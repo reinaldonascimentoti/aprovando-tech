@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100%" height="100%">
+  <defs>
+    <!-- Project 3-color gradient -->
+    <linearGradient id="projectGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#433fe5" />
+      <stop offset="50%" stop-color="#6b38d4" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+    <filter id="flameGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="120" height="120" rx="30" fill="url(#projectGrad)" />
+
+  <!-- Properly scaled and centered rocket -->
+  <g transform="translate(-48, -57) scale(1.8)">
+    <g>
+      <animateTransform attributeName="transform" type="translate" values="0,2; 0,-2; 0,2" dur="2s" repeatCount="indefinite" />
+      
+      <!-- Flame -->
+      <g filter="url(#flameGlow)">
+        <path d="M52 75 Q60 95 68 75 Q60 85 52 75 Z" fill="#f97316">
+          <animate attributeName="d" values="M52 75 Q60 95 68 75 Q60 85 52 75 Z; M52 75 Q60 100 68 75 Q60 80 52 75 Z; M52 75 Q60 95 68 75 Q60 85 52 75 Z" dur="0.2s" repeatCount="indefinite"/>
+        </path>
+        <path d="M55 75 Q60 85 65 75 Q60 80 55 75 Z" fill="#fcd34d">
+          <animate attributeName="d" values="M55 75 Q60 85 65 75 Q60 80 55 75 Z; M55 75 Q60 90 65 75 Q60 78 55 75 Z; M55 75 Q60 85 65 75 Q60 80 55 75 Z" dur="0.2s" repeatCount="indefinite"/>
+        </path>
+      </g>
+
+      <!-- Rocket Body -->
+      <g>
+        <path d="M50 65 L40 75 L45 75 L50 70 Z" fill="#f8fafc" />
+        <path d="M70 65 L80 75 L75 75 L70 70 Z" fill="#f8fafc" />
+        <path d="M55 72 L60 78 L65 72 Z" fill="#f8fafc" />
+        
+        <path d="M60 30 C72 40 70 65 70 72 L60 70 L50 72 C50 65 48 40 60 30 Z" fill="#ffffff" />
+        
+        <circle cx="60" cy="52" r="6" fill="#433fe5" />
+        <circle cx="60" cy="52" r="6" fill="none" stroke="#06b6d4" stroke-width="2.5" />
+      </g>
+    </g>
+  </g>
+</svg>

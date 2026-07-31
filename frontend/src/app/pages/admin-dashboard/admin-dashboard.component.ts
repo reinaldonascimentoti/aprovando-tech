@@ -14,8 +14,8 @@ import { AuthService, UserProfile } from '../../services/auth.service';
       <!-- Top Navigation Bar -->
       <header class="neo-raised rounded-2xl p-4 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-3">
-          <div class="w-12 h-12 neo-raised rounded-xl flex items-center justify-center text-[#433fe5]">
-            <span class="material-symbols-outlined !text-[28px] filled">admin_panel_settings</span>
+          <div class="w-16 h-16 flex items-center justify-center">
+            <img src="assets/admin_panel_icon.svg" alt="Admin Panel Icon" class="w-full h-full object-contain drop-shadow-md">
           </div>
           <div>
             <h1 class="text-xl font-bold text-[#191c1e]">Painel Administrativo</h1>
@@ -34,8 +34,8 @@ import { AuthService, UserProfile } from '../../services/auth.service';
       <!-- KPI Metric Cards Grid -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="neo-raised rounded-2xl p-6 flex items-center gap-4">
-          <div class="w-14 h-14 neo-pressed rounded-2xl flex items-center justify-center text-[#433fe5]">
-            <span class="material-symbols-outlined !text-[32px]">quiz</span>
+          <div class="w-14 h-14 flex items-center justify-center">
+            <img src="assets/laptop_code_icon.svg" alt="Questões" class="w-12 h-12 object-contain drop-shadow-sm">
           </div>
           <div>
             <p class="text-xs font-semibold text-[#464556]">Questões Extraídas</p>
@@ -44,8 +44,8 @@ import { AuthService, UserProfile } from '../../services/auth.service';
         </div>
 
         <div class="neo-raised rounded-2xl p-6 flex items-center gap-4">
-          <div class="w-14 h-14 neo-pressed rounded-2xl flex items-center justify-center text-[#006847]">
-            <span class="material-symbols-outlined !text-[32px]">verified</span>
+          <div class="w-14 h-14 flex items-center justify-center">
+            <img src="assets/security_shield_icon.svg" alt="Qualidade" class="w-12 h-12 object-contain drop-shadow-sm">
           </div>
           <div>
             <p class="text-xs font-semibold text-[#464556]">Score Qualidade Média IA</p>
@@ -54,8 +54,8 @@ import { AuthService, UserProfile } from '../../services/auth.service';
         </div>
 
         <div class="neo-raised rounded-2xl p-6 flex items-center gap-4">
-          <div class="w-14 h-14 neo-pressed rounded-2xl flex items-center justify-center text-[#6b38d4]">
-            <span class="material-symbols-outlined !text-[32px]">pie_chart</span>
+          <div class="w-14 h-14 flex items-center justify-center">
+            <img src="assets/growth_chart_icon.svg" alt="Pareto" class="w-12 h-12 object-contain drop-shadow-sm">
           </div>
           <div>
             <p class="text-xs font-semibold text-[#464556]">Editais Pareto (80/20)</p>
@@ -64,8 +64,8 @@ import { AuthService, UserProfile } from '../../services/auth.service';
         </div>
 
         <div class="neo-raised rounded-2xl p-6 flex items-center gap-4">
-          <div class="w-14 h-14 neo-pressed rounded-2xl flex items-center justify-center text-[#5d5cff]">
-            <span class="material-symbols-outlined !text-[32px]">group</span>
+          <div class="w-14 h-14 flex items-center justify-center">
+            <img src="assets/registered_users_icon.svg" alt="Usuários" class="w-12 h-12 object-contain drop-shadow-sm">
           </div>
           <div>
             <p class="text-xs font-semibold text-[#464556]">Usuários Cadastrados</p>
@@ -82,7 +82,7 @@ import { AuthService, UserProfile } from '../../services/auth.service';
           <div>
             <div class="flex items-center justify-between mb-4">
               <h2 class="text-lg font-bold text-[#191c1e] flex items-center gap-2">
-                <span class="material-symbols-outlined text-[#433fe5]">upload_file</span>
+                <img src="assets/cloud_upload_icon.svg" class="w-12 h-12 drop-shadow-sm">
                 Upload de PDF de Aula (IA + Qualidade JSON)
               </h2>
               <span class="bg-[#e1dfff] text-[#2b20d2] text-[11px] font-bold px-2.5 py-1 rounded-full">BullMQ + OpenAI</span>
@@ -92,7 +92,7 @@ import { AuthService, UserProfile } from '../../services/auth.service';
             </p>
 
             <div class="neo-pressed rounded-2xl p-8 border-2 border-dashed border-[#c7c4d8] flex flex-col items-center justify-center text-center relative hover:border-[#433fe5] transition-colors cursor-pointer mb-4">
-              <span class="material-symbols-outlined !text-[48px] text-[#433fe5] mb-2">cloud_upload</span>
+              <span class="material-symbols-outlined !text-[40px] text-[#6b38d4] mb-1">picture_as_pdf</span>
               <p class="text-sm font-semibold text-[#191c1e]">
                 {{ selectedPdfFile ? selectedPdfFile.name : 'Arraste o PDF da aula ou clique para selecionar' }}
               </p>
@@ -114,8 +114,8 @@ import { AuthService, UserProfile } from '../../services/auth.service';
         <div class="neo-raised rounded-3xl p-6 flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-lg font-bold text-[#191c1e] flex items-center gap-2">
-                <span class="material-symbols-outlined text-[#6b38d4]">analytics</span>
+              <h2 class="text-lg font-bold text-[#191c1e] flex items-center gap-3">
+                <img src="assets/cloud_upload_icon.svg" class="w-12 h-12 drop-shadow-sm">
                 Upload de Edital (Análise Pareto 80/20)
               </h2>
               <span class="bg-[#e9ddff] text-[#5516be] text-[11px] font-bold px-2.5 py-1 rounded-full">Sprints Inteligentes</span>
@@ -382,7 +382,7 @@ export class AdminDashboardComponent implements OnInit {
     private apiService: ApiService,
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.user = this.authService.getCurrentUser();

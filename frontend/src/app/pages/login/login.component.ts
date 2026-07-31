@@ -33,29 +33,7 @@ import { AuthService } from '../../services/auth.service';
           <p class="text-sm font-medium text-[#464556] text-center px-2">Análise de precisão para excelência acadêmica e concursos</p>
         </div>
 
-        <!-- Role Toggle (Aluno / Admin) -->
-        <div class="w-full neo-pressed p-1.5 rounded-2xl flex relative mb-6">
-          <button 
-            type="button"
-            (click)="selectedRole = 'user'"
-            [class.neo-raised]="selectedRole === 'user'"
-            [class.text-[#433fe5]]="selectedRole === 'user'"
-            [class.font-bold]="selectedRole === 'user'"
-            class="flex-1 py-3 text-sm font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-[#464556]">
-            <span class="material-symbols-outlined !text-[18px]">school</span>
-            <span>Aluno</span>
-          </button>
-          <button 
-            type="button"
-            (click)="selectedRole = 'admin'"
-            [class.neo-raised]="selectedRole === 'admin'"
-            [class.text-[#433fe5]]="selectedRole === 'admin'"
-            [class.font-bold]="selectedRole === 'admin'"
-            class="flex-1 py-3 text-sm font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-[#464556]">
-            <span class="material-symbols-outlined !text-[18px]">admin_panel_settings</span>
-            <span>Administrador</span>
-          </button>
-        </div>
+
 
         <!-- Login Form -->
         <form (ngSubmit)="handleAuth()" class="w-full space-y-5">
@@ -81,7 +59,7 @@ import { AuthService } from '../../services/auth.service';
                 name="email"
                 type="email" 
                 required
-                [placeholder]="selectedRole === 'admin' ? 'admin@aprovando.tech' : 'alex.rivers@university.edu'"
+                placeholder="seu.email@exemplo.com"
                 class="neo-pressed w-full h-14 pl-12 pr-4 rounded-2xl border-none focus:ring-2 focus:ring-[#433fe5]/20 bg-transparent text-base outline-none text-[#191c1e]">
             </div>
           </div>
@@ -141,7 +119,6 @@ import { AuthService } from '../../services/auth.service';
   `
 })
 export class LoginComponent {
-  selectedRole: 'user' | 'admin' = 'user';
   email = '';
   password = '';
   fullName = '';
@@ -172,7 +149,7 @@ export class LoginComponent {
     try {
       if (this.isRegister) {
         const user = await this.authService.signup(
-          this.email, this.password, this.fullName, this.selectedRole
+          this.email, this.password, this.fullName
         );
         this.redirectUser(user.role);
       } else {
