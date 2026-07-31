@@ -1,0 +1,117 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+:root {
+  --primary: #433fe5;
+  --primary-container: #5d5cff;
+  --secondary: #6b38d4;
+  --secondary-container: #8455ef;
+  --tertiary: #006847;
+  --tertiary-container: #00845a;
+  --background: #f7f9fc;
+  --surface: #f7f9fc;
+  --surface-container-low: #f2f4f7;
+  --surface-container: #eceef1;
+  --surface-container-high: #e6e8eb;
+  --surface-container-highest: #e0e3e6;
+  --on-surface: #191c1e;
+  --on-surface-variant: #464556;
+  --outline: #767587;
+  --outline-variant: #c7c4d8;
+  --surface-tint: #4643e9;
+  --error: #ba1a1a;
+  --error-container: #ffdad6;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--background);
+  color: var(--on-surface);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Neomorphic Raised */
+.neo-raised {
+  background: #f7f9fc;
+  box-shadow: 8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff;
+}
+
+/* Neomorphic Raised Subdued */
+.neo-raised-sm {
+  background: #f7f9fc;
+  box-shadow: 4px 4px 10px #d1d9e6, -4px -4px 10px #ffffff;
+}
+
+/* Neomorphic Pressed (Sunken) */
+.neo-pressed {
+  background: #f7f9fc;
+  box-shadow: inset 6px 6px 12px #d1d9e6, inset -6px -6px 12px #ffffff;
+}
+
+/* Mesh Gradient Button */
+.btn-mesh {
+  background: linear-gradient(135deg, #433fe5 0%, #6b38d4 50%, #8455ef 100%);
+  color: #ffffff;
+  box-shadow: 4px 4px 10px rgba(107, 56, 212, 0.3), -4px -4px 10px rgba(255, 255, 255, 0.8);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.btn-mesh:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 0px 20px rgba(107, 56, 212, 0.5);
+}
+
+.btn-mesh:active {
+  transform: scale(0.97);
+}
+
+/* Secondary Neomorphic Button */
+.btn-neo {
+  background: #f7f9fc;
+  box-shadow: 6px 6px 12px #d1d9e6, -6px -6px 12px #ffffff;
+  color: var(--primary);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.btn-neo:hover {
+  box-shadow: 2px 2px 5px #d1d9e6, -2px -2px 5px #ffffff;
+}
+
+/* Active Glow */
+.active-glow {
+  box-shadow: 0 0 18px rgba(107, 56, 212, 0.45);
+}
+
+/* Material Symbols Icon Sizing */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
+
+.material-symbols-outlined.filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Smooth transitions */
+.transition-all {
+  transition: all 0.3s ease;
+}

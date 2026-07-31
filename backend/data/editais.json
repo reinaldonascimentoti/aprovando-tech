@@ -1,0 +1,145 @@
+[
+  {
+    "id": "ed-1",
+    "title": "Edital Concurso Auditor Fiscal 2026",
+    "storage_path": "editais/edital-auditor-2026.pdf",
+    "uploaded_by": "usr-2",
+    "uploader_name": "Alex Rivers",
+    "status": "completed",
+    "created_at": "2026-07-30T02:04:22.817Z",
+    "pareto_data": {
+      "total_subjects": 6,
+      "high_priority_subjects": 2,
+      "coverage_percentage": 82,
+      "relevance_summary": "Foco massivo em Direito Tributário e Contabilidade Geral, correspondendo a 82% das questões históricas da banca.",
+      "subjects": [
+        {
+          "name": "Direito Tributário",
+          "weight": 45,
+          "priority": "Alta (20% Pareto)",
+          "status": "Essencial"
+        },
+        {
+          "name": "Contabilidade Geral",
+          "weight": 37,
+          "priority": "Alta (20% Pareto)",
+          "status": "Essencial"
+        },
+        {
+          "name": "Direito Administrativo",
+          "weight": 8,
+          "priority": "Média",
+          "status": "Complementar"
+        },
+        {
+          "name": "Direito Constitucional",
+          "weight": 5,
+          "priority": "Média",
+          "status": "Complementar"
+        },
+        {
+          "name": "Língua Portuguesa",
+          "weight": 3,
+          "priority": "Baixa",
+          "status": "Revisão"
+        },
+        {
+          "name": "Raciocínio Lógico",
+          "weight": 2,
+          "priority": "Baixa",
+          "status": "Revisão"
+        }
+      ],
+      "sprints": [
+        {
+          "id": "sprint-1",
+          "title": "Sprint 1 - Núcleo Duro Tributário & Contábil",
+          "duration": "2 Semanas",
+          "progress": 66,
+          "topics": [
+            {
+              "id": "t-101",
+              "subject": "Direito Tributário",
+              "name": "Impostos de Competência da União (IR, IPI, ITR)",
+              "is_pareto": true,
+              "weight": "Alto",
+              "completed": true
+            },
+            {
+              "id": "t-102",
+              "subject": "Direito Tributário",
+              "name": "Lançamento Tributário e Hipóteses de Suspensão",
+              "is_pareto": true,
+              "weight": "Alto",
+              "completed": true
+            },
+            {
+              "id": "t-103",
+              "subject": "Contabilidade Geral",
+              "name": "Balanço Patrimonial e Demonstração do Resultado (DRE)",
+              "is_pareto": true,
+              "weight": "Alto",
+              "completed": false
+            }
+          ]
+        },
+        {
+          "id": "sprint-2",
+          "title": "Sprint 2 - Contabilidade Avançada & Legislação",
+          "duration": "2 Semanas",
+          "progress": 33,
+          "topics": [
+            {
+              "id": "t-104",
+              "subject": "Contabilidade Geral",
+              "name": "Pronunciamentos CPC (Depreciação, Amortização e Exaustão)",
+              "is_pareto": true,
+              "weight": "Alto",
+              "completed": true
+            },
+            {
+              "id": "t-105",
+              "subject": "Direito Tributário",
+              "name": "Crédito Tributário e Execução Fiscal (Lei 6.830/80)",
+              "is_pareto": true,
+              "weight": "Alto",
+              "completed": false
+            },
+            {
+              "id": "t-106",
+              "subject": "Direito Administrativo",
+              "name": "Licitações e Contratos (Lei 14.133/21 - Pontos-chave)",
+              "is_pareto": false,
+              "weight": "Médio",
+              "completed": false
+            }
+          ]
+        },
+        {
+          "id": "sprint-3",
+          "title": "Sprint 3 - Consolidação & Revisão Geral",
+          "duration": "1 Semana",
+          "progress": 0,
+          "topics": [
+            {
+              "id": "t-107",
+              "subject": "Direito Constitucional",
+              "name": "Controle de Constitucionalidade (ADI, ADC, ADPF)",
+              "is_pareto": false,
+              "weight": "Médio",
+              "completed": false
+            },
+            {
+              "id": "t-108",
+              "subject": "Língua Portuguesa",
+              "name": "Interpretação de Texto e Sintaxe de Regência/Crase",
+              "is_pareto": false,
+              "weight": "Baixo",
+              "completed": false
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

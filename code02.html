@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Aprovando Tech - Painel do Estudante</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#4643e9",
+                    "on-tertiary-fixed-variant": "#005236",
+                    "inverse-on-surface": "#eff1f4",
+                    "surface-container-highest": "#e0e3e6",
+                    "tertiary": "#006847",
+                    "background": "#f7f9fc",
+                    "surface-dim": "#d8dadd",
+                    "surface": "#f7f9fc",
+                    "on-secondary": "#ffffff",
+                    "surface-variant": "#e0e3e6",
+                    "error-container": "#ffdad6",
+                    "on-primary-container": "#fdf9ff",
+                    "surface-bright": "#f7f9fc",
+                    "on-secondary-fixed": "#23005c",
+                    "inverse-surface": "#2d3133",
+                    "on-surface-variant": "#464556",
+                    "outline": "#767587",
+                    "outline-variant": "#c7c4d8",
+                    "on-error-container": "#93000a",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-low": "#f2f4f7",
+                    "primary-fixed": "#e1dfff",
+                    "tertiary-fixed": "#6ffbbe",
+                    "tertiary-fixed-dim": "#4edea3",
+                    "primary-container": "#5d5cff",
+                    "surface-container": "#eceef1",
+                    "inverse-primary": "#c1c1ff",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface": "#191c1e",
+                    "surface-container-high": "#e6e8eb",
+                    "secondary-container": "#8455ef",
+                    "on-tertiary-container": "#eefff2",
+                    "tertiary-container": "#00845a",
+                    "secondary-fixed": "#e9ddff",
+                    "secondary": "#6b38d4",
+                    "on-secondary-fixed-variant": "#5516be",
+                    "primary-fixed-dim": "#c1c1ff",
+                    "on-primary-fixed-variant": "#2b20d2",
+                    "error": "#ba1a1a",
+                    "on-tertiary-fixed": "#002113",
+                    "on-background": "#191c1e",
+                    "primary": "#433fe5",
+                    "on-primary-fixed": "#09006b",
+                    "secondary-fixed-dim": "#d0bcff",
+                    "on-secondary-container": "#fffbff",
+                    "on-error": "#ffffff",
+                    "on-primary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "md": "16px",
+                    "unit": "4px",
+                    "container-max": "1280px",
+                    "xl": "40px",
+                    "gutter": "24px",
+                    "sm": "8px",
+                    "lg": "24px",
+                    "xs": "4px"
+            },
+            "fontFamily": {
+                    "body-md": ["Plus Jakarta Sans"],
+                    "title-md": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #f7f9fc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #191c1e;
+        }
+        .neo-raised {
+            box-shadow: 6px 6px 12px #d1d9e6, -6px -6px 12px #ffffff;
+        }
+        .neo-pressed {
+            box-shadow: inset 4px 4px 8px #d1d9e6, inset -4px -4px 8px #ffffff;
+        }
+        .neo-pressed-sm {
+            box-shadow: inset 2px 2px 5px #d1d9e6, inset -2px -2px 5px #ffffff;
+        }
+        .active-glow {
+            box-shadow: 0 0 15px rgba(107, 56, 212, 0.4);
+        }
+        .vibrant-gradient {
+            background: linear-gradient(135deg, #6b38d4 0%, #4643e9 100%);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-tab-indicator {
+            box-shadow: 0 0 15px rgba(67, 63, 229, 0.4);
+        }
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d1d9e6; border-radius: 10px; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface shadow-[4px_4px_10px_#d1d9e6,-4px_-4px_10px_#ffffff] flex justify-between items-center px-lg py-sm">
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-primary p-xs rounded-lg hover:bg-surface-container-high transition-colors active:scale-95 duration-200">menu</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-surface-tint">Aprovando Tech</h1>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden md:flex gap-md mr-md">
+<span class="text-primary font-bold font-title-md text-title-md px-md py-xs rounded-lg active-glow">Painel</span>
+<span class="text-on-surface-variant font-title-md text-title-md px-md py-xs rounded-lg hover:bg-surface-container-high cursor-pointer transition-colors">Análise</span>
+<span class="text-on-surface-variant font-title-md text-title-md px-md py-xs rounded-lg hover:bg-surface-container-high cursor-pointer transition-colors">Biblioteca</span>
+</div>
+<div class="w-10 h-10 rounded-full border-2 border-primary-container overflow-hidden neo-raised">
+<img alt="Alex Rivers" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpz39v_e2XitABotqsLpW9XEszoRGXZWdzwKp0zORtYYPvNnOVTbspZdNX6AAAiQuIJ9SPzq3SNE7FccFjoes4QDb-FzJeKqFcsLxk_asoa-7A8r942-qIYWBMo2pQz3lSeRCcQicOocqlYo9XktJeEjEfY2yRD-OCxH9q1AZP937VdIPrm-LYl0OgDzCn6G-aas6nXxQireT56beFfokqY56U0BWXlOQks6wvbTXpRvSlB9ViQ9RSmQ"/>
+</div>
+</div>
+</header>
+<!-- Sidebar (Desktop) -->
+<nav class="hidden md:flex fixed left-0 top-0 h-full w-72 z-40 flex-col p-md bg-surface shadow-[10px_0_20px_#d1d9e6] pt-24">
+<div class="flex items-center gap-md mb-xl p-sm neo-pressed-sm rounded-xl">
+<div class="w-12 h-12 rounded-lg vibrant-gradient flex items-center justify-center text-white font-bold text-headline-lg-mobile shadow-lg">A</div>
+<div>
+<p class="font-body-lg text-body-lg font-bold">Alex Rivers</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Nível 42 Pro Acadêmico</p>
+</div>
+</div>
+<ul class="space-y-sm">
+<li class="flex items-center gap-md p-md bg-primary-container text-on-primary-container active-glow rounded-lg transition-all">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-lg text-body-lg">Painel</span>
+</li>
+<li class="flex items-center gap-md p-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-all cursor-pointer">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-lg text-body-lg">Análise de Exames</span>
+</li>
+<li class="flex items-center gap-md p-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-all cursor-pointer">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="font-body-lg text-body-lg">Cronogramas</span>
+</li>
+<li class="flex items-center gap-md p-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-all cursor-pointer">
+<span class="material-symbols-outlined">library_books</span>
+<span class="font-body-lg text-body-lg">Biblioteca de Conteúdo</span>
+</li>
+<li class="flex items-center gap-md p-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-all cursor-pointer">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="font-body-lg text-body-lg">Painel Admin</span>
+</li>
+</ul>
+<div class="mt-auto p-md neo-pressed rounded-xl bg-surface-container-lowest">
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-xs">Meta Diária</p>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full vibrant-gradient w-3/4"></div>
+</div>
+<p class="font-label-sm text-label-sm text-primary font-bold mt-xs">75% Alcançado</p>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="pt-24 pb-24 md:pb-8 md:pl-80 px-md">
+<!-- Hero Welcome Section -->
+<section class="mb-xl">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-md">
+<div>
+<h2 class="font-headline-lg text-headline-lg mb-xs">Bem-vindo de volta, Alex</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Sua preparação está 12% mais eficiente esta semana. Continue assim!</p>
+</div>
+<div class="flex gap-sm">
+<button class="px-lg py-md vibrant-gradient text-white rounded-xl neo-raised font-bold active:scale-95 transition-transform flex items-center gap-xs">
+<span class="material-symbols-outlined">play_arrow</span>
+                        Estudo Rápido
+                    </button>
+</div>
+</div>
+</section>
+<!-- Bento Grid Dashboard -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-lg">
+<!-- Highlight: New Exam Published -->
+<div class="md:col-span-8 neo-raised rounded-2xl bg-surface overflow-hidden relative group">
+<div class="p-lg flex flex-col md:flex-row gap-lg items-center">
+<div class="w-full md:w-1/2">
+<div class="flex items-center gap-xs mb-sm">
+<span class="px-sm py-xs bg-tertiary-container text-on-tertiary-container font-label-sm text-label-sm rounded-full">Novo Simulado Publicado</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">• 2 horas atrás</span>
+</div>
+<h3 class="font-headline-lg-mobile text-headline-lg-mobile mb-md text-primary">Machine Learning Avançado - Outono 2024</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-lg leading-relaxed">
+                            Uma avaliação abrangente focada em Neural Architecture Search e Generative Adversarial Networks. Prepare-se para 45 questões técnicas.
+                        </p>
+<div class="flex gap-md">
+<button class="neo-raised px-lg py-md rounded-xl font-bold bg-surface hover:bg-surface-container-high transition-colors">Detalhes</button>
+<button class="vibrant-gradient text-white px-lg py-md rounded-xl font-bold active-glow active:scale-95 transition-all">Começar Agora</button>
+</div>
+</div>
+<div class="w-full md:w-1/2 h-48 md:h-64 rounded-xl overflow-hidden neo-pressed relative">
+<img alt="Visualização de redes neurais" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBBIgst8CnK5uldPwpm-ed0AVK_kZsRnQpm_t5oH7mh4V_ZXVwzWh4a2mqHKUjWaqafPiz6GnDt9KnfV-2rmc_o6WU0dqFim_HClgsu9jS7_H__E5e7Oih7NPzX1mtHMD61dAqzhJ2UhN1tvfjgQqDX06SGl_8wUo0VSrCCLGqF-9PXUw5wjY3Z2MJCI5JPxfgCkhNP1Hzb90hbXh6WlTMu56K0PV0sTpS-NylHdov7SHc5lxXebIyzg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface/40 to-transparent"></div>
+</div>
+</div>
+</div>
+<!-- Questions Available -->
+<div class="md:col-span-4 neo-raised rounded-2xl bg-surface p-lg flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-md">
+<span class="material-symbols-outlined p-md vibrant-gradient text-white rounded-2xl shadow-lg">quiz</span>
+<span class="text-on-surface-variant material-symbols-outlined">more_vert</span>
+</div>
+<h3 class="font-title-md text-title-md mb-xs">Banco de Questões</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Disponíveis para prática</p>
+<div class="mt-lg">
+<span class="font-display-lg text-display-lg text-primary">2.480</span>
+<p class="font-label-sm text-label-sm text-on-tertiary-fixed-variant mt-xs flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">trending_up</span> +140 novas esta semana
+                        </p>
+</div>
+</div>
+<div class="mt-xl space-y-sm">
+<div class="flex justify-between font-label-sm text-label-sm">
+<span>Domínio dos Tópicos</span>
+<span class="text-primary font-bold">68%</span>
+</div>
+<div class="h-3 w-full bg-surface-container-highest rounded-full neo-pressed-sm overflow-hidden p-[2px]">
+<div class="h-full bg-secondary-container rounded-full active-glow" style="width: 68%"></div>
+</div>
+</div>
+</div>
+<!-- Pareto Analysis List -->
+<div class="md:col-span-5 neo-raised rounded-2xl bg-surface p-lg">
+<div class="flex justify-between items-center mb-lg">
+<h3 class="font-title-md text-title-md">Pontos Fracos (Pareto)</h3>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">info</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-xl">Foque nestes 20% de tópicos para recuperar 80% dos seus pontos perdidos.</p>
+<div class="space-y-md">
+<div class="p-md neo-pressed rounded-xl flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-error-container flex items-center justify-center text-on-error-container">
+<span class="material-symbols-outlined">data_object</span>
+</div>
+<div class="flex-1">
+<p class="font-body-lg text-body-lg font-bold">Estruturas de Dados</p>
+<p class="font-label-sm text-label-sm text-error">Lacuna crítica detectada</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+<div class="p-md neo-raised bg-surface rounded-xl flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed">
+<span class="material-symbols-outlined">functions</span>
+</div>
+<div class="flex-1">
+<p class="font-body-lg text-body-lg font-bold">Álgebra Linear</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Baixa retenção (42%)</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+<div class="p-md neo-raised bg-surface rounded-xl flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed">
+<span class="material-symbols-outlined">psychology</span>
+</div>
+<div class="flex-1">
+<p class="font-body-lg text-body-lg font-bold">Lógica Probabilística</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Requer revisão</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Activity Chart / Stats -->
+<div class="md:col-span-7 neo-raised rounded-2xl bg-surface p-lg">
+<div class="flex justify-between items-center mb-lg">
+<div>
+<h3 class="font-title-md text-title-md">Intensidade de Estudo</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Duração da sessão vs eficiência diária</p>
+</div>
+<div class="flex neo-pressed-sm p-xs rounded-lg">
+<button class="px-md py-xs bg-white neo-raised rounded-md text-label-sm font-bold">Semana</button>
+<button class="px-md py-xs text-on-surface-variant text-label-sm">Mês</button>
+</div>
+</div>
+<div class="h-64 w-full flex items-end gap-md px-md pb-md">
+<!-- Simple Mock Chart using Tailwind -->
+<div class="flex-1 flex flex-col items-center gap-sm">
+<div class="w-full bg-surface-container-high rounded-t-lg neo-pressed relative h-32 overflow-hidden">
+<div class="absolute bottom-0 w-full vibrant-gradient h-3/4 rounded-t-lg shadow-lg"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Seg</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm">
+<div class="w-full bg-surface-container-high rounded-t-lg neo-pressed relative h-40 overflow-hidden">
+<div class="absolute bottom-0 w-full vibrant-gradient h-1/2 rounded-t-lg shadow-lg"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Ter</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm">
+<div class="w-full bg-surface-container-high rounded-t-lg neo-pressed relative h-48 overflow-hidden">
+<div class="absolute bottom-0 w-full vibrant-gradient h-4/5 rounded-t-lg shadow-lg"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Qua</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm">
+<div class="w-full bg-surface-container-high rounded-t-lg neo-pressed relative h-36 overflow-hidden">
+<div class="absolute bottom-0 w-full vibrant-gradient h-2/3 rounded-t-lg shadow-lg"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Qui</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm">
+<div class="w-full bg-surface-container-high rounded-t-lg neo-pressed relative h-56 overflow-hidden">
+<div class="absolute bottom-0 w-full vibrant-gradient h-[90%] rounded-t-lg shadow-lg"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Sex</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm">
+<div class="w-full bg-surface-container-high rounded-t-lg neo-pressed relative h-24 overflow-hidden">
+<div class="absolute bottom-0 w-full vibrant-gradient h-1/4 rounded-t-lg shadow-lg"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Sáb</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm">
+<div class="w-full bg-surface-container-high rounded-t-lg neo-pressed relative h-28 overflow-hidden">
+<div class="absolute bottom-0 w-full vibrant-gradient h-1/3 rounded-t-lg shadow-lg"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Dom</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Upcoming Tasks (Horizontal Scroll on Mobile) -->
+<section class="mt-xl">
+<h3 class="font-headline-lg-mobile text-headline-lg-mobile mb-lg">Tarefas Imediatas</h3>
+<div class="flex gap-lg overflow-x-auto pb-lg snap-x">
+<div class="min-w-[280px] snap-center neo-raised rounded-2xl bg-surface p-md border-l-4 border-primary">
+<div class="flex justify-between mb-md">
+<span class="font-label-sm text-label-sm text-primary font-bold">VENCE HOJE</span>
+<span class="material-symbols-outlined text-primary">alarm</span>
+</div>
+<p class="font-body-lg text-body-lg font-bold mb-xs">Quiz de Portas Lógicas</p>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">15 questões • 20 mins</p>
+<button class="w-full py-md neo-pressed rounded-xl font-bold text-primary hover:bg-primary/5 transition-colors">Iniciar Tarefa</button>
+</div>
+<div class="min-w-[280px] snap-center neo-raised rounded-2xl bg-surface p-md border-l-4 border-secondary">
+<div class="flex justify-between mb-md">
+<span class="font-label-sm text-label-sm text-secondary font-bold">AMANHÃ</span>
+<span class="material-symbols-outlined text-secondary">event</span>
+</div>
+<p class="font-body-lg text-body-lg font-bold mb-xs">Revisão de Conceitos ML</p>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">Sessão de estudo com tutor IA</p>
+<button class="w-full py-md neo-pressed rounded-xl font-bold text-secondary hover:bg-secondary/5 transition-colors">Lembre-me</button>
+</div>
+<div class="min-w-[280px] snap-center neo-raised rounded-2xl bg-surface p-md border-l-4 border-tertiary">
+<div class="flex justify-between mb-md">
+<span class="font-label-sm text-label-sm text-tertiary font-bold">OPCIONAL</span>
+<span class="material-symbols-outlined text-tertiary">star</span>
+</div>
+<p class="font-body-lg text-body-lg font-bold mb-xs">Desafio Bônus</p>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">Desbloqueie o emblema "Deep Scholar"</p>
+<button class="w-full py-md neo-pressed rounded-xl font-bold text-tertiary hover:bg-tertiary/5 transition-colors">Ver Recompensa</button>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full h-16 bg-surface shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.1)] flex justify-around items-center px-md pb-safe z-50 rounded-t-xl">
+<div class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 shadow-[0_0_15px_rgba(107,56,212,0.4)] active:scale-90 transition-transform">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm">Início</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 transition-transform">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-label-sm text-label-sm">Análise</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 transition-transform">
+<span class="material-symbols-outlined">checklist_rtl</span>
+<span class="font-label-sm text-label-sm">Tarefas</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 transition-transform">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-sm text-label-sm">Perfil</span>
+</div>
+</nav>
+<!-- Floating Action Button (FAB) -->
+<button class="fixed bottom-20 right-6 md:bottom-8 md:right-8 w-14 h-14 vibrant-gradient text-white rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-transform z-40">
+<span class="material-symbols-outlined text-[32px]">add</span>
+</button>
+<script>
+        // Micro-interactions for neomorphic effects
+        document.querySelectorAll('.neo-raised').forEach(card => {
+            card.addEventListener('mousedown', () => {
+                card.classList.remove('neo-raised');
+                card.classList.add('neo-pressed-sm');
+            });
+            card.addEventListener('mouseup', () => {
+                card.classList.remove('neo-pressed-sm');
+                card.classList.add('neo-raised');
+            });
+            card.addEventListener('mouseleave', () => {
+                card.classList.remove('neo-pressed-sm');
+                card.classList.add('neo-raised');
+            });
+        });
+
+        // Simple toggle for the drawer menu icon on mobile
+        const menuBtn = document.querySelector('button.material-symbols-outlined');
+        menuBtn.addEventListener('click', () => {
+            console.log('Mobile menu navigation triggered');
+        });
+    </script>
+</body></html>

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Análise de Pareto - Aprovando Tech</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#4643e9",
+                    "on-tertiary-fixed-variant": "#005236",
+                    "inverse-on-surface": "#eff1f4",
+                    "surface-container-highest": "#e0e3e6",
+                    "tertiary": "#006847",
+                    "background": "#f7f9fc",
+                    "surface-dim": "#d8dadd",
+                    "surface": "#f7f9fc",
+                    "on-secondary": "#ffffff",
+                    "surface-variant": "#e0e3e6",
+                    "error-container": "#ffdad6",
+                    "on-primary-container": "#fdf9ff",
+                    "surface-bright": "#f7f9fc",
+                    "on-secondary-fixed": "#23005c",
+                    "inverse-surface": "#2d3133",
+                    "on-surface-variant": "#464556",
+                    "outline": "#767587",
+                    "outline-variant": "#c7c4d8",
+                    "on-error-container": "#93000a",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-low": "#f2f4f7",
+                    "primary-fixed": "#e1dfff",
+                    "tertiary-fixed": "#6ffbbe",
+                    "tertiary-fixed-dim": "#4edea3",
+                    "primary-container": "#5d5cff",
+                    "surface-container": "#eceef1",
+                    "inverse-primary": "#c1c1ff",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface": "#191c1e",
+                    "surface-container-high": "#e6e8eb",
+                    "secondary-container": "#8455ef",
+                    "on-tertiary-container": "#eefff2",
+                    "tertiary-container": "#00845a",
+                    "secondary-fixed": "#e9ddff",
+                    "secondary": "#6b38d4",
+                    "on-secondary-fixed-variant": "#5516be",
+                    "primary-fixed-dim": "#c1c1ff",
+                    "on-primary-fixed-variant": "#2b20d2",
+                    "error": "#ba1a1a",
+                    "on-tertiary-fixed": "#002113",
+                    "on-background": "#191c1e",
+                    "primary": "#433fe5",
+                    "on-primary-fixed": "#09006b",
+                    "secondary-fixed-dim": "#d0bcff",
+                    "on-secondary-container": "#fffbff",
+                    "on-error": "#ffffff",
+                    "on-primary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "md": "16px",
+                    "unit": "4px",
+                    "container-max": "1280px",
+                    "xl": "40px",
+                    "gutter": "24px",
+                    "sm": "8px",
+                    "lg": "24px",
+                    "xs": "4px"
+            },
+            "fontFamily": {
+                    "body-md": ["Plus Jakarta Sans"],
+                    "title-md": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .neomorph-extruded {
+            box-shadow: 6px 6px 12px #d1d9e6, -6px -6px 12px #ffffff;
+        }
+        .neomorph-inset {
+            box-shadow: inset 4px 4px 8px #d1d9e6, inset -4px -4px 8px #ffffff;
+        }
+        .active-glow {
+            box-shadow: 0 0 20px rgba(67, 63, 229, 0.4);
+        }
+        .mesh-gradient {
+            background: radial-gradient(at 0% 0%, #6b38d4 0%, transparent 50%),
+                        radial-gradient(at 100% 0%, #433fe5 0%, transparent 50%),
+                        radial-gradient(at 100% 100%, #8455ef 0%, transparent 50%),
+                        radial-gradient(at 0% 100%, #5d5cff 0%, transparent 50%);
+            background-color: #433fe5;
+        }
+        .progress-ring-container {
+            position: relative;
+            width: 240px;
+            height: 240px;
+        }
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.8s ease-out;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+        body {
+          min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen pb-24 md:pb-0 md:pl-72">
+<!-- Top App Bar -->
+<header class="fixed top-0 right-0 left-0 md:left-72 z-50 bg-surface shadow-[4px_4px_10px_#d1d9e6,-4px_-4px_10px_#ffffff] dark:shadow-none flex justify-between items-center px-lg py-sm w-full">
+<div class="flex items-center gap-md">
+<button class="md:hidden p-2 rounded-lg hover:bg-surface-container-high transition-colors active:scale-95">
+<span class="material-symbols-outlined text-primary">menu</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-surface-tint">Aprovando Tech</h1>
+</div>
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:bg-surface-container-high p-2 rounded-full transition-colors">notifications</span>
+<div class="w-10 h-10 rounded-full border-2 border-primary-fixed-dim overflow-hidden neomorph-extruded">
+<img class="w-full h-full object-cover" data-alt="Retrato profissional de um jovem acadêmico com óculos, Alex Rivers." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0VvD0R8plg2W0q_jKQ8FFrrH2_77II2WfMP-TCUe8pKnlp-HQsfXHsRzTPE8eY5V9L3_SetsS2-vuPmbubAdficj1g9ThLuQaXzb2py_Pzt4bzISyMHcLpD8cRfpuxqffiUi97fUGn9zcEim2oV-D_wjgU94THAzLmq3t8Jli5-3jxvw9J_eaTi2y4v1PMBbv9jrNnAsX3vRHhkwc-99AN6B2fTwcxT-WOY4DjyADGJQLe9zxXQAiRQ"/>
+</div>
+</div>
+</header>
+<!-- Navigation Drawer (Desktop) -->
+<aside class="hidden md:flex fixed left-0 top-0 h-full w-72 z-40 flex-col p-md bg-surface shadow-[10px_0_20px_#d1d9e6] rounded-r-xl">
+<div class="mb-xl px-md">
+<span class="font-headline-lg text-headline-lg font-extrabold text-primary">Aprovando</span>
+</div>
+<nav class="flex-1 space-y-sm">
+<a class="flex items-center gap-md px-md py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-lg text-body-lg">Painel</span>
+</a>
+<a class="flex items-center gap-md px-md py-3 bg-primary-container text-on-primary-container shadow-[0_0_15px_rgba(67,63,229,0.3)] rounded-lg font-bold" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-lg text-body-lg">Análise de Exame</span>
+</a>
+<a class="flex items-center gap-md px-md py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="font-body-lg text-body-lg">Cronogramas</span>
+</a>
+<a class="flex items-center gap-md px-md py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">library_books</span>
+<span class="font-body-lg text-body-lg">Biblioteca</span>
+</a>
+<a class="flex items-center gap-md px-md py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="font-body-lg text-body-lg">Painel Admin</span>
+</a>
+</nav>
+<div class="mt-auto p-md neomorph-inset rounded-xl flex items-center gap-md">
+<div class="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
+<img class="w-full h-full object-cover" data-alt="Perfil de Alex Rivers." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRlcYUNehmeiSBSvU37ViISo1vCEholx90mvRkWRFnlxroiFVIE6lntMMgYJVl95sDexrSNxd2e-Pwupil_-pBPFy49CkaDyP1cnEqDK0at3FaVVt79U85giE0qVCG-BrKT2HnMmwUr_ZLkU0BDI_5yyegUza5-cdbeyaQX72d9hj2VDAaYdXk2r3sQecfmeN1SZsz3AEn13RT7qkeo9Q5oF_IMkRKa3y5Z_Gg5AqR09wdNnrS-9tNgA"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">Alex Rivers</p>
+<p class="text-label-sm text-on-surface-variant opacity-70">Nível 42 • Acadêmico Pro</p>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="pt-24 px-md md:px-xl max-w-7xl mx-auto">
+<header class="mb-lg">
+<div class="flex items-center gap-sm text-primary mb-xs">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Voltar ao Painel</span>
+</div>
+<h2 class="font-display-lg text-display-lg text-on-surface">Análise de Pareto</h2>
+<p class="text-on-surface-variant font-body-lg text-body-lg max-w-2xl">Visualizando a regra 80/20: identifique os 20% dos tópicos que contribuirão para 80% dos resultados de pontuação do seu exame.</p>
+</header>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Pareto Visualizer (Bento Item 1) -->
+<section class="lg:col-span-5 flex flex-col items-center justify-center neomorph-extruded bg-surface rounded-xl p-xl h-fit sticky top-28">
+<div class="progress-ring-container mb-lg">
+<!-- Background Ring -->
+<svg class="w-full h-full">
+<circle class="text-surface-container-high" cx="120" cy="120" fill="transparent" r="100" stroke="currentColor" stroke-width="18"></circle>
+<!-- Active Progress Ring -->
+<circle class="progress-ring-circle" cx="120" cy="120" fill="transparent" id="progress-circle" r="100" stroke="url(#gradient)" stroke-dasharray="628" stroke-dashoffset="125.6" stroke-linecap="round" stroke-width="20"></circle>
+<defs>
+<lineargradient id="gradient" x1="0%" x2="100%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#433fe5"></stop>
+<stop offset="100%" stop-color="#8455ef"></stop>
+</lineargradient>
+</defs>
+</svg>
+<!-- Center Content -->
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-display-lg font-display-lg text-primary">80%</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant opacity-60 uppercase">Ganho de Impacto</span>
+</div>
+</div>
+<div class="text-center">
+<h3 class="font-title-md text-title-md text-on-surface mb-xs">Concentração Crítica</h3>
+<p class="text-body-md text-on-surface-variant px-md">Focar nestes 4 módulos maximizará sua eficiência de preparação em 4x em comparação com um estudo amplo.</p>
+</div>
+<button class="mt-xl mesh-gradient text-on-primary px-lg py-md rounded-full font-bold active-glow transition-all hover:scale-105 active:scale-95 flex items-center gap-sm">
+<span class="material-symbols-outlined">bolt</span>
+                Plano de Estudo Otimizado
+            </button>
+</section>
+<!-- Topic List (Bento Item 2) -->
+<section class="lg:col-span-7 space-y-md">
+<div class="flex items-center justify-between px-md mb-sm">
+<h4 class="font-title-md text-title-md text-on-surface">Tópicos Essenciais (Os 20% Vitais)</h4>
+<span class="text-primary font-bold text-label-sm neomorph-inset px-3 py-1 rounded-full">Top 4 / 20</span>
+</div>
+<!-- Topic Cards -->
+<div class="space-y-md">
+<!-- Item 1 -->
+<div class="neomorph-extruded bg-surface rounded-xl p-md flex items-center gap-md group hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="w-12 h-12 flex items-center justify-center neomorph-inset rounded-lg text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">functions</span>
+</div>
+<div class="flex-1">
+<h5 class="font-body-lg text-body-lg text-on-surface">Cálculo Avançado e Integração</h5>
+<p class="text-body-md text-on-surface-variant">Fundamentos matemáticos essenciais para Finais de Engenharia.</p>
+</div>
+<div class="flex flex-col items-end gap-xs">
+<span class="bg-secondary text-on-secondary text-label-sm font-bold px-3 py-1 rounded-full active-glow">32% Peso</span>
+<span class="text-xs text-on-tertiary-container bg-tertiary-container px-2 py-0.5 rounded font-bold">Alto Rendimento</span>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="neomorph-extruded bg-surface rounded-xl p-md flex items-center gap-md group hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="w-12 h-12 flex items-center justify-center neomorph-inset rounded-lg text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">memory</span>
+</div>
+<div class="flex-1">
+<h5 class="font-body-lg text-body-lg text-on-surface">Fundamentos de Mecânica Quântica</h5>
+<p class="text-body-md text-on-surface-variant">Dualidade onda-partícula e equações de Schrödinger.</p>
+</div>
+<div class="flex flex-col items-end gap-xs">
+<span class="bg-secondary text-on-secondary text-label-sm font-bold px-3 py-1 rounded-full active-glow">24% Peso</span>
+<span class="text-xs text-on-tertiary-container bg-tertiary-container px-2 py-0.5 rounded font-bold">Crucial</span>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="neomorph-extruded bg-surface rounded-xl p-md flex items-center gap-md group hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="w-12 h-12 flex items-center justify-center neomorph-inset rounded-lg text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</div>
+<div class="flex-1">
+<h5 class="font-body-lg text-body-lg text-on-surface">Análise de Complexidade de Algoritmos</h5>
+<p class="text-body-md text-on-surface-variant">Notação Big O e otimizações de eficiência.</p>
+</div>
+<div class="flex flex-col items-end gap-xs">
+<span class="bg-secondary text-on-secondary text-label-sm font-bold px-3 py-1 rounded-full active-glow">15% Peso</span>
+<span class="text-xs text-on-tertiary-container bg-tertiary-container px-2 py-0.5 rounded font-bold">Estratégico</span>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="neomorph-extruded bg-surface rounded-xl p-md flex items-center gap-md group hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="w-12 h-12 flex items-center justify-center neomorph-inset rounded-lg text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">database</span>
+</div>
+<div class="flex-1">
+<h5 class="font-body-lg text-body-lg text-on-surface">Modelagem de Dados Normalizada</h5>
+<p class="text-body-md text-on-surface-variant">Design de esquema e regras de integridade relacional.</p>
+</div>
+<div class="flex flex-col items-end gap-xs">
+<span class="bg-secondary text-on-secondary text-label-sm font-bold px-3 py-1 rounded-full active-glow">9% Peso</span>
+<span class="text-xs text-on-tertiary-container bg-tertiary-container px-2 py-0.5 rounded font-bold">Fundamental</span>
+</div>
+</div>
+</div>
+<!-- Descriptive Summary Card -->
+<div class="neomorph-inset bg-surface-container-lowest rounded-xl p-lg mt-xl border border-white/50">
+<div class="flex items-start gap-md">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined">info</span>
+</div>
+<div>
+<h6 class="font-body-lg text-body-lg text-primary font-bold mb-xs">Insight de Pareto</h6>
+<p class="text-on-surface-variant text-body-md leading-relaxed">
+                            Nossa análise de IA sugere que focar exclusivamente nestes **quatro módulos** nas próximas 48 horas preencherá a lacuna entre uma nota "Aprovado" e uma nota "Honras". Os 16 módulos restantes são suplementares e devem ser abordados apenas após dominar estes essenciais.
+                        </p>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Bottom Section: Effort vs Result Chart Simulation -->
+<section class="my-xl neomorph-extruded bg-surface rounded-xl p-lg">
+<h4 class="font-title-md text-title-md text-on-surface mb-lg">Projeção de Eficiência</h4>
+<div class="h-64 w-full relative flex items-end justify-between px-md pb-md overflow-hidden">
+<!-- Grid Lines -->
+<div class="absolute inset-0 flex flex-col justify-between p-4 opacity-10">
+<div class="border-b border-on-surface w-full"></div>
+<div class="border-b border-on-surface w-full"></div>
+<div class="border-b border-on-surface w-full"></div>
+<div class="border-b border-on-surface w-full"></div>
+</div>
+<!-- Chart Bars -->
+<div class="flex items-end gap-lg w-full h-full relative z-10">
+<div class="flex-1 flex flex-col items-center gap-sm">
+<div class="w-full bg-surface-container-high rounded-t-lg neomorph-inset h-[20%] transition-all hover:h-[22%]"></div>
+<span class="text-label-sm text-on-surface-variant">Semana 1</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm">
+<div class="w-full bg-surface-container-high rounded-t-lg neomorph-inset h-[45%] transition-all hover:h-[47%]"></div>
+<span class="text-label-sm text-on-surface-variant">Semana 2</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm">
+<div class="w-full mesh-gradient rounded-t-lg active-glow h-[80%] transition-all hover:h-[82%] relative">
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-on-surface text-surface text-[10px] px-2 py-1 rounded font-bold">PICO PARETO</div>
+</div>
+<span class="text-label-sm text-primary font-bold">Semana 3 (Atual)</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm">
+<div class="w-full bg-surface-container-high rounded-t-lg neomorph-inset h-[60%] transition-all hover:h-[62%]"></div>
+<span class="text-label-sm text-on-surface-variant">Finais</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full h-16 flex justify-around items-center px-md pb-safe bg-surface shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.1)] rounded-t-xl z-50">
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm">Início</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 shadow-[0_0_15px_rgba(107,56,212,0.4)]" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-label-sm text-label-sm">Análise</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70" href="#">
+<span class="material-symbols-outlined">checklist_rtl</span>
+<span class="font-label-sm text-label-sm">Tarefas</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-sm text-label-sm">Perfil</span>
+</a>
+</nav>
+<script>
+    // Micro-interaction for the progress ring
+    window.addEventListener('DOMContentLoaded', () => {
+        const circle = document.getElementById('progress-circle');
+        const radius = circle.r.baseVal.value;
+        const circumference = radius * 2 * Math.PI;
+        
+        // 80% calculation
+        const offset = circumference - (0.80 * circumference);
+        
+        // Trigger animation after a slight delay
+        setTimeout(() => {
+            circle.style.strokeDashoffset = offset;
+        }, 300);
+    });
+
+    // Hover effect for list items
+    document.querySelectorAll('.neomorph-extruded').forEach(item => {
+        item.addEventListener('mouseenter', () => {
+            item.style.transform = 'translateY(-2px)';
+        });
+        item.addEventListener('mouseleave', () => {
+            item.style.transform = 'translateY(0)';
+        });
+    });
+</script>
+</body></html>

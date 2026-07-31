@@ -1,0 +1,65 @@
+{
+  "generated_at": "2026-07-30T02:48:22.217Z",
+  "total_questions_analyzed": 3,
+  "average_metrics": {
+    "avg_clarity_score": 9.5,
+    "avg_distractor_plausibility": 9.07,
+    "avg_overall_quality_score": 9.27
+  },
+  "bloom_taxonomy_breakdown": {
+    "Compreensão": 1,
+    "Conhecimento": 1,
+    "Aplicação": 1
+  },
+  "difficulty_distribution": {
+    "Médio": 2,
+    "Fácil": 1
+  },
+  "detailed_questions_quality": [
+    {
+      "id": "q-101",
+      "pdf_name": "Aula 01 - Direito Constitucional.pdf",
+      "subject": "Direito Constitucional",
+      "topic": "Direitos Fundamentais",
+      "statement_snippet": "Sobre os Direitos e Garantias Fundamentais previstos na CF/88, assinale a alternativa correta a resp...",
+      "quality_metrics": {
+        "clarity_score": 9.5,
+        "distractor_plausibility": 9,
+        "bloom_taxonomy": "Compreensão",
+        "difficulty_level": "Médio",
+        "overall_quality_score": 9.2,
+        "quality_comments": "Enunciado preciso e direto. Distratores baseados nas pegadinhas clássicas de concursos (confusão entre eficácia contida e limitada)."
+      }
+    },
+    {
+      "id": "q-102",
+      "pdf_name": "Aula 01 - Direito Constitucional.pdf",
+      "subject": "Direito Administrativo",
+      "topic": "Processo Administrativo",
+      "statement_snippet": "No âmbito do Processo Administrativo Federal (Lei 9.784/99), o dever de decidir impõe à Administraçã...",
+      "quality_metrics": {
+        "clarity_score": 9.8,
+        "distractor_plausibility": 8.8,
+        "bloom_taxonomy": "Conhecimento",
+        "difficulty_level": "Fácil",
+        "overall_quality_score": 9.3,
+        "quality_comments": "Excelente questão para fixação conceitual do princípio da legalidade e prazos do processo administrativo."
+      }
+    },
+    {
+      "id": "q-103",
+      "pdf_name": "Aula 02 - Raciocínio Lógico e Estatística.pdf",
+      "subject": "Raciocínio Lógico",
+      "topic": "Lógica Proposicional",
+      "statement_snippet": "Considerando as proposições P: \"Estudei para o concurso\" e Q: \"Fui aprovado\", a negação lógica da co...",
+      "quality_metrics": {
+        "clarity_score": 9.2,
+        "distractor_plausibility": 9.4,
+        "bloom_taxonomy": "Aplicação",
+        "difficulty_level": "Médio",
+        "overall_quality_score": 9.3,
+        "quality_comments": "Excelente distritor com a recíproca ~P -> ~Q, induzindo o estudante ao erro comum da contrapositiva."
+      }
+    }
+  ]
+}

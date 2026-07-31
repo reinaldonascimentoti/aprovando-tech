@@ -1,0 +1,270 @@
+<!DOCTYPE html><html class="light" lang="pt-BR"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Aprovando Tech - Login</title>
+<!-- Google Fonts: Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#4643e9",
+                    "on-tertiary-fixed-variant": "#005236",
+                    "inverse-on-surface": "#eff1f4",
+                    "surface-container-highest": "#e0e3e6",
+                    "tertiary": "#006847",
+                    "background": "#f7f9fc",
+                    "surface-dim": "#d8dadd",
+                    "surface": "#f7f9fc",
+                    "on-secondary": "#ffffff",
+                    "surface-variant": "#e0e3e6",
+                    "error-container": "#ffdad6",
+                    "on-primary-container": "#fdf9ff",
+                    "surface-bright": "#f7f9fc",
+                    "on-secondary-fixed": "#23005c",
+                    "inverse-surface": "#2d3133",
+                    "on-surface-variant": "#464556",
+                    "outline": "#767587",
+                    "outline-variant": "#c7c4d8",
+                    "on-error-container": "#93000a",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-low": "#f2f4f7",
+                    "primary-fixed": "#e1dfff",
+                    "tertiary-fixed": "#6ffbbe",
+                    "tertiary-fixed-dim": "#4edea3",
+                    "primary-container": "#5d5cff",
+                    "surface-container": "#eceef1",
+                    "inverse-primary": "#c1c1ff",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface": "#191c1e",
+                    "surface-container-high": "#e6e8eb",
+                    "secondary-container": "#8455ef",
+                    "on-tertiary-container": "#eefff2",
+                    "tertiary-container": "#00845a",
+                    "secondary-fixed": "#e9ddff",
+                    "secondary": "#6b38d4",
+                    "on-secondary-fixed-variant": "#5516be",
+                    "primary-fixed-dim": "#c1c1ff",
+                    "on-primary-fixed-variant": "#2b20d2",
+                    "error": "#ba1a1a",
+                    "on-tertiary-fixed": "#002113",
+                    "on-background": "#191c1e",
+                    "primary": "#433fe5",
+                    "on-primary-fixed": "#09006b",
+                    "secondary-fixed-dim": "#d0bcff",
+                    "on-secondary-container": "#fffbff",
+                    "on-error": "#ffffff",
+                    "on-primary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "md": "16px",
+                    "unit": "4px",
+                    "container-max": "1280px",
+                    "xl": "40px",
+                    "gutter": "24px",
+                    "sm": "8px",
+                    "lg": "24px",
+                    "xs": "4px"
+            },
+            "fontFamily": {
+                    "body-md": ["Plus Jakarta Sans"],
+                    "title-md": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #f7f9fc;
+            overflow: hidden;
+        }
+
+        /* Neomorphic Raised */
+        .neo-raised {
+            background: #f7f9fc;
+            box-shadow: 8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff;
+        }
+
+        /* Neomorphic Pressed */
+        .neo-pressed {
+            background: #f7f9fc;
+            box-shadow: inset 6px 6px 12px #d1d9e6, inset -6px -6px 12px #ffffff;
+        }
+
+        /* Mesh Gradient Button */
+        .btn-mesh {
+            background: linear-gradient(135deg, #433fe5 0%, #6b38d4 50%, #8455ef 100%);
+            box-shadow: 4px 4px 10px rgba(107, 56, 212, 0.3), -4px -4px 10px rgba(255, 255, 255, 0.8);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-mesh:hover {
+            transform: translateY(-2px);
+            box-shadow: 0px 0px 20px rgba(107, 56, 212, 0.5);
+        }
+
+        .btn-mesh:active {
+            transform: scale(0.96);
+        }
+
+        /* Active Glow */
+        .active-glow {
+            box-shadow: 0 0 15px rgba(107, 56, 212, 0.4);
+        }
+
+        /* Custom Transition */
+        .toggle-transition {
+            transition: all 0.3s ease;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface">
+<!-- Global Background Animation -->
+<main class="min-h-screen flex items-center justify-center p-md relative z-10">
+<!-- Login Card -->
+<div class="neo-raised w-full max-w-[440px] rounded-[32px] p-xl flex flex-col items-center">
+<!-- Logo Section -->
+<div class="mb-xl flex flex-col items-center gap-sm">
+<div class="neo-raised w-20 h-20 rounded-2xl flex items-center justify-center text-primary">
+<span class="material-symbols-outlined !text-[48px]" style="font-variation-settings: 'FILL' 1;">account_tree</span>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-surface-tint">Aprovando Tech</h1>
+<p class="font-body-md text-on-surface-variant text-center px-md">Análise de precisão para excelência acadêmica</p>
+</div>
+<!-- Profile Toggle (Aluno / Admin) -->
+
+<!-- Login Form -->
+<form class="w-full space-y-lg" onsubmit="event.preventDefault();">
+<!-- Email Field -->
+<div class="space-y-xs">
+<label class="font-label-sm text-on-surface-variant ml-2">E-mail Institucional</label>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant group-focus-within:text-primary transition-colors">mail</span>
+<input class="neo-pressed w-full h-14 pl-12 pr-4 rounded-2xl border-none focus:ring-2 focus:ring-primary/20 bg-transparent text-body-lg placeholder:text-outline-variant outline-none" placeholder="alex.rivers@university.edu" type="email">
+</div>
+</div>
+<!-- Password Field -->
+<div class="space-y-xs">
+<div class="flex justify-between items-center px-2">
+<label class="font-label-sm text-on-surface-variant">Senha</label>
+<a class="font-label-sm text-primary hover:underline" href="#">Esqueceu?</a>
+</div>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant group-focus-within:text-primary transition-colors">lock</span>
+<input class="neo-pressed w-full h-14 pl-12 pr-4 rounded-2xl border-none focus:ring-2 focus:ring-primary/20 bg-transparent text-body-lg placeholder:text-outline-variant outline-none" placeholder="••••••••••••" type="password">
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+</div>
+<!-- Remember Me -->
+<div class="flex items-center gap-2 px-2">
+<div class="neo-pressed w-5 h-5 rounded flex items-center justify-center cursor-pointer group" onclick="this.querySelector('div').classList.toggle('hidden')">
+<div class="hidden w-3 h-3 bg-primary rounded-xs"></div>
+</div>
+<span class="font-body-md text-on-surface-variant select-none">Confiar neste dispositivo por 30 dias</span>
+</div>
+<!-- Enter Button -->
+<div class="pt-md">
+<button class="btn-mesh w-full h-14 rounded-2xl text-white font-title-md flex items-center justify-center gap-2" type="submit">
+<span class="">Entrar no Painel</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</form>
+<!-- Footer Links -->
+<div class="mt-xl text-center">
+<p class="font-body-md text-on-surface-variant">
+                Novo na Aprovando Tech? <a class="text-primary font-bold hover:underline" href="#">Criar Conta</a>
+</p>
+<div class="flex justify-center gap-md mt-md opacity-60">
+<a class="font-label-sm hover:text-primary" href="#">Privacidade</a>
+<span class="text-outline-variant">•</span>
+<a class="font-label-sm hover:text-primary" href="#">Termos</a>
+<span class="text-outline-variant">•</span>
+<a class="font-label-sm hover:text-primary" href="#">Central de Ajuda</a>
+</div>
+</div>
+</div>
+<!-- Secondary Decoration - Floating Neo-Elements -->
+<div class="absolute top-10 left-10 hidden lg:block">
+<div class="neo-raised w-32 h-32 rounded-3xl animate-bounce flex items-center justify-center" style="animation-duration: 4s;">
+<span class="material-symbols-outlined text-primary-container !text-[40px]">trending_up</span>
+</div>
+</div>
+<div class="absolute bottom-20 right-20 hidden lg:block">
+<div class="neo-raised w-40 h-40 rounded-[40px] animate-pulse flex items-center justify-center" style="animation-duration: 6s;">
+<span class="material-symbols-outlined text-secondary-container !text-[56px]">psychology</span>
+</div>
+</div>
+</main>
+<script>
+        function toggleRole(role) {
+            const bg = document.getElementById('toggle-bg');
+            const btnStudent = document.getElementById('btn-student');
+            const btnAdmin = document.getElementById('btn-admin');
+
+            if (role === 'student') {
+                bg.style.left = '6px';
+                btnStudent.classList.add('text-primary');
+                btnStudent.classList.remove('text-on-surface-variant');
+                btnAdmin.classList.remove('text-primary');
+                btnAdmin.classList.add('text-on-surface-variant');
+            } else {
+                bg.style.left = 'calc(50%)';
+                btnAdmin.classList.add('text-primary');
+                btnAdmin.classList.remove('text-on-surface-variant');
+                btnStudent.classList.remove('text-primary');
+                btnStudent.classList.add('text-on-surface-variant');
+            }
+        }
+
+        // Add subtle neomorphic hover effect to inputs via JS for better control
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentElement.classList.add('active-glow');
+            });
+            input.addEventListener('blur', () => {
+                input.parentElement.classList.remove('active-glow');
+            });
+        });
+    </script>
+
+
+</body></html>

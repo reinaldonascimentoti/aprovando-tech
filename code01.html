@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Aprovando Tech - Painel Administrativo</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#4643e9",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "inverse-on-surface": "#eff1f4",
+                        "surface-container-highest": "#e0e3e6",
+                        "tertiary": "#006847",
+                        "background": "#f7f9fc",
+                        "surface-dim": "#d8dadd",
+                        "surface": "#f7f9fc",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#e0e3e6",
+                        "error-container": "#ffdad6",
+                        "on-primary-container": "#fdf9ff",
+                        "surface-bright": "#f7f9fc",
+                        "on-secondary-fixed": "#23005c",
+                        "inverse-surface": "#2d3133",
+                        "on-surface-variant": "#464556",
+                        "outline": "#767587",
+                        "outline-variant": "#c7c4d8",
+                        "on-error-container": "#93000a",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#f2f4f7",
+                        "primary-fixed": "#e1dfff",
+                        "tertiary-fixed": "#6ffbbe",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "primary-container": "#5d5cff",
+                        "surface-container": "#eceef1",
+                        "inverse-primary": "#c1c1ff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#191c1e",
+                        "surface-container-high": "#e6e8eb",
+                        "secondary-container": "#8455ef",
+                        "on-tertiary-container": "#eefff2",
+                        "tertiary-container": "#00845a",
+                        "secondary-fixed": "#e9ddff",
+                        "secondary": "#6b38d4",
+                        "on-secondary-fixed-variant": "#5516be",
+                        "primary-fixed-dim": "#c1c1ff",
+                        "on-primary-fixed-variant": "#2b20d2",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#002113",
+                        "on-background": "#191c1e",
+                        "primary": "#433fe5",
+                        "on-primary-fixed": "#09006b",
+                        "secondary-fixed-dim": "#d0bcff",
+                        "on-secondary-container": "#fffbff",
+                        "on-error": "#ffffff",
+                        "on-primary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "unit": "4px",
+                        "container-max": "1280px",
+                        "xl": "40px",
+                        "gutter": "24px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Plus Jakarta Sans"],
+                        "title-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .neomorph-raised {
+            box-shadow: 8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff;
+        }
+        .neomorph-inset {
+            box-shadow: inset 4px 4px 8px #d1d9e6, inset -4px -4px 8px #ffffff;
+        }
+        .active-glow {
+            box-shadow: 0 0 20px rgba(67, 63, 229, 0.4);
+        }
+        .mesh-gradient-primary {
+            background: linear-gradient(135deg, #433fe5 0%, #6b38d4 100%);
+        }
+        body {
+            background-color: #f7f9fc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #191c1e;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface shadow-[4px_4px_10px_#d1d9e6,-4px_-4px_10px_#ffffff] flex justify-between items-center px-lg py-sm">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary cursor-pointer active:scale-95 duration-200">menu</span>
+<h1 class="font-headline-lg text-headline-lg font-bold text-surface-tint">Aprovando Tech</h1>
+</div>
+<div class="flex items-center gap-md">
+<div class="neomorph-inset px-md py-xs rounded-full flex items-center bg-surface-container-low hidden md:flex">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md font-body-md text-on-surface ml-xs w-48" placeholder="Buscar métricas..." type="text"/>
+</div>
+<div class="w-10 h-10 rounded-full neomorph-raised border-2 border-surface flex items-center justify-center overflow-hidden active:scale-95 transition-transform cursor-pointer">
+<img alt="Perfil do Administrador" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXBPm94mXMd3o8G0pgqrCJMySumWupWo0AV-3O2p27XjdvPFYccqHqHSShe1VjM_lZMRWCy0QelLULneoenZHvZdapf-HSVUiW2kdFZYlxsQ7eRJPUAf3Xk9YgT9FtwqBnxQjQh4vvJcGqfaPfQgAl7gttnTctkwfgNf9isJ34K1nLoaFIYurg-OiO_IMOG5-fmKoafHp5BR6UdjHZJhXhoeG5vfuzMPizm0-qfCm15ZO0KR9pRAkzFA"/>
+</div>
+</div>
+</header>
+<!-- Navigation Drawer (Desktop) -->
+<aside class="hidden md:flex fixed left-0 top-0 h-full z-40 w-72 bg-surface shadow-[10px_0_20px_#d1d9e6] flex-col p-md pt-24 transition-transform duration-300 ease-in-out">
+<!-- Profile Section -->
+<div class="flex items-center gap-md mb-xl p-md rounded-xl neomorph-inset">
+<div class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+<img alt="Avatar do Usuário" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEVkIfbQogiwF5y0InipXZl4n4bI9KnNXCBkS3OqB6Y8OMl1gmkLAeuagkZsnTXEJAF1NriTv7EsKXfcqmvkkqD12Sia45qrX3KuX7zbUs46w5jS9EID2SJIh0P_uYlPZ61d6INUSW3SMXZlaJYNwYQNOTqmBUBBDqz2kyZSMAlz5zLZOE0RZgWjzknMbEVYfB3a8wtmZitIBwbWDywVyeBcV1FapfAU6bAwGEoB3VeBo5M18XX3OQ8A"/>
+</div>
+<div class="overflow-hidden">
+<p class="font-title-md text-title-md text-on-surface truncate">Alex Rivers</p>
+<p class="font-body-md text-on-surface-variant text-xs">Admin Acadêmico • Nv 42</p>
+</div>
+</div>
+<!-- Nav Items -->
+<nav class="flex flex-col gap-sm">
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-low transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">dashboard</span>
+<span class="font-body-lg text-body-lg">Painel Geral</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-low transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">analytics</span>
+<span class="font-body-lg text-body-lg">Análise de Provas</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-low transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">calendar_month</span>
+<span class="font-body-lg text-body-lg">Cronogramas</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-low transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">library_books</span>
+<span class="font-body-lg text-body-lg">Biblioteca</span>
+</a>
+<a class="flex items-center gap-md p-md bg-primary-container text-on-primary-container shadow-[0_0_15px_rgba(67,63,233,0.3)] rounded-lg" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">admin_panel_settings</span>
+<span class="font-body-lg text-body-lg font-bold">Painel Admin</span>
+</a>
+</nav>
+<div class="mt-auto p-md">
+<button class="w-full neomorph-raised py-md rounded-xl text-primary font-bold hover:bg-surface-container-high transition-colors active:scale-95 duration-200">
+                Sair
+            </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="pt-24 pb-20 md:pb-12 md:pl-80 px-md transition-all">
+<div class="max-w-7xl mx-auto space-y-lg">
+<!-- Header Section -->
+<section class="flex flex-col md:flex-row md:items-end justify-between gap-md">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Painel Administrativo</h2>
+<p class="text-on-surface-variant font-body-lg">Monitoramento do sistema e métricas de extração de questões.</p>
+</div>
+<div class="flex gap-sm">
+<button class="neomorph-raised px-lg py-md rounded-xl font-bold text-primary active:scale-95 transition-all">
+                        Atualizar Dados
+                    </button>
+<button class="mesh-gradient-primary px-lg py-md rounded-xl font-bold text-white shadow-[0_4px_15px_rgba(67,63,229,0.4)] active:scale-95 transition-all">
+                        Exportar Sistema
+                    </button>
+</div>
+</section>
+<!-- Bento Grid Stats -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<!-- Total Users Card -->
+<div class="neomorph-raised p-lg rounded-3xl bg-surface flex flex-col gap-md relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-lg opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[80px]" style="font-variation-settings: 'FILL' 1;">groups</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="p-sm rounded-xl neomorph-inset bg-surface-container-low">
+<span class="material-symbols-outlined text-primary">person</span>
+</span>
+<span class="bg-emerald-100 text-emerald-700 px-sm py-1 rounded-full text-label-sm font-bold flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +12%
+                        </span>
+</div>
+<div>
+<p class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-widest">Total de Usuários</p>
+<h3 class="font-display-lg text-display-lg text-primary">14.802</h3>
+</div>
+</div>
+<!-- Extracted Questions -->
+<div class="neomorph-raised p-lg rounded-3xl bg-surface flex flex-col gap-md relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-lg opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[80px]" style="font-variation-settings: 'FILL' 1;">quiz</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="p-sm rounded-xl neomorph-inset bg-surface-container-low">
+<span class="material-symbols-outlined text-secondary">database</span>
+</span>
+<span class="bg-emerald-100 text-emerald-700 px-sm py-1 rounded-full text-label-sm font-bold flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Otimizado
+                        </span>
+</div>
+<div>
+<p class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-widest">Questões Extraídas</p>
+<h3 class="font-display-lg text-display-lg text-secondary">842.591</h3>
+</div>
+</div>
+<!-- Pending Processing -->
+<div class="neomorph-raised p-lg rounded-3xl bg-surface flex flex-col gap-md relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-lg opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[80px]" style="font-variation-settings: 'FILL' 1;">pending_actions</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="p-sm rounded-xl neomorph-inset bg-surface-container-low">
+<span class="material-symbols-outlined text-tertiary">hourglass_top</span>
+</span>
+<span class="bg-amber-100 text-amber-700 px-sm py-1 rounded-full text-label-sm font-bold flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">warning</span> Requer Atenção
+                        </span>
+</div>
+<div>
+<p class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-widest">Provas Pendentes</p>
+<h3 class="font-display-lg text-display-lg text-tertiary">238</h3>
+</div>
+</div>
+</section>
+<!-- Data Visualizations Area -->
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-lg">
+<!-- Extraction Trends -->
+<div class="neomorph-raised p-lg rounded-3xl bg-surface min-h-[300px] flex flex-col">
+<div class="flex justify-between items-center mb-lg">
+<h4 class="font-title-md text-title-md text-on-surface">Tendências de Precisão</h4>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">more_vert</span>
+</div>
+<div class="flex-grow flex items-end justify-between gap-sm px-md pb-md">
+<!-- Mock Chart Bars -->
+<div class="w-full bg-surface-container-high rounded-t-lg relative group" style="height: 40%;">
+<div class="absolute inset-0 mesh-gradient-primary opacity-0 group-hover:opacity-100 transition-opacity rounded-t-lg"></div>
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] px-2 py-1 rounded hidden group-hover:block">88%</div>
+</div>
+<div class="w-full bg-surface-container-high rounded-t-lg relative group" style="height: 65%;">
+<div class="absolute inset-0 mesh-gradient-primary opacity-0 group-hover:opacity-100 transition-opacity rounded-t-lg"></div>
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] px-2 py-1 rounded hidden group-hover:block">91%</div>
+</div>
+<div class="w-full bg-surface-container-high rounded-t-lg relative group" style="height: 55%;">
+<div class="absolute inset-0 mesh-gradient-primary opacity-0 group-hover:opacity-100 transition-opacity rounded-t-lg"></div>
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] px-2 py-1 rounded hidden group-hover:block">89%</div>
+</div>
+<div class="w-full mesh-gradient-primary rounded-t-lg relative group" style="height: 85%;">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] px-2 py-1 rounded hidden group-hover:block">94%</div>
+</div>
+<div class="w-full bg-surface-container-high rounded-t-lg relative group" style="height: 75%;">
+<div class="absolute inset-0 mesh-gradient-primary opacity-0 group-hover:opacity-100 transition-opacity rounded-t-lg"></div>
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] px-2 py-1 rounded hidden group-hover:block">92%</div>
+</div>
+<div class="w-full bg-surface-container-high rounded-t-lg relative group" style="height: 95%;">
+<div class="absolute inset-0 mesh-gradient-primary opacity-0 group-hover:opacity-100 transition-opacity rounded-t-lg"></div>
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] px-2 py-1 rounded hidden group-hover:block">98%</div>
+</div>
+</div>
+<div class="flex justify-between text-label-sm text-on-surface-variant font-label-sm mt-sm">
+<span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+</div>
+</div>
+<!-- Category Distribution -->
+<div class="neomorph-raised p-lg rounded-3xl bg-surface flex flex-col gap-lg">
+<h4 class="font-title-md text-title-md text-on-surface">Domínios das Questões</h4>
+<div class="flex-grow flex items-center justify-center relative">
+<!-- Donut Chart Mock -->
+<div class="w-48 h-48 rounded-full neomorph-raised border-[20px] border-surface-container-low flex items-center justify-center relative">
+<div class="text-center">
+<p class="text-display-lg font-display-lg text-primary leading-none">62%</p>
+<p class="text-label-sm font-label-sm text-on-surface-variant">Exatas</p>
+</div>
+<!-- Segment 1 -->
+<svg class="absolute inset-0 w-full h-full -rotate-90 overflow-visible" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#433fe5" stroke-dasharray="160 251.2" stroke-linecap="round" stroke-width="8"></circle>
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#8455ef" stroke-dasharray="60 251.2" stroke-dashoffset="-160" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+</div>
+<div class="ml-lg space-y-md">
+<div class="flex items-center gap-sm">
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<span class="font-body-md text-body-md">Exatas (STEM)</span>
+</div>
+<div class="flex items-center gap-sm">
+<div class="w-3 h-3 rounded-full bg-secondary-container"></div>
+<span class="font-body-md text-body-md">Humanas</span>
+</div>
+<div class="flex items-center gap-sm">
+<div class="w-3 h-3 rounded-full bg-tertiary"></div>
+<span class="font-body-md text-body-md">Linguagens</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Recent Processing List -->
+<section class="neomorph-raised rounded-3xl bg-surface overflow-hidden">
+<div class="p-lg border-b border-surface-container-high flex justify-between items-center">
+<h4 class="font-title-md text-title-md text-on-surface">Fila de Processamento Recente</h4>
+<button class="text-primary font-bold text-label-sm flex items-center gap-xs">
+                        Ver Tudo <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-surface-container-low">
+<tr>
+<th class="p-lg font-label-sm text-on-surface-variant uppercase tracking-wider">Arquivo de Prova</th>
+<th class="p-lg font-label-sm text-on-surface-variant uppercase tracking-wider">Departamento</th>
+<th class="p-lg font-label-sm text-on-surface-variant uppercase tracking-wider">Questões</th>
+<th class="p-lg font-label-sm text-on-surface-variant uppercase tracking-wider">Status</th>
+<th class="p-lg font-label-sm text-on-surface-variant uppercase tracking-wider">Ação</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-low">
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="p-lg">
+<div class="flex items-center gap-md">
+<div class="p-xs rounded bg-red-100 text-red-600">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<span class="font-body-lg text-body-lg">Calc_Final_Verao24.pdf</span>
+</div>
+</td>
+<td class="p-lg font-body-md">Matemática</td>
+<td class="p-lg font-body-md">45</td>
+<td class="p-lg">
+<span class="px-md py-1 rounded-full bg-emerald-100 text-emerald-700 text-label-sm font-bold">Concluído</span>
+</td>
+<td class="p-lg">
+<button class="neomorph-inset p-sm rounded-lg text-primary hover:bg-primary-container hover:text-white transition-all">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="p-lg">
+<div class="flex items-center gap-md">
+<div class="p-xs rounded bg-blue-100 text-blue-600">
+<span class="material-symbols-outlined">description</span>
+</div>
+<span class="font-body-lg text-body-lg">Bio_Genetica_Simulado.docx</span>
+</div>
+</td>
+<td class="p-lg font-body-md">Biologia</td>
+<td class="p-lg font-body-md">120</td>
+<td class="p-lg">
+<div class="flex items-center gap-sm">
+<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+<span class="text-label-sm font-bold text-amber-600 uppercase">Processando...</span>
+</div>
+</td>
+<td class="p-lg">
+<button class="neomorph-inset p-sm rounded-lg text-on-surface-variant opacity-50 cursor-not-allowed">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="p-lg">
+<div class="flex items-center gap-md">
+<div class="p-xs rounded bg-red-100 text-red-600">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<span class="font-body-lg text-body-lg">Intro_Psicologia_Exame.pdf</span>
+</div>
+</td>
+<td class="p-lg font-body-md">Psicologia</td>
+<td class="p-lg font-body-md">75</td>
+<td class="p-lg">
+<span class="px-md py-1 rounded-full bg-primary-container text-on-primary-container text-label-sm font-bold">Revisão Necessária</span>
+</td>
+<td class="p-lg">
+<button class="neomorph-inset p-sm rounded-lg text-primary hover:bg-primary-container hover:text-white transition-all">
+<span class="material-symbols-outlined text-[20px]">edit_note</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</main>
+<!-- Bottom Navigation (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full h-16 bg-surface shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.1)] flex justify-around items-center px-md pb-safe z-50 rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm">Início</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-label-sm text-label-sm">Análise</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 shadow-[0_0_15px_rgba(107,56,212,0.4)] active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">admin_panel_settings</span>
+<span class="font-label-sm text-label-sm">Admin</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-sm text-label-sm">Perfil</span>
+</a>
+</nav>
+<!-- Dynamic Hover Effects Script -->
+<script>
+        document.querySelectorAll('.neomorph-raised').forEach(el => {
+            el.addEventListener('mousedown', () => {
+                el.classList.remove('neomorph-raised');
+                el.classList.add('neomorph-inset');
+            });
+            el.addEventListener('mouseup', () => {
+                el.classList.remove('neomorph-inset');
+                el.classList.add('neomorph-raised');
+            });
+            el.addEventListener('mouseleave', () => {
+                el.classList.remove('neomorph-inset');
+                el.classList.add('neomorph-raised');
+            });
+        });
+    </script>
+</body></html>

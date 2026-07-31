@@ -1,0 +1,154 @@
+[
+  {
+    "id": "q-101",
+    "pdf_id": "pdf-1",
+    "pdf_name": "Aula 01 - Direito Constitucional.pdf",
+    "statement": "Sobre os Direitos e Garantias Fundamentais previstos na CF/88, assinale a alternativa correta a respeito da inviolabilidade de domicílio:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "A casa é asilo inviolável do indivíduo, ninguém nela podendo penetrar sem consentimento do morador, salvo em caso de flagrante delito ou desastre."
+      },
+      {
+        "letter": "B",
+        "text": "Determine a lei a entrada noturna por determinação judicial em qualquer hipótese."
+      },
+      {
+        "letter": "C",
+        "text": "A entrada pode ocorrer durante a noite por ordem policial independente de flagrante."
+      },
+      {
+        "letter": "D",
+        "text": "Busca e apreensão residencial pode ser executada às 03h00 da manhã desde que haja mandado expedido por juiz."
+      },
+      {
+        "letter": "E",
+        "text": "Nenhuma das alternativas acima está correta."
+      }
+    ],
+    "correct_option": "A",
+    "explanation": "Art. 5º, XI, CF/88: a casa é asilo inviolável, salvo flagrante delito, desastre, prestar socorro, ou durante o dia por determinação judicial.",
+    "subject": "Direito Constitucional",
+    "topic": "Direitos Fundamentais",
+    "is_released": true,
+    "quality_metrics": {
+      "clarity_score": 9.5,
+      "distractor_plausibility": 9,
+      "bloom_taxonomy": "Compreensão",
+      "difficulty_level": "Médio",
+      "overall_quality_score": 9.2,
+      "quality_comments": "Enunciado preciso e direto. Distratores baseados nas pegadinhas clássicas de concursos (confusão entre eficácia contida e limitada)."
+    },
+    "created_at": "2026-07-30T02:04:22.817Z"
+  },
+  {
+    "id": "q-102",
+    "pdf_id": "pdf-1",
+    "pdf_name": "Aula 01 - Direito Constitucional.pdf",
+    "statement": "No âmbito do Processo Administrativo Federal (Lei 9.784/99), o dever de decidir impõe à Administração o prazo geral de:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "15 dias prorrogáveis por igual período."
+      },
+      {
+        "letter": "B",
+        "text": "30 dias após a conclusão da instrução, salvo prorrogação explicitamente motivada."
+      },
+      {
+        "letter": "C",
+        "text": "60 dias improrrogáveis."
+      },
+      {
+        "letter": "D",
+        "text": "10 dias úteis."
+      },
+      {
+        "letter": "E",
+        "text": "90 dias em qualquer hipótese."
+      }
+    ],
+    "correct_option": "B",
+    "explanation": "Conforme art. 49 da Lei 9.784/99, concluída a instrução, a Administração tem o prazo de até 30 dias para decidir, prorrogável por igual período motivadamente.",
+    "subject": "Direito Administrativo",
+    "topic": "Processo Administrativo",
+    "is_released": true,
+    "quality_metrics": {
+      "clarity_score": 9.8,
+      "distractor_plausibility": 8.8,
+      "bloom_taxonomy": "Conhecimento",
+      "difficulty_level": "Fácil",
+      "overall_quality_score": 9.3,
+      "quality_comments": "Excelente questão para fixação conceitual do princípio da legalidade e prazos do processo administrativo."
+    },
+    "created_at": "2026-07-30T02:04:22.817Z"
+  },
+  {
+    "id": "q-103",
+    "pdf_id": "pdf-2",
+    "pdf_name": "Aula 02 - Raciocínio Lógico e Estatística.pdf",
+    "statement": "Considerando as proposições P: \"Estudei para o concurso\" e Q: \"Fui aprovado\", a negação lógica da condicional P -> Q é equivalente a:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "~P -> ~Q"
+      },
+      {
+        "letter": "B",
+        "text": "P e ~Q (\"Estudei para o concurso e NÃO fui aprovado\")"
+      },
+      {
+        "letter": "C",
+        "text": "~P ou Q"
+      },
+      {
+        "letter": "D",
+        "text": "Se não fui aprovado então não estudei"
+      },
+      {
+        "letter": "E",
+        "text": "P ou Q"
+      }
+    ],
+    "correct_option": "B",
+    "explanation": "A negação de (P -> Q) é (P e ~Q) - Regra do \"Mantém a primeira E nega a segunda\" (MANE).",
+    "subject": "Raciocínio Lógico",
+    "topic": "Lógica Proposicional",
+    "is_released": false,
+    "quality_metrics": {
+      "clarity_score": 9.2,
+      "distractor_plausibility": 9.4,
+      "bloom_taxonomy": "Aplicação",
+      "difficulty_level": "Médio",
+      "overall_quality_score": 9.3,
+      "quality_comments": "Excelente distritor com a recíproca ~P -> ~Q, induzindo o estudante ao erro comum da contrapositiva."
+    },
+    "created_at": "2026-07-30T02:04:22.817Z"
+  },
+  {
+    "id": "Q4202321",
+    "pdf_id": null,
+    "pdf_name": "FUNDATEC - 2026 - Prefeitura de Caxias do Sul - RS - Auditor Fiscal da Receita Municipal - Bloco 2",
+    "statement": "O clustering (agrupamento) é uma técnica de aprendizado de máquina usada para agrupar objetos, dados e observações com base em semelhanças e padrões, sendo classificada como um tipo de aprendizado:",
+    "options": [
+      { "letter": "A", "text": "Por reforço" },
+      { "letter": "B", "text": "Não supervisionado" },
+      { "letter": "C", "text": "Supervisionado" },
+      { "letter": "D", "text": "Semissupervisionado" }
+    ],
+    "correct_option": "B",
+    "explanation": null,
+    "subject": "Engenharia de Software",
+    "topic": "Inteligência Artificial",
+    "is_released": false,
+    "quality_metrics": {
+      "difficulty_level": "Médio",
+      "source_metadata": {
+        "year": 2026,
+        "exam_board": "FUNDATEC",
+        "organization": "Prefeitura de Caxias do Sul - RS",
+        "image_url": null
+      }
+    }
+  }
+]
