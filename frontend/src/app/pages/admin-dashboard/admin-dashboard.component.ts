@@ -116,24 +116,125 @@ import { AuthService, UserProfile } from '../../services/auth.service';
             <div class="flex items-center justify-between mb-4">
               <h2 class="text-lg font-bold text-[#191c1e] flex items-center gap-3">
                 <img src="assets/cloud_upload_icon.svg" class="w-12 h-12 drop-shadow-sm">
-                Upload de Edital (Análise Pareto 80/20)
+                Upload de Edital (Análise Pareto 3 Camadas)
               </h2>
-              <span class="bg-[#e9ddff] text-[#5516be] text-[11px] font-bold px-2.5 py-1 rounded-full">Sprints Inteligentes</span>
+              <span class="bg-[#e9ddff] text-[#5516be] text-[11px] font-bold px-2.5 py-1 rounded-full">Macro → Meso → Micro</span>
             </div>
-            <p class="text-xs text-[#464556] mb-6">
-              Faça upload do edital oficial do concurso. O algoritmo Pareto 80/20 identificará os 20% tópicos vitais e salvará em <code>backend/data/editais.json</code>.
+            <p class="text-xs text-[#464556] mb-5">
+              Faça upload do edital oficial. A IA aplicará Pareto 80/20 em 3 camadas gerando mapa de prioridades, cronograma adaptado ao seu tempo disponível, régua de corte e alertas de banca.
             </p>
 
+            <!-- Contexto do Candidato -->
+            <div class="rounded-2xl border border-[#c7c4d8] bg-[#f7f4ff] p-4 mb-4">
+              <p class="text-[11px] font-extrabold text-[#5516be] uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <span class="material-symbols-outlined !text-[15px]">person</span>
+                Contexto do Candidato
+              </p>
+              <div class="space-y-2.5">
+
+                <!-- Título do Edital -->
+                <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
+                  <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">description</span>
+                  <input
+                    [(ngModel)]="editalTitle"
+                    type="text"
+                    placeholder="Título do Edital (Ex: Concurso TCU 2026)"
+                    class="w-full bg-transparent border-none outline-none text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+                </div>
+
+                <!-- Concurso Alvo -->
+                <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
+                  <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">emoji_events</span>
+                  <input
+                    [(ngModel)]="editalConcurso"
+                    type="text"
+                    placeholder="Concurso alvo (Ex: SEFAZ-RS 2026)"
+                    class="w-full bg-transparent border-none outline-none text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+                </div>
+
+                <!-- Cargo -->
+                <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
+                  <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">badge</span>
+                  <input
+                    [(ngModel)]="editalCargo"
+                    type="text"
+                    placeholder="Cargo (Ex: Auditor Fiscal da Receita Estadual) *"
+                    class="w-full bg-transparent border-none outline-none text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+                </div>
+
+                <!-- Data da prova -->
+                <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
+                  <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">event</span>
+                  <input
+                    [(ngModel)]="editalDataProva"
+                    type="date"
+                    [min]="today"
+                    placeholder="Data da prova *"
+                    class="w-full bg-transparent border-none outline-none text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+                </div>
+
+                <!-- Disponibilidade: horas/dia + dias/semana -->
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">schedule</span>
+                    <input
+                      [(ngModel)]="editalHorasPorDia"
+                      type="number"
+                      min="0.5" max="24" step="0.5"
+                      placeholder="Horas/dia *"
+                      class="w-full bg-transparent border-none outline-none text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+                  </div>
+                  <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">calendar_view_week</span>
+                    <input
+                      [(ngModel)]="editalDiasPorSemana"
+                      type="number"
+                      min="1" max="7" step="1"
+                      placeholder="Dias/semana *"
+                      class="w-full bg-transparent border-none outline-none text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+                  </div>
+                </div>
+
+                <!-- Resumo dinâmico de disponibilidade -->
+                <div *ngIf="editalHorasPorDia && editalDiasPorSemana && editalDataProva" class="bg-[#e9ddff]/60 rounded-xl px-3 py-2 flex items-center gap-2 text-[11px] font-semibold text-[#5516be]">
+                  <span class="material-symbols-outlined !text-[15px]">insights</span>
+                  <span>{{ editalHorasPorDia }}h/dia × {{ editalDiasPorSemana }} dias = <strong>{{ editalHorasPorDia * editalDiasPorSemana }}h/semana</strong>
+                  &nbsp;|&nbsp; {{ semanasDisponiveis }} semanas até a prova
+                  &nbsp;|&nbsp; ~<strong>{{ editalTotalHoras }}h</strong> no total</span>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Modo de upload (Link / PDF) -->
+            <div class="flex gap-2 mb-3 bg-[#eceef1] p-1 rounded-xl">
+              <button
+                type="button"
+                (click)="editalUploadMode = 'link'"
+                [ngClass]="editalUploadMode === 'link' ? 'bg-white shadow-sm text-[#433fe5]' : 'text-[#464556]'"
+                class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all">
+                Link do Edital
+              </button>
+              <button
+                type="button"
+                (click)="editalUploadMode = 'pdf'"
+                [ngClass]="editalUploadMode === 'pdf' ? 'bg-white shadow-sm text-[#433fe5]' : 'text-[#464556]'"
+                class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all">
+                Arquivo PDF
+              </button>
+            </div>
+
             <div class="space-y-3 mb-4">
-              <div class="neo-pressed rounded-xl p-3 flex items-center">
-                <input 
-                  [(ngModel)]="editalTitle" 
-                  type="text" 
-                  placeholder="Título do Edital (Ex: Auditor Fiscal 2026)"
+              <div *ngIf="editalUploadMode === 'link'" class="neo-pressed rounded-xl p-3 flex items-center">
+                <span class="material-symbols-outlined text-[#433fe5] mr-2">link</span>
+                <input
+                  [(ngModel)]="editalLink"
+                  type="text"
+                  placeholder="Cole aqui a URL do edital"
                   class="w-full bg-transparent border-none outline-none text-sm px-2 text-[#191c1e]">
               </div>
 
-              <div class="neo-pressed rounded-2xl p-6 border-2 border-dashed border-[#c7c4d8] flex flex-col items-center justify-center text-center relative hover:border-[#6b38d4] transition-colors cursor-pointer">
+              <div *ngIf="editalUploadMode === 'pdf'" class="neo-pressed rounded-2xl p-6 border-2 border-dashed border-[#c7c4d8] flex flex-col items-center justify-center text-center relative hover:border-[#6b38d4] transition-colors cursor-pointer">
                 <span class="material-symbols-outlined !text-[40px] text-[#6b38d4] mb-1">picture_as_pdf</span>
                 <p class="text-xs font-semibold text-[#191c1e]">
                   {{ selectedEditalFile ? selectedEditalFile.name : 'Selecionar Edital em PDF' }}
@@ -143,10 +244,11 @@ import { AuthService, UserProfile } from '../../services/auth.service';
             </div>
           </div>
 
-          <button 
-            (click)="uploadEdital()" 
-            [disabled]="isUploadingEdital"
-            class="btn-mesh w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm mt-4" style="background: linear-gradient(135deg, #6b38d4 0%, #8455ef 100%);">
+          <button
+            (click)="uploadEdital()"
+            [disabled]="!isEditalFormValid || isUploadingEdital"
+            class="btn-mesh w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm mt-2"
+            style="background: linear-gradient(135deg, #6b38d4 0%, #8455ef 100%);">
             <span class="material-symbols-outlined">donut_large</span>
             <span>{{ isUploadingEdital ? 'Analisando Edital...' : 'Gerar Análise Pareto 80/20' }}</span>
           </button>
@@ -348,19 +450,81 @@ import { AuthService, UserProfile } from '../../services/auth.service';
               <h3 class="text-base font-bold text-[#191c1e] mb-2">{{ ed.title }}</h3>
               <p class="text-xs text-[#464556] mb-4">{{ ed.pareto_data?.relevance_summary }}</p>
             </div>
-            <div class="flex gap-2">
-              <a [routerLink]="['/pareto', ed.id]" class="btn-mesh flex-1 py-2.5 rounded-xl text-xs font-bold">
-                Ver Análise Pareto
-              </a>
-              <a [routerLink]="['/sprints', ed.id]" class="btn-neo flex-1 py-2.5 rounded-xl text-xs font-bold">
-                Cronograma Sprints
-              </a>
+            <div class="flex flex-col gap-3">
+              <div class="flex gap-2">
+                <a [routerLink]="['/pareto', ed.id]" class="btn-mesh flex-1 py-2.5 rounded-xl text-xs font-bold">
+                  Ver Análise Pareto
+                </a>
+                <a [routerLink]="['/sprints', ed.id]" class="btn-neo flex-1 py-2.5 rounded-xl text-xs font-bold">
+                  Cronograma Sprints
+                </a>
+              </div>
+
+              <!-- Enviar Link para Usuário -->
+              <button 
+                (click)="toggleSendEditalPanel(ed.id)" 
+                class="w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all"
+                [ngClass]="sendEditalOpenId === ed.id 
+                  ? 'bg-[#433fe5] text-white shadow-md' 
+                  : 'bg-[#e9ddff] text-[#5516be] hover:bg-[#ddd0ff]'">
+                <span class="material-symbols-outlined !text-[16px]">send</span>
+                <span>{{ sendEditalOpenId === ed.id ? 'Fechar Envio' : 'Enviar Link para Usuário' }}</span>
+              </button>
+
+              <!-- Painel Inline de Envio para Usuário -->
+              <div *ngIf="sendEditalOpenId === ed.id" 
+                class="neo-raised rounded-2xl p-4 space-y-3 border-l-4 border-[#433fe5] animate-fadeIn">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="material-symbols-outlined text-[#433fe5] !text-[20px]">person_add</span>
+                  <p class="text-xs font-bold text-[#191c1e]">Selecione o usuário para receber este edital</p>
+                </div>
+                <div class="neo-pressed rounded-xl p-1">
+                  <select 
+                    [(ngModel)]="sendEditalSelectedUserId" 
+                    class="w-full bg-transparent border-none outline-none text-sm px-3 py-2 text-[#191c1e] cursor-pointer">
+                    <option value="" disabled>Escolha um usuário...</option>
+                    <option *ngFor="let u of nonAdminUsers" [value]="u.id">
+                      {{ u.full_name }} ({{ u.email }})
+                    </option>
+                  </select>
+                </div>
+                <button 
+                  (click)="sendEditalToUser(ed.id)" 
+                  [disabled]="!sendEditalSelectedUserId || isSendingEdital"
+                  class="w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all"
+                  [ngClass]="!sendEditalSelectedUserId || isSendingEdital 
+                    ? 'bg-[#eceef1] text-[#767587] cursor-not-allowed' 
+                    : 'bg-gradient-to-r from-[#433fe5] to-[#6b38d4] text-white hover:shadow-lg hover:scale-[1.01]'">
+                  <span class="material-symbols-outlined !text-[16px]">{{ isSendingEdital ? 'hourglass_top' : 'rocket_launch' }}</span>
+                  <span>{{ isSendingEdital ? 'Enviando...' : 'Enviar Edital para Análise' }}</span>
+                </button>
+              </div>
+
+              <!-- Toast de Sucesso/Erro -->
+              <div *ngIf="sendEditalToastId === ed.id && sendEditalToastMsg" 
+                class="rounded-xl p-3 text-xs font-bold flex items-center gap-2 animate-fadeIn"
+                [ngClass]="sendEditalToastType === 'success' ? 'bg-[#eefff2] text-[#005236]' : 'bg-[#ffdad6] text-[#93000a]'">
+                <span class="material-symbols-outlined !text-[16px]">
+                  {{ sendEditalToastType === 'success' ? 'check_circle' : 'error' }}
+                </span>
+                <span>{{ sendEditalToastMsg }}</span>
+              </div>
             </div>
           </div>
         </div>
 
       </div>
     </div>
+
+    <style>
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fadeIn {
+        animation: fadeIn 0.25s ease-out;
+      }
+    </style>
   `
 })
 export class AdminDashboardComponent implements OnInit {
@@ -373,10 +537,31 @@ export class AdminDashboardComponent implements OnInit {
 
   selectedPdfFile: File | null = null;
   selectedEditalFile: File | null = null;
+
+  // Campos do contexto do candidato
   editalTitle = '';
+  editalLink = '';
+  editalCargo = '';          // Cargo específico (obrigatório)
+  editalConcurso = '';       // Concurso alvo
+  editalDataProva = '';      // Data da prova (ISO string)
+  editalHorasPorDia: number | null = null;    // h/dia
+  editalDiasPorSemana: number | null = null;  // dias/semana
+
+  editalUploadMode: 'link' | 'pdf' = 'link';
+
+  /** Data mínima para o date picker (hoje) */
+  readonly today = new Date().toISOString().split('T')[0];
 
   isUploadingPdf = false;
   isUploadingEdital = false;
+
+  // Estado para envio de edital para usuário
+  sendEditalOpenId: string | null = null;
+  sendEditalSelectedUserId = '';
+  isSendingEdital = false;
+  sendEditalToastId: string | null = null;
+  sendEditalToastMsg = '';
+  sendEditalToastType: 'success' | 'error' = 'success';
 
   constructor(
     private apiService: ApiService,
@@ -402,6 +587,11 @@ export class AdminDashboardComponent implements OnInit {
 
   get releasedQuestionsCount(): number {
     return this.questions.filter(q => q.is_released).length;
+  }
+
+  /** Filtra apenas usuários não-admin para o dropdown de envio */
+  get nonAdminUsers(): any[] {
+    return this.users.filter(u => u.role !== 'admin');
   }
 
   onPdfSelected(event: any) {
@@ -432,21 +622,74 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
-  uploadEdital() {
-    this.isUploadingEdital = true;
-    const title = this.editalTitle || (this.selectedEditalFile ? this.selectedEditalFile.name : 'Novo Edital Concurso');
+  /** Valida se os campos obrigatórios do formulário estão preenchidos */
+  get isEditalFormValid(): boolean {
+    const hasFile = this.editalUploadMode === 'pdf'
+      ? !!this.selectedEditalFile
+      : !!this.editalLink?.trim();
+    return (
+      hasFile &&
+      !!this.editalCargo?.trim() &&
+      !!this.editalDataProva &&
+      !!this.editalHorasPorDia &&
+      !!this.editalDiasPorSemana
+    );
+  }
 
-    this.apiService.uploadEdital(this.selectedEditalFile!, title, this.user?.id || 'usr-1').subscribe({
-      next: (res) => {
-        this.isUploadingEdital = false;
-        this.selectedEditalFile = null;
-        this.editalTitle = '';
-        this.loadDashboardData();
-      },
-      error: () => {
-        this.isUploadingEdital = false;
-      }
-    });
+  /** Semanas disponíveis até a data da prova */
+  get semanasDisponiveis(): number {
+    if (!this.editalDataProva) return 0;
+    const hoje = new Date();
+    const prova = new Date(this.editalDataProva);
+    const diff = prova.getTime() - hoje.getTime();
+    return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24 * 7)));
+  }
+
+  /** Total de horas disponíveis até a prova */
+  get editalTotalHoras(): number {
+    if (!this.editalHorasPorDia || !this.editalDiasPorSemana || !this.editalDataProva) return 0;
+    return this.editalHorasPorDia * this.editalDiasPorSemana * this.semanasDisponiveis;
+  }
+
+  uploadEdital() {
+    if (!this.isEditalFormValid) return;
+    this.isUploadingEdital = true;
+
+    const title = this.editalTitle ||
+      (this.editalUploadMode === 'pdf' && this.selectedEditalFile
+        ? this.selectedEditalFile.name.replace('.pdf', '')
+        : 'Novo Edital Concurso');
+
+    const fileToUpload = this.editalUploadMode === 'pdf' ? this.selectedEditalFile : null;
+    const linkToSend  = this.editalUploadMode === 'link' ? this.editalLink : '';
+
+    const userContext = {
+      cargo:          this.editalCargo.trim(),
+      concurso:       this.editalConcurso.trim() || undefined,
+      dataProva:      this.editalDataProva || undefined,
+      horasPorDia:    this.editalHorasPorDia    ?? undefined,
+      diasPorSemana:  this.editalDiasPorSemana  ?? undefined,
+    };
+
+    this.apiService
+      .uploadEdital(fileToUpload, title, linkToSend, this.user?.id || 'usr-1', userContext)
+      .subscribe({
+        next: () => {
+          this.isUploadingEdital = false;
+          this.selectedEditalFile  = null;
+          this.editalTitle         = '';
+          this.editalLink          = '';
+          this.editalCargo         = '';
+          this.editalConcurso      = '';
+          this.editalDataProva     = '';
+          this.editalHorasPorDia   = null;
+          this.editalDiasPorSemana = null;
+          this.loadDashboardData();
+        },
+        error: () => {
+          this.isUploadingEdital = false;
+        },
+      });
   }
 
   toggleRelease(question: any) {
@@ -459,6 +702,56 @@ export class AdminDashboardComponent implements OnInit {
     const newRole = u.role === 'admin' ? 'user' : 'admin';
     this.apiService.updateUserRole(u.id, newRole).subscribe({
       next: () => u.role = newRole
+    });
+  }
+
+  /** Abre/fecha o painel de envio de edital para um card específico */
+  toggleSendEditalPanel(editalId: string) {
+    if (this.sendEditalOpenId === editalId) {
+      this.sendEditalOpenId = null;
+      this.sendEditalSelectedUserId = '';
+    } else {
+      this.sendEditalOpenId = editalId;
+      this.sendEditalSelectedUserId = '';
+      this.sendEditalToastId = null;
+      this.sendEditalToastMsg = '';
+    }
+  }
+
+  /** Envia o link do edital para o usuário selecionado */
+  sendEditalToUser(editalId: string) {
+    if (!this.sendEditalSelectedUserId) return;
+    this.isSendingEdital = true;
+
+    this.apiService.sendEditalToUser(editalId, this.sendEditalSelectedUserId).subscribe({
+      next: (res) => {
+        this.isSendingEdital = false;
+        this.sendEditalOpenId = null;
+        this.sendEditalSelectedUserId = '';
+
+        // Mostra toast de sucesso
+        this.sendEditalToastId = editalId;
+        this.sendEditalToastType = 'success';
+        this.sendEditalToastMsg = res?.data?.already_assigned
+          ? 'Este edital já havia sido enviado para este usuário.'
+          : 'Edital enviado com sucesso! O usuário já pode acessar a análise.';
+        setTimeout(() => {
+          this.sendEditalToastId = null;
+          this.sendEditalToastMsg = '';
+        }, 5000);
+      },
+      error: (err) => {
+        this.isSendingEdital = false;
+
+        // Mostra toast de erro
+        this.sendEditalToastId = editalId;
+        this.sendEditalToastType = 'error';
+        this.sendEditalToastMsg = 'Erro ao enviar edital. Tente novamente.';
+        setTimeout(() => {
+          this.sendEditalToastId = null;
+          this.sendEditalToastMsg = '';
+        }, 5000);
+      }
     });
   }
 

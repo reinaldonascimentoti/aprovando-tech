@@ -68,14 +68,42 @@ export class ApiService {
   // EDITAIS
   // ----------------------------------------------------------------
 
-  uploadEdital(file: File | null, title: string, userId: string): Observable<any> {
+  uploadEdital(
+    file: File | null,
+    title: string,
+    link: string,
+    userId: string,
+    userContext: {
+      cargo: string;
+      concurso?: string;
+      dataProva?: string;
+      horasPorDia?: number;
+      diasPorSemana?: number;
+    },
+  ): Observable<any> {
     const formData = new FormData();
     if (file) formData.append('file', file);
     formData.append('title', title);
+    if (link) formData.append('link', link);
     formData.append('userId', userId);
+
+    // Contexto do candidato
+    if (userContext.cargo)         formData.append('cargo', userContext.cargo);
+    if (userContext.concurso)      formData.append('concurso', userContext.concurso);
+    if (userContext.dataProva)     formData.append('dataProva', userContext.dataProva);
+    if (userContext.horasPorDia)   formData.append('horasPorDia', String(userContext.horasPorDia));
+    if (userContext.diasPorSemana) formData.append('diasPorSemana', String(userContext.diasPorSemana));
+
     return this.http.post(`${this.baseUrl}/editais/upload`, formData, {
       headers: this.getFormHeaders()
     });
+  }
+
+  /** Public list of editais with limited metadata */
+  getPublicEditais(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/public/editais`, {
+      headers: this.getHeaders()
+    }).pipe(catchError(() => of([])));
   }
 
   getEditais(): Observable<any[]> {
@@ -94,6 +122,14 @@ export class ApiService {
     return this.http.post(
       `${this.baseUrl}/editais/${editalId}/toggle-topic`,
       { topicId, userId },
+      { headers: this.getHeaders() }
+    );
+  }
+
+  sendEditalToUser(editalId: string, userId: string): Observable<any> {
+    return this.http.post(
+      `${this.baseUrl}/editais/${editalId}/send-to-user`,
+      { userId },
       { headers: this.getHeaders() }
     );
   }

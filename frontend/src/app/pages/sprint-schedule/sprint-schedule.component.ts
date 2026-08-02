@@ -9,7 +9,7 @@ import { AuthService, UserProfile } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="min-h-screen bg-[#f7f9fc] p-4 md:p-8 max-w-6xl mx-auto">
+    <div class="min-h-screen bg-[#f7f9fc] p-4 md:p-8 max-w-7xl mx-auto">
       <!-- Back Navigation Header -->
       <div class="flex items-center justify-between mb-6">
         <button (click)="goBack()" class="btn-neo px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2">
@@ -17,7 +17,7 @@ import { AuthService, UserProfile } from '../../services/auth.service';
           <span>Voltar ao Painel</span>
         </button>
         <span class="bg-[#e1dfff] text-[#09006b] text-xs font-extrabold px-3 py-1 rounded-full">
-          Cronograma de Sprints Interativo
+          Cronograma Semanal Inteligente
         </span>
       </div>
 
@@ -26,10 +26,10 @@ import { AuthService, UserProfile } from '../../services/auth.service';
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 class="text-2xl md:text-3xl font-black text-[#191c1e] mb-1">
-              Cronograma em Sprints - {{ edital?.title || 'Edital Concurso' }}
+              Cronograma de Estudos - {{ edital?.title || 'Edital Concurso' }}
             </h1>
             <p class="text-xs text-[#464556]">
-              Marque os assuntos já estudados para atualizar seu progresso em tempo real e dominar os tópicos de maior peso.
+              Organizado por subtópico com proporção 30% Teoria / 50% Exercícios / 20% Revisão. Marque os itens concluídos.
             </p>
           </div>
 
@@ -48,10 +48,125 @@ import { AuthService, UserProfile } from '../../services/auth.service';
         <div class="w-full h-3 neo-pressed rounded-full overflow-hidden p-0.5">
           <div class="h-full bg-gradient-to-r from-[#433fe5] via-[#6b38d4] to-[#8455ef] rounded-full transition-all duration-500" [style.width.%]="overallProgress"></div>
         </div>
+
+        <!-- Proportion Legend -->
+        <div class="flex flex-wrap gap-4 pt-2">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-sm bg-[#433fe5]"></div>
+            <span class="text-[11px] font-bold text-[#464556]">Teoria (30%)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-sm bg-[#6b38d4]"></div>
+            <span class="text-[11px] font-bold text-[#464556]">Exercícios (50%)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-sm bg-[#00845a]"></div>
+            <span class="text-[11px] font-bold text-[#464556]">Revisão (20%)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-sm bg-[#e65100]"></div>
+            <span class="text-[11px] font-bold text-[#464556]">Revisão Espaçada</span>
+          </div>
+        </div>
       </div>
 
-      <!-- Sprints Timeline -->
-      <div class="space-y-8">
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <!-- CRONOGRAMA POR SEMANAS (from cronograma_estudos)          -->
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <div *ngIf="semanas.length" class="space-y-6 mb-8">
+        <div *ngFor="let semana of semanas; let si = index" class="neo-raised rounded-3xl p-6 md:p-8 space-y-5">
+          
+          <!-- Semana Header -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#c7c4d8]/40 pb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl neo-pressed flex items-center justify-center text-[#433fe5] font-extrabold text-sm">
+                S{{ semana.numero }}
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-[#191c1e]">{{ semana.titulo }}</h2>
+                <span class="text-[11px] text-[#767587]">{{ semana.blocos?.length || 0 }} blocos de estudo</span>
+              </div>
+            </div>
+
+            <!-- Semana Proportion Bars -->
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] font-bold text-[#464556]">T/E/R:</span>
+                <div class="w-24 h-2 rounded-full overflow-hidden flex bg-[#eceef1]">
+                  <div class="h-full bg-[#433fe5]" [style.width.%]="getProportionForSemana(semana, 'teoria')"></div>
+                  <div class="h-full bg-[#6b38d4]" [style.width.%]="getProportionForSemana(semana, 'exercicios')"></div>
+                  <div class="h-full bg-[#00845a]" [style.width.%]="getProportionForSemana(semana, 'revisao')"></div>
+                </div>
+              </div>
+              <span class="text-[11px] font-bold text-[#433fe5]">{{ getSemanaProgress(si) }}%</span>
+            </div>
+          </div>
+
+          <!-- Blocos de Estudo -->
+          <div class="space-y-2.5">
+            <div *ngFor="let bloco of semana.blocos; let bi = index" 
+              (click)="toggleBloco(si, bi)"
+              class="rounded-2xl p-4 flex items-center justify-between gap-4 cursor-pointer transition-all hover:scale-[1.001]"
+              [class.neo-pressed]="!isBlocoCompleted(si, bi)"
+              [class.bg-[#eefff2]]="isBlocoCompleted(si, bi)"
+              [class.border-l-4]="true"
+              [ngClass]="{
+                'border-[#433fe5]': bloco.tipo_atividade === 'teoria',
+                'border-[#6b38d4]': bloco.tipo_atividade === 'exercicios',
+                'border-[#00845a]': bloco.tipo_atividade === 'revisao' && !bloco.semana_revisao_espacada,
+                'border-[#e65100]': bloco.tipo_atividade === 'revisao' && bloco.semana_revisao_espacada
+              }">
+
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <!-- Checkbox -->
+                <div class="w-5 h-5 rounded-md neo-raised flex items-center justify-center transition-colors shrink-0"
+                     [class.bg-[#00845a]]="isBlocoCompleted(si, bi)" [class.text-white]="isBlocoCompleted(si, bi)">
+                  <span *ngIf="isBlocoCompleted(si, bi)" class="material-symbols-outlined !text-[14px]">check</span>
+                </div>
+
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-xs font-bold text-[#191c1e] truncate" 
+                          [class.line-through]="isBlocoCompleted(si, bi)" 
+                          [class.opacity-60]="isBlocoCompleted(si, bi)">
+                      {{ bloco.subtopico }}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <span class="text-[10px] text-[#767587]">{{ bloco.disciplina }}</span>
+                    <span *ngIf="bloco.semana_revisao_espacada" 
+                          class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#fff3e0] text-[#e65100]">
+                      ↻ Revisão espaçada na S{{ bloco.semana_revisao_espacada }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 shrink-0">
+                <!-- Carga horária -->
+                <span class="neo-pressed px-2.5 py-1 rounded-lg text-[11px] font-extrabold text-[#191c1e]">
+                  {{ bloco.carga_horaria }}
+                </span>
+
+                <!-- Tipo badge -->
+                <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap"
+                      [ngClass]="{
+                        'bg-[#e1dfff] text-[#2b20d2]': bloco.tipo_atividade === 'teoria',
+                        'bg-[#e9ddff] text-[#5516be]': bloco.tipo_atividade === 'exercicios',
+                        'bg-[#eefff2] text-[#005236]': bloco.tipo_atividade === 'revisao'
+                      }">
+                  {{ bloco.tipo_atividade === 'teoria' ? '📖 Teoria' : bloco.tipo_atividade === 'exercicios' ? '✍️ Exercícios' : '🔄 Revisão' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <!-- SPRINTS (backward compatible — fallback view)             -->
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <div *ngIf="!semanas.length && sprints.length" class="space-y-8 mb-8">
         <div *ngFor="let sprint of sprints; let i = index" class="neo-raised rounded-3xl p-6 md:p-8 space-y-6">
           
           <!-- Sprint Header -->
@@ -128,7 +243,9 @@ export class SprintScheduleComponent implements OnInit {
   @Input() editalId = 'ed-1';
   edital: any = null;
   sprints: any[] = [];
+  semanas: any[] = [];
   user: UserProfile | null = null;
+  completedBlocos = new Set<string>();
 
   constructor(
     private route: ActivatedRoute,
@@ -149,10 +266,24 @@ export class SprintScheduleComponent implements OnInit {
     this.apiService.getEditalDetails(this.editalId).subscribe(ed => {
       this.edital = ed;
       this.sprints = ed?.pareto_data?.sprints || [];
+      this.semanas = ed?.pareto_data?.cronograma_estudos?.semanas || [];
     });
   }
 
   get overallProgress(): number {
+    if (this.semanas.length > 0) {
+      let totalBlocos = 0;
+      let completedCount = 0;
+      for (let si = 0; si < this.semanas.length; si++) {
+        for (let bi = 0; bi < (this.semanas[si].blocos?.length || 0); bi++) {
+          totalBlocos++;
+          if (this.isBlocoCompleted(si, bi)) completedCount++;
+        }
+      }
+      return totalBlocos > 0 ? Math.round((completedCount / totalBlocos) * 100) : 0;
+    }
+
+    // Fallback to sprints
     if (!this.sprints || this.sprints.length === 0) return 0;
     let totalTopics = 0;
     let completedTopics = 0;
@@ -165,11 +296,42 @@ export class SprintScheduleComponent implements OnInit {
     return totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
   }
 
+  getSemanaProgress(semanaIndex: number): number {
+    const semana = this.semanas[semanaIndex];
+    if (!semana?.blocos?.length) return 0;
+    let completed = 0;
+    for (let bi = 0; bi < semana.blocos.length; bi++) {
+      if (this.isBlocoCompleted(semanaIndex, bi)) completed++;
+    }
+    return Math.round((completed / semana.blocos.length) * 100);
+  }
+
+  getProportionForSemana(semana: any, tipo: string): number {
+    if (!semana?.blocos?.length) return 0;
+    const total = semana.blocos.length;
+    const count = semana.blocos.filter((b: any) => b.tipo_atividade === tipo).length;
+    return Math.round((count / total) * 100);
+  }
+
+  toggleBloco(semanaIndex: number, blocoIndex: number) {
+    const key = `${semanaIndex}-${blocoIndex}`;
+    if (this.completedBlocos.has(key)) {
+      this.completedBlocos.delete(key);
+    } else {
+      this.completedBlocos.add(key);
+    }
+  }
+
+  isBlocoCompleted(semanaIndex: number, blocoIndex: number): boolean {
+    return this.completedBlocos.has(`${semanaIndex}-${blocoIndex}`);
+  }
+
   toggleTopic(topic: any) {
     this.apiService.toggleTopic(this.editalId, topic.id, this.user?.id || 'usr-2').subscribe({
       next: (res) => {
         this.edital = res.data;
         this.sprints = res.data?.pareto_data?.sprints || [];
+        this.semanas = res.data?.pareto_data?.cronograma_estudos?.semanas || [];
       }
     });
   }

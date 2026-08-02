@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as ws from 'ws';
+import { EditalUserContext } from '../modules/editais/editais.types';
 
 @Injectable()
 export class SupabaseService {
@@ -266,7 +267,7 @@ export class SupabaseService {
     return data;
   }
 
-  async addEdital(title: string, uploadedBy: string, paretoData: any) {
+  async addEdital(title: string, uploadedBy: string, paretoData: any, userContext?: EditalUserContext) {
     if (!this.adminClient) return null;
 
     // Busca nome do uploader
@@ -287,6 +288,11 @@ export class SupabaseService {
         uploader_name: uploaderName,
         status: 'completed',
         pareto_data: paretoData,
+        cargo: userContext?.cargo || null,
+        concurso: userContext?.concurso || null,
+        data_prova: userContext?.dataProva || null,
+        horas_por_dia: userContext?.horasPorDia || null,
+        dias_por_semana: userContext?.diasPorSemana || null,
       })
       .select()
       .single();
@@ -296,6 +302,69 @@ export class SupabaseService {
       return null;
     }
     return data;
+  }
+
+  // ----------------------------------------------------------------
+  // SEND EDITAL TO USER (Admin → User assignment)
+  // ----------------------------------------------------------------
+
+  async sendEditalToUser(editalId: string, userId: string) {
+    if (!this.adminClient) return null;
+
+    // Verifica se o edital existe
+    const edital = await this.getEditalById(editalId);
+    if (!edital) return null;
+
+    // Verifica se já existe atribuição (evita duplicidade)
+    const { data: existing } = await this.adminClient
+      .from('user_edital_assignments')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('edital_id', editalId)
+      .maybeSingle();
+
+    if (existing) {
+      this.logger.log(`Edital ${editalId} já atribuído ao usuário ${userId}`);
+      return { already_assigned: true, edital };
+    }
+
+    const { data, error } = await this.adminClient
+      .from('user_edital_assignments')
+      .insert({
+        user_id: userId,
+        edital_id: editalId,
+        assigned_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      this.logger.error(`sendEditalToUser error: ${error.message}`);
+      // Fallback: a tabela user_edital_assignments pode não existir.
+      // Nesse caso, fazemos a associação indiretamente via user_topic_progress.
+      this.logger.warn('Tentando associação via user_topic_progress como fallback...');
+
+      // Cria um registro de progresso inicial para o primeiro sprint/tópico
+      if (edital.pareto_data?.sprints?.[0]?.topics?.[0]) {
+        const firstTopicId = edital.pareto_data.sprints[0].topics[0].id;
+        const { data: fallback } = await this.adminClient
+          .from('user_topic_progress')
+          .insert({
+            user_id: userId,
+            edital_id: editalId,
+            topic_id: firstTopicId,
+            completed: false,
+          })
+          .select()
+          .single();
+
+        return { fallback_assignment: true, data: fallback, edital };
+      }
+
+      return null;
+    }
+
+    return { assigned: true, data, edital };
   }
 
   // ----------------------------------------------------------------

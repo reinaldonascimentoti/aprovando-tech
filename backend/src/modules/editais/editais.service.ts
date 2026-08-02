@@ -4,6 +4,7 @@ import { Queue } from 'bullmq';
 import { LangChainOpenAIService } from '../../services/langchain-openai.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { extractTextFromPdf } from '../../utils/pdf-helper';
+import { EditalUserContext } from './editais.types';
 
 @Injectable()
 export class EditaisService {
@@ -15,31 +16,50 @@ export class EditaisService {
     private readonly supabaseService: SupabaseService,
   ) {}
 
-  async uploadAndAnalyzeEdital(file: Express.Multer.File, title: string, userId: string) {
-    this.logger.log(`Processing Edital Upload & Pareto Analysis for: ${title}`);
+  async uploadAndAnalyzeEdital(
+    file: Express.Multer.File,
+    title: string,
+    userId: string,
+    link?: string,
+    userContext?: EditalUserContext,
+  ) {
+    this.logger.log(`Processing Edital Upload & Pareto Analysis for: ${title} | Cargo: ${userContext?.cargo}`);
 
     const pdfText = file?.buffer
       ? await extractTextFromPdf(file.buffer, title, this.logger)
-      : `Edital oficial: ${title}`;
+      : (link ? `Conteúdo extraído do edital no link: ${link}` : `Edital oficial: ${title}`);
 
     try {
       await this.paretoQueue.add('analyze-pareto', {
         title,
         pdfText,
         userId,
+        userContext,
       });
     } catch (e) {
       this.logger.warn(`BullMQ queue offline for Edital (${e.message}). Processing synchronously.`);
     }
 
-    const paretoAnalysis = await this.langChainService.analyzeEditalPareto(pdfText, title);
-    const saved = await this.supabaseService.addEdital(title, userId, paretoAnalysis);
+    const paretoAnalysis = await this.langChainService.analyzeEditalPareto(pdfText, title, userContext);
+    const saved = await this.supabaseService.addEdital(title, userId, paretoAnalysis, userContext);
 
     return saved;
   }
 
   async getAllEditais() {
     return this.supabaseService.getEditais();
+  }
+
+  async getPublicEditais() {
+    const editais = await this.supabaseService.getEditais();
+    // Return only public metadata fields
+    return editais.map(e => ({
+      id: e.id,
+      title: e.title,
+      uploaded_by: e.uploaded_by,
+      uploader_name: e.uploader_name,
+      created_at: e.created_at,
+    }));
   }
 
   async getEditalPareto(id: string) {
@@ -56,5 +76,10 @@ export class EditaisService {
       throw new NotFoundException(`Tópico ou Edital não encontrado.`);
     }
     return updatedEdital;
+  }
+
+  async sendEditalToUser(editalId: string, userId: string) {
+    this.logger.log(`Enviando edital ${editalId} para o usuário ${userId}`);
+    return this.supabaseService.sendEditalToUser(editalId, userId);
   }
 }
