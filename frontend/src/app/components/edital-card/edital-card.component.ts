@@ -8,7 +8,7 @@ import { FormsModule } from '@angular/forms';
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
   template: `
-    <div class="neo-pressed rounded-3xl p-6 flex flex-col justify-between hover:shadow-inner transition-all h-full">
+    <div class="bg-white rounded-3xl p-6 flex flex-col justify-between border border-[#e4d9ff] shadow-md hover:shadow-xl hover:border-[#6b38d4]/40 hover:-translate-y-1 transition-all duration-300 h-full relative overflow-hidden group">
       <div>
         <!-- Top Badges Row -->
         <div class="flex items-center justify-between gap-2 mb-3 flex-wrap">
@@ -52,46 +52,44 @@ import { FormsModule } from '@angular/forms';
         </div>
       </div>
 
-      <!-- Action Buttons Matrix -->
-      <div class="space-y-2 pt-2 border-t border-[#c7c4d8]/30">
-        
-        <!-- Primary Action Buttons Row (3 Columns) -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <!-- Action Buttons Row (Na mesma linha) -->
+      <div class="pt-3 border-t border-[#c7c4d8]/30 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto flex-1">
           <a [routerLink]="['/disciplinas', edital.id]"
-             class="btn-mesh py-2.5 px-2 rounded-xl text-xs font-extrabold text-center flex items-center justify-center gap-1.5"
+             class="btn-mesh py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial"
              title="Mapa Geral das Disciplinas (Tabela Completa)">
             <span class="material-symbols-outlined !text-[16px]">grid_view</span>
             <span>Mapa Geral</span>
           </a>
 
           <a *ngIf="edital.pareto_data?.pareto_analisado" [routerLink]="['/pareto', edital.id]"
-             class="py-2.5 px-2 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-1.5 bg-[#e9ddff] text-[#5516be] hover:bg-[#ddd0ff] transition-all"
+             class="py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-[#e9ddff] text-[#5516be] hover:bg-[#ddd0ff] transition-all flex-1 sm:flex-initial"
              title="Ver Relatório Pareto 80/20">
             <span class="material-symbols-outlined !text-[16px]">donut_large</span>
             <span>Ver Pareto</span>
           </a>
 
           <a *ngIf="!edital.pareto_data?.pareto_analisado" [routerLink]="['/disciplinas', edital.id]"
-             class="py-2.5 px-2 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-1.5 bg-[#f0e7ff] text-[#433fe5] hover:bg-[#e1dfff] transition-all"
+             class="py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-[#f0e7ff] text-[#433fe5] hover:bg-[#e1dfff] transition-all flex-1 sm:flex-initial"
              title="Abrir Mapa para Executar Análise Pareto">
             <span class="material-symbols-outlined !text-[16px]">analytics</span>
             <span>Analisar Pareto</span>
           </a>
 
           <a [routerLink]="['/sprints', edital.id]"
-             class="btn-neo py-2.5 px-2 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-1.5 text-[#191c1e]"
+             class="btn-neo py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-[#191c1e] flex-1 sm:flex-initial"
              title="Cronograma Semanal">
             <span class="material-symbols-outlined !text-[16px] text-[#433fe5]">calendar_month</span>
             <span>Sprints</span>
           </a>
         </div>
 
-        <!-- Role Specific Actions (Admin vs Student) -->
-        <div *ngIf="isAdmin" class="space-y-2 pt-1">
-          <div class="flex gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
+          <!-- Role Specific Actions (Admin vs Student) -->
+          <ng-container *ngIf="isAdmin">
             <button
               (click)="editEdital.emit(edital)"
-              class="px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 bg-[#fff3e0] text-[#e65100] hover:bg-[#ffe0b2] transition-all"
+              class="px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 bg-[#fff3e0] text-[#e65100] hover:bg-[#ffe0b2] transition-all"
               title="Editar Análise de Edital">
               <span class="material-symbols-outlined !text-[15px]">edit</span>
               <span>Editar</span>
@@ -99,43 +97,41 @@ import { FormsModule } from '@angular/forms';
 
             <button
               (click)="toggleSend.emit(edital.id)"
-              class="flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+              class="px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
               [ngClass]="sendOpenId === edital.id ? 'bg-[#433fe5] text-white shadow-md' : 'bg-[#e1dfff] text-[#2b20d2] hover:bg-[#d5d2ff]'">
               <span class="material-symbols-outlined !text-[15px]">send</span>
-              <span>{{ sendOpenId === edital.id ? 'Fechar Envio' : 'Enviar Link a Usuário' }}</span>
+              <span>{{ sendOpenId === edital.id ? 'Fechar' : 'Enviar Link' }}</span>
             </button>
 
             <button
               (click)="deleteEdital.emit(edital)"
-              class="px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 bg-[#ffdad6] text-[#ba1a1a] hover:bg-[#ffb4ab] transition-all"
+              class="px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 bg-[#ffdad6] text-[#ba1a1a] hover:bg-[#ffb4ab] transition-all"
               title="Excluir Edital">
               <span class="material-symbols-outlined !text-[15px]">delete</span>
               <span>Excluir</span>
             </button>
-          </div>
-        </div>
+          </ng-container>
 
-        <div *ngIf="!isAdmin" class="space-y-2 pt-1">
-          <div class="flex gap-2">
+          <ng-container *ngIf="!isAdmin">
             <button
               (click)="editEdital.emit(edital)"
-              class="px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 bg-[#fff3e0] text-[#e65100] hover:bg-[#ffe0b2] transition-all"
+              class="px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 bg-[#fff3e0] text-[#e65100] hover:bg-[#ffe0b2] transition-all"
               title="Editar Concurso">
               <span class="material-symbols-outlined !text-[15px]">edit</span>
-              <span>Editar Concurso</span>
+              <span>Editar</span>
             </button>
 
             <ng-container *ngIf="dismissConfirmId === edital.id; else studentDismissBtn">
-              <div class="flex-1 flex gap-1">
+              <div class="flex gap-1">
                 <button
                   (click)="confirmDismiss.emit(edital)"
-                  class="flex-1 py-2 rounded-xl text-xs font-bold bg-[#ba1a1a] text-white flex items-center justify-center gap-1">
+                  class="px-3 py-2.5 rounded-xl text-xs font-bold bg-[#ba1a1a] text-white flex items-center justify-center gap-1">
                   <span class="material-symbols-outlined !text-[14px]">check</span>
                   Confirmar
                 </button>
                 <button
                   (click)="cancelDismiss.emit()"
-                  class="py-2 px-2.5 rounded-xl text-xs font-bold border border-[#c7c4d8] text-[#464556] hover:border-[#433fe5]">
+                  class="py-2.5 px-2.5 rounded-xl text-xs font-bold border border-[#c7c4d8] text-[#464556] hover:border-[#433fe5]">
                   <span class="material-symbols-outlined !text-[14px]">close</span>
                 </button>
               </div>
@@ -143,15 +139,14 @@ import { FormsModule } from '@angular/forms';
             <ng-template #studentDismissBtn>
               <button
                 (click)="requestDismiss.emit(edital.id)"
-                class="px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 bg-[#ffdad6] text-[#ba1a1a] hover:bg-[#ffb4ab] transition-all"
+                class="px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 bg-[#ffdad6] text-[#ba1a1a] hover:bg-[#ffb4ab] transition-all"
                 title="Excluir Edital">
                 <span class="material-symbols-outlined !text-[15px]">delete</span>
                 <span>Excluir</span>
               </button>
             </ng-template>
-          </div>
+          </ng-container>
         </div>
-
       </div>
     </div>
   `
