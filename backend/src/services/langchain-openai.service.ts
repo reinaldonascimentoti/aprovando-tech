@@ -1,142 +1,491 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { GoogleGenerativeAI, GenerativeModel, SchemaType } from '@google/generative-ai';
+import { GoogleAIFileManager } from '@google/generative-ai/server';
 import { ChatOpenAI } from '@langchain/openai';
 import { EditalUserContext } from '../modules/editais/editais.types';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import { z } from 'zod';
+/**
+ * DEFINIÇÃO DO SCHEMA ESTRUTURADO (JSON Schema via SchemaType para Gemini File API)
+ */
+export const schemaConteudoProgramatico = {
+  type: SchemaType.OBJECT,
+  properties: {
+    edital: { type: SchemaType.STRING },
+    cargo: { type: SchemaType.STRING },
+    conteudo_programatico: {
+      type: SchemaType.OBJECT,
+      properties: {
+        conhecimentos_gerais: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              disciplina: { type: SchemaType.STRING },
+              topicos: {
+                type: SchemaType.ARRAY,
+                items: {
+                  type: SchemaType.OBJECT,
+                  properties: {
+                    nome: { type: SchemaType.STRING },
+                    subtopicos: {
+                      type: SchemaType.ARRAY,
+                      items: { type: SchemaType.STRING }
+                    }
+                  },
+                  required: ['nome', 'subtopicos']
+                }
+              }
+            },
+            required: ['disciplina', 'topicos']
+          }
+        },
+        conhecimentos_especificos: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              disciplina: { type: SchemaType.STRING },
+              topicos: {
+                type: SchemaType.ARRAY,
+                items: {
+                  type: SchemaType.OBJECT,
+                  properties: {
+                    nome: { type: SchemaType.STRING },
+                    subtopicos: {
+                      type: SchemaType.ARRAY,
+                      items: { type: SchemaType.STRING }
+                    }
+                  },
+                  required: ['nome', 'subtopicos']
+                }
+              }
+            },
+            required: ['disciplina', 'topicos']
+          }
+        }
+      },
+      required: ['conhecimentos_gerais', 'conhecimentos_especificos']
+    }
+  },
+  required: ['edital', 'cargo', 'conteudo_programatico']
+};
+
+/**
+ * DEFINIÇÃO DO SCHEMA ESTRUTURADO (Zod para LangChain/Groq/OpenAI)
+ */
+export const zodSchemaConteudoProgramatico = z.object({
+  edital: z.string().optional(),
+  cargo: z.string().optional(),
+  conteudo_programatico: z.object({
+    conhecimentos_gerais: z.array(z.object({
+      disciplina: z.string(),
+      topicos: z.array(z.object({
+        nome: z.string(),
+        subtopicos: z.array(z.string())
+      }))
+    })),
+    conhecimentos_especificos: z.array(z.object({
+      disciplina: z.string(),
+      topicos: z.array(z.object({
+        nome: z.string(),
+        subtopicos: z.array(z.string())
+      }))
+    }))
+  })
+});
+
+/**
+ * Wrapper unificado para invocar modelos (Gemini nativo ou LangChain/Groq).
+ * Garante que ambos os providers retornem texto via a mesma interface.
+ */
+interface LLMProvider {
+  invoke(prompt: string): Promise<string>;
+  invokeStructured?<T>(prompt: string, schema: any): Promise<T | null>;
+  name: string;
+}
+
+class GeminiProvider implements LLMProvider {
+  name = 'Google Gemini (gemini-1.5-flash / gemini-flash-latest / gemini-2.0-flash)';
+  private models: { name: string; model: GenerativeModel; jsonModel: GenerativeModel }[];
+
+  constructor(genAI: GoogleGenerativeAI, private logger: Logger) {
+    const candidates = ['gemini-1.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash', 'gemini-pro-latest'];
+    this.models = candidates.map(name => ({
+      name,
+      model: genAI.getGenerativeModel({
+        model: name,
+        generationConfig: {
+          temperature: 0.0,
+          maxOutputTokens: 65536,
+        },
+      }),
+      jsonModel: genAI.getGenerativeModel({
+        model: name,
+        generationConfig: {
+          temperature: 0.0,
+          maxOutputTokens: 65536,
+          responseMimeType: 'application/json',
+        },
+      })
+    }));
+  }
+
+  async invoke(prompt: string): Promise<string> {
+    let lastError: any = null;
+    for (const item of this.models) {
+      try {
+        const result = await item.model.generateContent(prompt);
+        const text = result.response.text();
+        if (text && text.trim().length > 0) {
+          return text;
+        }
+      } catch (err: any) {
+        lastError = err;
+        this.logger.warn(`⚠️ Modelo Gemini [${item.name}] falhou (${err.message}). Tentando próximo modelo Gemini...`);
+      }
+    }
+    throw lastError || new Error('Nenhum modelo Gemini respondeu');
+  }
+
+  async invokeStructured<T>(prompt: string, schema: any): Promise<T | null> {
+    let lastError: any = null;
+    for (const item of this.models) {
+      try {
+        const jsonPrompt = `${prompt}\n\nATENÇÃO: Retorne a resposta ESTRITAMENTE em formato JSON válido conforme o esquema solicitado. Não inclua texto introdutório ou explicações fora do JSON.`;
+        const result = await item.jsonModel.generateContent(jsonPrompt);
+        const text = result.response.text();
+        if (text && text.trim().length > 0) {
+          const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+          const matchObj = cleaned.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+          const raw = matchObj ? matchObj[0] : cleaned;
+          const parsed = JSON.parse(raw);
+          if (parsed) return parsed as T;
+        }
+      } catch (err: any) {
+        lastError = err;
+        this.logger.warn(`⚠️ Gemini invokeStructured [${item.name}] falhou (${err.message}). Tentando próximo modelo Gemini...`);
+      }
+    }
+    // Fallback: tenta invoke com parsing JSON simples
+    try {
+      const text = await this.invoke(`${prompt}\n\nATENÇÃO: Responda EXCLUSIVAMENTE em formato JSON.`);
+      const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+      const matchObj = cleaned.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+      const parsed = JSON.parse(matchObj ? matchObj[0] : cleaned);
+      if (parsed) return parsed as T;
+    } catch (e: any) {
+      this.logger.warn(`⚠️ Fallback Gemini invokeStructured via invoke() falhou: ${e.message}`);
+    }
+    return null;
+  }
+}
+
+class GroqProvider implements LLMProvider {
+  name = 'Groq LLMs (Llama 3.3 70B -> Llama 3.1 8B -> Mixtral)';
+  private models: { name: string; model: ChatOpenAI }[];
+
+  constructor(apiKey: string, private logger: Logger) {
+    const candidateModels = [
+      'llama-3.3-70b-versatile',
+      'llama-3.1-8b-instant',
+      'mixtral-8x7b-32768'
+    ];
+    this.models = candidateModels.map(mName => ({
+      name: mName,
+      model: new ChatOpenAI({
+        apiKey: apiKey,
+        modelName: mName,
+        temperature: 0.0,
+        timeout: 120000,
+        maxRetries: 1,
+        configuration: { baseURL: 'https://api.groq.com/openai/v1' },
+      })
+    }));
+  }
+
+  async invoke(prompt: string): Promise<string> {
+    let lastErr: any = null;
+    for (const item of this.models) {
+      try {
+        const response = await item.model.invoke(prompt);
+        const text = typeof response.content === 'string'
+          ? response.content
+          : JSON.stringify(response.content);
+        if (text && text.trim().length > 0) {
+          return text;
+        }
+      } catch (err: any) {
+        lastErr = err;
+        this.logger.warn(`⚠️ Groq modelo [${item.name}] falhou (${err.message}). Tentando próximo modelo do Groq...`);
+      }
+    }
+    throw lastErr || new Error('Todos os modelos do Groq falharam.');
+  }
+
+  async invokeStructured<T>(prompt: string, schema: any): Promise<T | null> {
+    let lastErr: any = null;
+    for (const item of this.models) {
+      try {
+        const modelWithStructure = item.model.withStructuredOutput(schema);
+        const response = await modelWithStructure.invoke(prompt);
+        if (response) return response as T;
+      } catch (err: any) {
+        lastErr = err;
+        this.logger.warn(`⚠️ Groq modelo [${item.name}] falhou estruturado (${err.message})...`);
+      }
+    }
+    return null;
+  }
+}
+
+class OpenAIProvider implements LLMProvider {
+  name = 'OpenAI (gpt-4o-mini)';
+  constructor(private model: ChatOpenAI) { }
+
+  async invoke(prompt: string): Promise<string> {
+    const response = await this.model.invoke(prompt);
+    return typeof response.content === 'string'
+      ? response.content
+      : JSON.stringify(response.content);
+  }
+
+  async invokeStructured<T>(prompt: string, schema: any): Promise<T | null> {
+    const modelWithStructure = this.model.withStructuredOutput(schema);
+    const response = await modelWithStructure.invoke(prompt);
+    return response as T;
+  }
+}
+
+class FallbackLLMProvider implements LLMProvider {
+  name: string;
+
+  constructor(private providers: LLMProvider[], private logger: Logger) {
+    this.name = providers.map(p => p.name).join(' -> ');
+  }
+
+  async invoke(prompt: string): Promise<string> {
+    let lastError: any = null;
+    for (const p of this.providers) {
+      try {
+        const result = await p.invoke(prompt);
+        return result;
+      } catch (err: any) {
+        lastError = err;
+        this.logger.warn(`⚠️ Provedor [${p.name}] falhou (${err.message}). Redirecionando automaticamente para o próximo provedor...`);
+      }
+    }
+    throw lastError || new Error('Todos os provedores de LLM configurados falharam.');
+  }
+
+  async invokeStructured<T>(prompt: string, schema: any): Promise<T | null> {
+    let lastError: any = null;
+    for (const p of this.providers) {
+      if (!p.invokeStructured) continue;
+      try {
+        const result = await p.invokeStructured<T>(prompt, schema);
+        if (result) return result;
+      } catch (err: any) {
+        lastError = err;
+        this.logger.warn(`⚠️ Provedor Estruturado [${p.name}] falhou (${err.message}). Redirecionando para próximo provedor...`);
+      }
+    }
+
+    // Se invokeStructured retornar null ou falhar em todos os provedores estruturados, tenta invoke() nos provedores disponíveis
+    try {
+      this.logger.warn('⚠️ invokeStructured não obteve resultado válido dos provedores. Tentando invoke() nos provedores ativos...');
+      const textResult = await this.invoke(`${prompt}\n\nATENÇÃO: Responda EXCLUSIVAMENTE em formato JSON.`);
+      if (textResult) {
+        const cleaned = textResult.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+        const matchObj = cleaned.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+        const parsed = JSON.parse(matchObj ? matchObj[0] : cleaned);
+        if (parsed) return parsed as T;
+      }
+    } catch (fallbackErr: any) {
+      this.logger.error(`⚠️ Fallback de invokeStructured via invoke() falhou: ${fallbackErr.message}`);
+    }
+
+    if (lastError) throw lastError;
+    return null;
+  }
+}
 
 @Injectable()
 export class LangChainOpenAIService {
   private readonly logger = new Logger(LangChainOpenAIService.name);
-  private model: ChatOpenAI | null = null;
+  private provider: LLMProvider | null = null;
 
   constructor() {
+    const activeProviders: LLMProvider[] = [];
+
+    // --- Prioridade 1: Google Gemini Flash ---
+    const googleKey = process.env.GOOGLE_AI_API_KEY;
+    if (googleKey && googleKey.length > 10) {
+      try {
+        const genAI = new GoogleGenerativeAI(googleKey);
+        activeProviders.push(new GeminiProvider(genAI, this.logger));
+        this.logger.log('✅ Provedor Gemini preparado como Prioridade 1');
+      } catch (err) {
+        this.logger.warn(`Falha ao preparar Gemini: ${err.message}`);
+      }
+    }
+
+    // --- Prioridade 2: Groq (Com Failover interno Llama 3.3 70B -> Llama 3.1 8B Instant) ---
     const groqKey = process.env.GROQ_API_KEY;
     if (groqKey && groqKey.startsWith('gsk_')) {
       try {
-        this.model = new ChatOpenAI({
-          apiKey: groqKey,
-          modelName: 'llama-3.3-70b-versatile',
-          temperature: 0.2,
-          timeout: 30000,
-          maxRetries: 1,
-          configuration: { baseURL: 'https://api.groq.com/openai/v1' },
-        });
-        this.logger.log('Serviço LangChain inicializado com Groq (Llama 3.3 70B)');
+        activeProviders.push(new GroqProvider(groqKey, this.logger));
+        this.logger.log('✅ Provedor Groq preparado com resiliência multi-modelo (70B -> 8B Instant -> Mixtral)');
       } catch (err) {
-        this.logger.warn(`Falha ao inicializar modelo Groq: ${err.message}`);
+        this.logger.warn(`Falha ao preparar Groq: ${err.message}`);
       }
+    }
+
+    // --- Prioridade 3: OpenAI (GPT-4o-mini / GPT-3.5) ---
+    const openAIKey = process.env.OPENAI_API_KEY;
+    if (openAIKey && openAIKey.startsWith('sk-')) {
+      try {
+        const openAIModel = new ChatOpenAI({
+          apiKey: openAIKey,
+          modelName: 'gpt-4o-mini',
+          temperature: 0.0,
+          timeout: 120000,
+          maxRetries: 2,
+        });
+        activeProviders.push(new OpenAIProvider(openAIModel));
+        this.logger.log('✅ Provedor OpenAI (gpt-4o-mini) preparado');
+      } catch (err) {
+        this.logger.warn(`Falha ao preparar OpenAI: ${err.message}`);
+      }
+    }
+
+    if (activeProviders.length > 0) {
+      this.provider = new FallbackLLMProvider(activeProviders, this.logger);
+      this.logger.log(`✅ Serviço LLM Resiliente ativo com a cadeia: ${this.provider.name}`);
     } else {
-      this.logger.log('LangChain operando em modo de fallback/mock');
+      this.logger.error('❌ NENHUM provedor LLM disponível. As análises de edital NÃO funcionarão.');
     }
   }
+
+  // ===========================================================================
+  // Utilitários de parsing JSON
+  // ===========================================================================
+
+  /**
+   * Extrai e parseia JSON de uma resposta do LLM, limpando markdown code fences.
+   * Não lança erro fatal se o modelo responder com texto conversacional sem JSON.
+   */
+  private parseJsonResponse(content: string, etapa: string = 'desconhecida'): any {
+    if (!content || typeof content !== 'string') {
+      return {};
+    }
+
+    const cleaned = content
+      .replace(/```json\s*/gi, '')
+      .replace(/```\s*/g, '')
+      .trim();
+
+    // 1. Tenta extrair o primeiro objeto JSON válido { ... }
+    const matchObj = cleaned.match(/\{[\s\S]*\}/);
+    if (matchObj) {
+      try {
+        return JSON.parse(matchObj[0]);
+      } catch (e) {
+        this.logger.warn(`[${etapa}] Falha ao parsear matchObj: ${e.message}`);
+      }
+    }
+
+    // 2. Tenta extrair o primeiro array JSON válido [ ... ]
+    const matchArr = cleaned.match(/\[[\s\S]*\]/);
+    if (matchArr) {
+      try {
+        return JSON.parse(matchArr[0]);
+      } catch (e) {
+        this.logger.warn(`[${etapa}] Falha ao parsear matchArr: ${e.message}`);
+      }
+    }
+
+    // 3. Tenta parsear o conteúdo limpo inteiro
+    try {
+      return JSON.parse(cleaned);
+    } catch (e) {
+      const preview = content.substring(0, 300) + (content.length > 300 ? '...' : '');
+      this.logger.warn(`[${etapa}] O modelo retornou texto conversacional sem objeto JSON. Resposta: "${preview}"`);
+      return {
+        _raw_text: cleaned,
+        conteudo_programatico: { conhecimentos_gerais: [], conhecimentos_especificos: [] }
+      };
+    }
+  }
+
+  // ===========================================================================
+  // Extração de Questões de PDFs de Aula
+  // ===========================================================================
 
   /**
    * Extract multiple choice questions from raw text of a lesson PDF, including Quality Analysis metrics
    */
   async extractQuestionsFromPdfText(pdfText: string, filename: string): Promise<any[]> {
-    if (this.model) {
-      try {
-        const chunkSize = 25000;
-        const overlap = 2000;
-        const chunks: string[] = [];
-        
-        let start = 0;
-        while (start < pdfText.length) {
-          const end = Math.min(start + chunkSize, pdfText.length);
-          chunks.push(pdfText.substring(start, end));
-          if (end === pdfText.length) break;
-          start += chunkSize - overlap;
-        }
-
-        this.logger.log(`Texto extraído possui ${pdfText.length} caracteres. Dividido em ${chunks.length} blocos para extração.`);
-
-        const allQuestions: any[] = [];
-        
-        for (let i = 0; i < chunks.length; i++) {
-          this.logger.log(`Extraindo questões do bloco ${i + 1}/${chunks.length}...`);
-          const chunkQuestions = await this.extractFromChunk(chunks[i], filename);
-          allQuestions.push(...chunkQuestions);
-        }
-
-        // De-duplicate questions by statement
-        const seenStatements = new Set<string>();
-        const uniqueQuestions = allQuestions.filter(q => {
-          const normalizedStatement = (q.statement || q.enunciado || '').trim().toLowerCase().replace(/\s+/g, ' ');
-          if (!normalizedStatement || seenStatements.has(normalizedStatement)) {
-            return false;
-          }
-          seenStatements.add(normalizedStatement);
-          return true;
-        });
-
-        this.logger.log(`Extração concluída. Total: ${allQuestions.length} extraídas, ${uniqueQuestions.length} únicas.`);
-        return uniqueQuestions;
-      } catch (error) {
-        this.logger.error(`Falha na extração em lote: ${error.message}. Usando fallback inteligente.`);
-      }
+    if (!this.provider) {
+      this.logger.error('Nenhum provedor LLM disponível para extração de questões.');
+      return [];
     }
 
-    // Intelligent Fallback for extracted questions with Quality Analysis
-    return [
-      {
-        tipo: 'multipla_escolha',
-        statement: `[Extraído por IA de ${filename}] Em relação às normas constitucionais de eficácia plena, contida e limitada, assinale a opção correta:`,
-        alternativa_a: 'As normas de eficácia contida dependem de lei posterior para produzirem todos os seus efeitos.',
-        alternativa_b: 'As normas de eficácia plena produzem efeitos imediatos desde a promulgação da Constituição, sem necessidade de regulamentação.',
-        alternativa_c: 'As normas de eficácia limitada não possuem qualquer juridicidade antes da norma regulamentadora.',
-        alternativa_d: 'Todas as normas constitucionais possuem o mesmo grau de eficácia direta e imediata.',
-        alternativa_e: 'Eficácia contida e eficácia limitada são sinônimos no Direito Constitucional.',
-        correct_option: 'B',
-        resposta_boolean: null,
-        explanation: 'Normas de eficácia plena são autoaplicáveis e não exigem norma posterior para produzir a plenitude de seus efeitos.',
-        subject: 'Direito Constitucional',
-        topic: 'Aplicabilidade das Normas Constitucionais',
-        ano: 2026,
-        banca: 'IA-Banca',
-        orgao: 'Aprovando Tech',
-        prova: 'Simulado Constitucional',
-        quality_metrics: {
-          clarity_score: 9.5,
-          distractor_plausibility: 9.0,
-          bloom_taxonomy: 'Compreensão',
-          difficulty_level: 'Médio',
-          overall_quality_score: 9.2,
-          quality_comments: 'Enunciado preciso e direto. Distratores baseados nas pegadinhas clássicas de concursos (confusão entre eficácia contida e limitada).'
-        }
-      },
-      {
-        tipo: 'certo_errado',
-        statement: `[Extraído por IA de ${filename}] O princípio da legalidade estrita na Administração Pública estabelece que o administrador só pode agir quando e conforme a lei autoriza ou determina.`,
-        alternativa_a: null,
-        alternativa_b: null,
-        alternativa_c: null,
-        alternativa_d: null,
-        alternativa_e: null,
-        correct_option: null,
-        resposta_boolean: true,
-        explanation: 'Na Administração Pública vigora o princípio da legalidade estrita (art. 37, caput, CF), vinculando o agente público ao ditame legal.',
-        subject: 'Direito Administrativo',
-        topic: 'Princípios da Administração Pública',
-        ano: 2026,
-        banca: 'IA-Banca',
-        orgao: 'Aprovando Tech',
-        prova: 'Simulado Administrativo',
-        quality_metrics: {
-          clarity_score: 9.8,
-          distractor_plausibility: 8.8,
-          bloom_taxonomy: 'Conhecimento',
-          difficulty_level: 'Fácil',
-          overall_quality_score: 9.3,
-          quality_comments: 'Excelente questão para fixação conceitual do princípio da legalidade na Administração.'
-        }
+    try {
+      const chunkSize = 25000;
+      const overlap = 2000;
+      const chunks: string[] = [];
+
+      let start = 0;
+      while (start < pdfText.length) {
+        const end = Math.min(start + chunkSize, pdfText.length);
+        chunks.push(pdfText.substring(start, end));
+        if (end === pdfText.length) break;
+        start += chunkSize - overlap;
       }
-    ];
+
+      this.logger.log(`Texto extraído possui ${pdfText.length} caracteres. Dividido em ${chunks.length} blocos para extração.`);
+
+      const allQuestions: any[] = [];
+
+      for (let i = 0; i < chunks.length; i++) {
+        this.logger.log(`Extraindo questões do bloco ${i + 1}/${chunks.length}...`);
+        const chunkQuestions = await this.extractFromChunk(chunks[i], filename);
+        allQuestions.push(...chunkQuestions);
+      }
+
+      // De-duplicate questions by statement
+      const seenStatements = new Set<string>();
+      const uniqueQuestions = allQuestions.filter(q => {
+        const normalizedStatement = (q.statement || q.enunciado || '').trim().toLowerCase().replace(/\s+/g, ' ');
+        if (!normalizedStatement || seenStatements.has(normalizedStatement)) {
+          return false;
+        }
+        seenStatements.add(normalizedStatement);
+        return true;
+      });
+
+      this.logger.log(`Extração concluída. Total: ${allQuestions.length} extraídas, ${uniqueQuestions.length} únicas.`);
+      return uniqueQuestions;
+    } catch (error) {
+      this.logger.error(`Falha na extração em lote: ${error.message}.`);
+      return [];
+    }
   }
 
   private async extractFromChunk(chunkText: string, filename: string): Promise<any[]> {
-    if (!this.model) return [];
-    
+    if (!this.provider) return [];
+
     try {
       const prompt = `Você é um especialista em exames, concursos públicos e psicometria educacional. 
 Analise o texto a seguir extraído de um bloco do PDF de aula "${filename}" e extraia todas as questões da aula (sejam de múltipla escolha ou de certo/errado).
+
+## REGRA FUNDAMENTAL
+- Extraia SOMENTE questões que existem LITERALMENTE no texto abaixo.
+- NÃO invente, NÃO complete, NÃO crie questões que não estejam no texto.
+- Se não houver questões no texto, retorne um array vazio: []
 
 Diferencie as questões pelo campo "tipo":
 - "multipla_escolha": se possuir alternativas de múltipla escolha.
@@ -147,6 +496,8 @@ Identifique e extraia também os seguintes metadados da questão quando disponí
 - ano (ano da prova, ex: 2024, 2023)
 - orgao (órgão público da prova, ex: "TRT 2ª Região", "Prefeitura de São Paulo")
 - prova (cargo ou nome da prova, ex: "Auditor Fiscal", "Analista de Sistemas")
+
+Se algum metadado NÃO estiver no texto, use null — NUNCA invente.
 
 Para cada questão, faça também uma ANÁLISE DE QUALIDADE PSICOMÉTRICA (Quality Metrics).
 
@@ -179,11 +530,8 @@ Retorne a resposta EXCLUSIVAMENTE em formato JSON (Array de objetos), onde cada 
     - quality_comments: string (análise da qualidade do enunciado e das alternativas/distratores)
   )`;
 
-      const response = await this.model.invoke(prompt);
-      const content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
-
-      const cleanJson = content.replace(/```json/g, '').replace(/```/g, '').trim();
-      const parsed = JSON.parse(cleanJson);
+      const content = await this.provider.invoke(prompt);
+      const parsed = this.parseJsonResponse(content);
       if (Array.isArray(parsed)) {
         return parsed;
       }
@@ -194,9 +542,1144 @@ Retorne a resposta EXCLUSIVAMENTE em formato JSON (Array de objetos), onde cada 
     }
   }
 
+  // ===========================================================================
+  // Utilitários de Extração de Texto de Edital e Debug
+  // ===========================================================================
+
+  private async saveDebugJson(cargo: string, parsed: any, provider: string): Promise<void> {
+    try {
+      const debugDir = path.join(process.cwd(), 'logs', 'extractions');
+      await fs.promises.mkdir(debugDir, { recursive: true });
+      
+      const safeCargo = cargo.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `${safeCargo}_${provider}_${timestamp}.json`;
+      const filePath = path.join(debugDir, filename);
+      
+      await fs.promises.writeFile(filePath, JSON.stringify(parsed, null, 2));
+      this.logger.log(`[Debug] JSON da extração salvo em: ${filePath}`);
+    } catch (err) {
+      this.logger.warn(`[Debug] Falha ao salvar JSON de log: ${err.message}`);
+    }
+  }
+
+  private getEditalTextSnippet(editalText: string, cargo?: string, secaoConteudo?: string): string {
+    if (!editalText && !secaoConteudo) return '';
+
+    let userSecaoSnippet = '';
+    if (secaoConteudo && secaoConteudo.trim().length > 0) {
+      userSecaoSnippet = `=== SEÇÃO DESTACADA DE CONHECIMENTOS / CONTEÚDO PROGRAMÁTICO (INSPEÇÃO PRIORITÁRIA DEFINIDA PELO USUÁRIO) ===\n${secaoConteudo.trim()}\n\n`;
+    }
+
+    // Permite envio completo do edital até 150.000 caracteres (modelos modernos possuem janelas de 128k+ a 1M tokens)
+    const maxTotalChars = 150000;
+
+    if ((editalText || '').length <= maxTotalChars) {
+      return `${userSecaoSnippet}${editalText || ''}`;
+    }
+
+    const lower = editalText.toLowerCase();
+
+    // 1. Busca específica pela posição do CARGO no edital
+    let cargoSnippet = '';
+    let foundCargoIdx = -1;
+
+    if (cargo && cargo.trim().length >= 3) {
+      // Substitui caracteres não alfanuméricos por ".*" para permitir variações de espaços, traços ou quebras de linha
+      const cargoClean = cargo.trim().replace(/[^a-zA-Z0-9]+/g, '.*');
+      const cargoRegex = new RegExp(`${cargoClean}`, 'gi');
+      const match = cargoRegex.exec(editalText);
+      if (match) {
+        foundCargoIdx = match.index;
+      } else {
+        const firstWord = cargo.trim().split(' ')[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (firstWord.length >= 4) {
+          const firstWordRegex = new RegExp(`\\b${firstWord}\\b`, 'gi');
+          const firstWordMatch = firstWordRegex.exec(editalText);
+          if (firstWordMatch) foundCargoIdx = firstWordMatch.index;
+        }
+      }
+    }
+
+    if (foundCargoIdx !== -1) {
+      const cargoStart = Math.max(0, foundCargoIdx - 2000);
+      cargoSnippet = `=== SEÇÃO 1: TRECHO DO CARGO SOLICITADO ("${cargo}") ===\n${editalText.substring(cargoStart, cargoStart + 35000)}\n\n`;
+    } else {
+      cargoSnippet = `=== SEÇÃO 1: CABEÇALHO E CARGOS DO EDITAL ===\n${editalText.substring(0, 20000)}\n\n`;
+    }
+
+    // 2. Localização da SEÇÃO DO CONTEÚDO PROGRAMÁTICO
+    let conteudoSnippet = '';
+    const regex = /\b(conteúdo programático|conteudo programatico|objetos de avaliação|objetos de avaliacao|conhecimentos gerais|conhecimentos básicos|conhecimentos basicos|conhecimentos específicos|conhecimentos especificos|anexo i|anexo ii|anexo iii|programa das provas|conteúdos das provas)\b/gi;
+    
+    let foundIdx = -1;
+    let match;
+    while ((match = regex.exec(editalText)) !== null) {
+      // Pega a última ocorrência para fugir do índice/sumário que fica no começo do edital
+      foundIdx = match.index;
+    }
+
+    const remainingLimit = Math.max(50000, maxTotalChars - cargoSnippet.length - userSecaoSnippet.length);
+    if (foundIdx !== -1) {
+      conteudoSnippet = `=== SEÇÃO 2: CONTEÚDO PROGRAMÁTICO DO EDITAL ===\n${editalText.substring(foundIdx, foundIdx + remainingLimit)}`;
+    } else {
+      conteudoSnippet = `=== SEÇÃO 2: CORPO DO EDITAL ===\n${editalText.substring(20000, 20000 + remainingLimit)}`;
+    }
+
+    return `${userSecaoSnippet}${cargoSnippet}${conteudoSnippet}`;
+  }
+
   /**
-   * Analyze an Edital PDF using the 3-layer Pareto principle (Macro → Meso → Micro)
-   * Generates: Priority Map, Study Schedule, Cut Ruler, Exam Board Alerts
+   * Extração de Edital via Gemini File API (Upload direto de PDF ou Download por URL/link)
+   * com garantia estrutural de JSON Schema (SchemaType) e temperatura 0.1.
+   */
+  private async extractEditalViaGeminiFileApi(params: {
+    fileBuffer?: Buffer;
+    urlPdf?: string;
+    editalTitle: string;
+    cargo: string;
+  }): Promise<any | null> {
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
+    if (!apiKey || apiKey.length < 10) {
+      this.logger.warn('[Gemini File API] Chave GEMINI_API_KEY / GOOGLE_AI_API_KEY não configurada.');
+      return null;
+    }
+
+    const tempFilePath = path.join(
+      os.tmpdir(),
+      `edital_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.pdf`
+    );
+    let uploadResult: any = null;
+    const fileManager = new GoogleAIFileManager(apiKey);
+
+    try {
+      let pdfBuffer: Buffer | null = null;
+
+      if (params.fileBuffer && params.fileBuffer.length > 0) {
+        this.logger.log(`[Gemini File API] Utilizando buffer de PDF fornecido via upload (${params.fileBuffer.length} bytes)...`);
+        pdfBuffer = params.fileBuffer;
+      } else if (params.urlPdf && params.urlPdf.trim().startsWith('http')) {
+        this.logger.log(`[Gemini File API] Baixando PDF a partir do link: ${params.urlPdf}...`);
+        const fetchFn: any = typeof fetch !== 'undefined' ? fetch : require('node-fetch');
+        const response = await fetchFn(params.urlPdf);
+        if (!response.ok) {
+          throw new Error(`Falha ao baixar PDF do link: ${response.status} ${response.statusText}`);
+        }
+        const arrayBuf = await response.arrayBuffer();
+        pdfBuffer = Buffer.from(arrayBuf);
+      }
+
+      if (!pdfBuffer || pdfBuffer.length === 0) {
+        this.logger.warn('[Gemini File API] Nenhum buffer de PDF ou URL válido fornecido.');
+        return null;
+      }
+
+      await fs.promises.writeFile(tempFilePath, pdfBuffer);
+      this.logger.log(`[Gemini File API] 1. Fazendo upload do PDF para a API do Gemini (${tempFilePath})...`);
+
+      uploadResult = await fileManager.uploadFile(tempFilePath, {
+        mimeType: 'application/pdf',
+        displayName: params.editalTitle || 'Edital Concurso',
+      });
+
+      this.logger.log(`[Gemini File API] Upload concluído! URI do arquivo: ${uploadResult.file.uri}`);
+      this.logger.log(`[Gemini File API] 2. Analisando o edital e extraindo os dados com schema estrito para o cargo: "${params.cargo}"...`);
+
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+        systemInstruction: `Você é um especialista em análise de editais de concursos públicos brasileiros.
+
+Sua missão é acessar um edital, identificar o cargo solicitado, localizar todo o conteúdo programático e convertê-lo em uma estrutura JSON organizada e didática.
+
+Seu objetivo não é apenas copiar o edital, mas reorganizar seu conteúdo para facilitar o planejamento dos estudos, mantendo total fidelidade às informações originais.
+
+## Objetivo
+1. Acessar o edital informado.
+2. Identificar o nome do concurso.
+3. Localizar os Conhecimentos Gerais (quando existirem).
+4. Localizar o cargo solicitado.
+5. Extrair todos os Conhecimentos Específicos referentes ao cargo.
+6. Reestruturar o conteúdo de forma didática.
+7. Retornar somente JSON válido.
+
+## Fluxo de Extração (OBRIGATÓRIO)
+Etapa 1 — Ler todo o edital: Percorra o documento para identificar Conteúdo Programático, Conhecimentos Básicos/Gerais, Conteúdo Comum, Disciplinas Comuns, Anexos e Programa das Provas.
+Etapa 2 — Extrair Conhecimentos Gerais: Verifique se existe uma seção comum para todos os cargos (Conhecimentos Gerais/Básicos/Formação Geral/Programa Comum). Se existir, extraia integralmente. Caso contrário, retorne "conhecimentos_gerais": [].
+Etapa 3 — Localizar o cargo: Localize o cargo solicitado e extraia apenas os conhecimentos específicos daquele cargo.
+Etapa 4 — Consolidar: O JSON final deve conter conhecimentos_gerais e conhecimentos_especificos.
+
+## Regras de Organização
+- O objetivo é produzir um conteúdo organizado para estudo. Reorganize o conteúdo quando isso melhorar a compreensão.
+- Disciplina: Cada disciplina representa uma grande área (ex: Língua Portuguesa, Matemática, Banco de Dados, Desenvolvimento de Sistemas).
+- Tópicos: Cada tópico deve representar um assunto principal e possuir apenas um tema. Evite tópicos enormes que agrupam várias tecnologias.
+  Exemplo Didático:
+  Em vez de um único tópico enorme "Java, JavaEE, Spring, JPA, Angular, Android", divida em:
+  {
+    "nome": "Desenvolvimento em Linguagens de Programação",
+    "subtopicos": ["Java", "Java EE", "Jakarta EE", "JPA", "JavaScript", "JUnit", "Hibernate", "JSF", "PrimeFaces", "Spring", "Spring Boot", "Spring Cloud", "Android", "iOS", "Low-code", "No-code"]
+  }
+- Subtópicos: Sempre que um tópico listar linguagens, frameworks, bibliotecas, ferramentas, padrões, protocolos, metodologias, tecnologias, conceitos ou arquiteturas (ex: "HTML, CSS, JavaScript, Angular, React e Vue"), transforme cada item em um subtópico individual.
+  Exemplo:
+  {
+    "nome": "Frontend Web",
+    "subtopicos": ["HTML", "CSS", "JavaScript", "Angular", "React", "Vue.js"]
+  }
+- Divisão Inteligente de Conteúdo: Caso um item do edital contenha dois ou mais assuntos independentes (ex: "Git. Testes Unitários. Testes de Integração. TDD"), divida-os em tópicos distintos (ex: Tópico "Controle de Versão" -> subtópicos ["Git"]; Tópico "Testes de Software" -> subtópicos ["Testes Unitários", "Testes de Integração", "TDD"]).
+- Nome dos tópicos: É permitido criar um nome mais didático e curto para um tópico (ex: "Java, Spring, Hibernate" -> "Desenvolvimento Java"; "HTML, CSS, JavaScript" -> "Frontend Web"; "Docker, Kubernetes" -> "Containers e Orquestração"). O novo nome deve representar corretamente o conteúdo, não omitir nada do edital, nem adicionar tecnologias inexistentes.
+- Fidelidade ao edital: Nunca invente conteúdos nem acrescente tecnologias inexistentes no edital.
+- Texto corrido: Se houver texto corrido como "Arquitetura de software. Interoperabilidade. SOA. Web Services. REST. API. Swagger.", transforme no tópico "Arquitetura de Software" com os subtópicos ["Interoperabilidade", "SOA", "Web Services", "REST", "API", "Swagger"].
+- Numeração: Ignore números, letras e marcadores originais.
+- Arrays Vazios: Caso um tópico realmente não possua subdivisões, utilize array vazio [].
+- JSON: Retorne exclusivamente JSON válido. Sem markdown fora do JSON, explicações ou observações.
+
+## Estrutura Obrigatória JSON:
+{
+  "edital": "",
+  "cargo": "",
+  "conteudo_programatico": {
+    "conhecimentos_gerais": [
+      {
+        "disciplina": "",
+        "topicos": [
+          {
+            "nome": "",
+            "subtopicos": []
+          }
+        ]
+      }
+    ],
+    "conhecimentos_especificos": [
+      {
+        "disciplina": "",
+        "topicos": [
+          {
+            "nome": "",
+            "subtopicos": []
+          }
+        ]
+      }
+    ]
+  }
+}
+
+## Validação Final
+Valide antes de responder: O edital foi percorrido completamente. Os Conhecimentos Gerais foram procurados em todo o documento. O cargo foi localizado corretamente. Todos os tópicos foram contemplados. Itens extensos foram reorganizados didaticamente. Tecnologias e listas foram transformadas em subtópicos. Não existem assuntos inventados. O JSON é válido.`
+      });
+
+      const result = await model.generateContent({
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { fileData: { fileUri: uploadResult.file.uri, mimeType: 'application/pdf' } },
+              { text: `Edital Concurso: "${params.editalTitle}"
+Cargo solicitado: "${params.cargo}"
+
+Analise o edital PDF anexo, especifique o cargo "${params.cargo}" e extraia o conteúdo programático seguindo estritamente as regras de extração.` }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: 'application/json',
+          responseSchema: schemaConteudoProgramatico as any,
+        },
+      });
+
+      this.logger.log('[Gemini File API] 3. Extração concluída com sucesso!');
+      const jsonOutput = result.response.text();
+      const parsed = JSON.parse(jsonOutput);
+      await this.saveDebugJson(params.cargo, parsed, 'gemini_file_api');
+      return parsed;
+
+    } catch (error: any) {
+      this.logger.error(`[Gemini File API] Erro durante a extração por File API: ${error.message}`);
+      return null;
+    } finally {
+      // 4. LIMPEZA (Crucial para eficiência)
+      if (uploadResult?.file?.name) {
+        try {
+          await fileManager.deleteFile(uploadResult.file.name);
+          this.logger.log(`[Gemini File API] Arquivo remoto no servidor Gemini excluído: ${uploadResult.file.name}`);
+        } catch (err: any) {
+          this.logger.warn(`[Gemini File API] Falha ao excluir arquivo remoto no servidor Gemini: ${err.message}`);
+        }
+      }
+      if (fs.existsSync(tempFilePath)) {
+        try {
+          await fs.promises.unlink(tempFilePath);
+          this.logger.log('[Gemini File API] Arquivo temporário local apagado com sucesso.');
+        } catch (err: any) {
+          this.logger.warn(`[Gemini File API] Falha ao apagar arquivo temporário local: ${err.message}`);
+        }
+      }
+    }
+  }
+
+  // ===========================================================================
+  // ETAPA 1 — Extração Completa e Fiel do Conteúdo Programático (PROMPT 1)
+  // ===========================================================================
+
+  private async extractEditalComplete(
+    editalText: string,
+    editalTitle: string,
+    cargo: string,
+    secaoConteudo?: string,
+    fileBuffer?: Buffer,
+    link?: string,
+  ): Promise<any | null> {
+    // 1. Tenta extração via Gemini File API (upload direto de PDF ou download via URL/link)
+    if ((fileBuffer && fileBuffer.length > 0) || (link && link.trim().startsWith('http'))) {
+      try {
+        const fileApiResult = await this.extractEditalViaGeminiFileApi({
+          fileBuffer,
+          urlPdf: link,
+          editalTitle,
+          cargo,
+        });
+
+        if (fileApiResult && fileApiResult.conteudo_programatico) {
+          this.logger.log(`[PROMPT 1] ✅ Sucesso na extração via Gemini File API & SchemaType para o cargo: "${cargo}"`);
+          const parsed = fileApiResult;
+          parsed.mapa_completo = this.buildMapaGeralFromConteudoProgramatico(parsed);
+          parsed.mapa_geral = parsed.mapa_completo;
+          parsed.mapa_geral_extraido = parsed.mapa_completo;
+          parsed.conteudo_programatico = this.buildConteudoProgramaticoFromMapaGeral(parsed.mapa_completo);
+
+          const basicas = parsed.mapa_completo?.disciplinas_basicas?.length ?? 0;
+          const especificas = parsed.mapa_completo?.disciplinas_especificas?.length ?? 0;
+
+          if (!parsed.concurso_info) {
+            parsed.concurso_info = {
+              concurso: editalTitle,
+              cargo: cargo,
+              mensagem_confirmacao: 'Já confirmei seu Cargo no edital.'
+            };
+          }
+
+          this.logger.log(`[Gemini File API] Mapa Geral das Disciplinas construído com ${basicas} disciplinas básicas + ${especificas} específicas.`);
+          if (editalText && editalText.length > 100) {
+            this.validateExtraction(parsed, editalText);
+          }
+          return parsed;
+        }
+      } catch (err: any) {
+        this.logger.warn(`[PROMPT 1] Extração via Gemini File API falhou (${err.message}). Prosseguindo com fallback de texto...`);
+      }
+    }
+
+    if (!this.provider) return null;
+
+    try {
+      const buildPromptText = (strictCargoOnly: boolean = false) =>
+        `Você é um especialista em análise de editais de concursos públicos brasileiros.
+
+Sua missão é acessar um edital, identificar o cargo solicitado, localizar todo o conteúdo programático e convertê-lo em uma estrutura JSON organizada e didática.
+
+Seu objetivo não é apenas copiar o edital, mas reorganizar seu conteúdo para facilitar o planejamento dos estudos, mantendo total fidelidade às informações originais.
+
+CARGO ALVO SOLICITADO: "${cargo}"
+NOME DO CONCURSO / EDITAL: "${editalTitle}"
+
+## REGRAS DE ORGANIZAÇÃO DIDÁTICA:
+1. Ler todo o edital e localizar Conhecimentos Gerais (comuns a todos os cargos) e Conhecimentos Específicos do cargo "${cargo}".
+2. Disciplina: Cada disciplina representa uma grande área (ex: Língua Portuguesa, Matemática, Banco de Dados, Desenvolvimento de Sistemas).
+3. Tópicos: Cada tópico deve representar um assunto principal e possuir apenas um tema. Evite tópicos enormes que agrupam várias tecnologias.
+   Exemplo Didático:
+   Em vez de um único tópico enorme "Java, JavaEE, Spring, JPA, Angular, Android", divida em tópicos mais didáticos (ex: "Desenvolvimento em Linguagens de Programação", "Frameworks Java", "Desenvolvimento Mobile") mantendo os subtópicos individuais.
+4. Subtópicos: Sempre que um tópico listar linguagens, frameworks, bibliotecas, ferramentas, padrões, protocolos, metodologias, tecnologias ou conceitos (ex: "HTML, CSS, JavaScript, Angular, React e Vue"), transforme cada item em um subtópico individual (ex: ["HTML", "CSS", "JavaScript", "Angular", "React", "Vue.js"]).
+5. Divisão Inteligente de Conteúdo: Caso um item contenha dois ou mais assuntos independentes (ex: "Git. Testes Unitários. Testes de Integração. TDD"), divida-os em tópicos distintos (ex: Tópico "Controle de Versão" -> subtópicos ["Git"]; Tópico "Testes de Software" -> subtópicos ["Testes Unitários", "Testes de Integração", "TDD"]).
+6. Nome dos tópicos: É permitido criar um nome mais didático e curto para um tópico (ex: "Java, Spring, Hibernate" -> "Desenvolvimento Java"; "HTML, CSS, JavaScript" -> "Frontend Web"; "Docker, Kubernetes" -> "Containers e Orquestração"). O novo nome deve representar corretamente o conteúdo, não omitir nada do edital, nem adicionar tecnologias inexistentes.
+7. Fidelidade ao edital: Nunca invente conteúdos nem acrescente tecnologias inexistentes no edital.
+8. Texto corrido: Se houver texto corrido como "Arquitetura de software. Interoperabilidade. SOA. Web Services. REST. API. Swagger.", transforme no tópico "Arquitetura de Software" com os subtópicos ["Interoperabilidade", "SOA", "Web Services", "REST", "API", "Swagger"].
+9. Numeração: Ignore números, letras e marcadores originais.
+10. JSON: O retorno deve conter SOMENTE JSON VÁLIDO. Não escreva explicações, comentários, markdown ou qualquer texto fora do JSON.
+
+## TEXTO DO EDITAL:
+${this.getEditalTextSnippet(editalText, cargo, secaoConteudo)}
+
+## ESTRUTURA OBRIGATÓRIA JSON:
+{
+  "edital": "${editalTitle}",
+  "cargo": "${cargo}",
+  "conteudo_programatico": {
+    "conhecimentos_gerais": [
+      {
+        "disciplina": "Nome da disciplina",
+        "topicos": [
+          {
+            "nome": "Nome do tópico",
+            "subtopicos": ["Subtópico 1", "Subtópico 2"]
+          }
+        ]
+      }
+    ],
+    "conhecimentos_especificos": [
+      {
+        "disciplina": "Nome da disciplina",
+        "topicos": [
+          {
+            "nome": "Nome do tópico",
+            "subtopicos": ["Subtópico 1", "Subtópico 2"]
+          }
+        ]
+      }
+    ]
+  }
+}`;
+
+      this.logger.log(`[PROMPT 1] Extraindo conteúdo programático do edital para o cargo: "${cargo}" (usando ${this.provider.name})`);
+      let content = await this.provider.invokeStructured<any>(buildPromptText(false), zodSchemaConteudoProgramatico);
+      if (!content) {
+         content = await this.provider.invoke(buildPromptText(false));
+      }
+
+      let parsed = typeof content === 'string' ? this.parseJsonResponse(content) : content;
+      if (parsed) {
+        await this.saveDebugJson(cargo, parsed, 'fallback_texto_prompt1');
+      }
+
+      // --- Passo 1: Construção do Mapa Geral das Disciplinas a partir do Prompt 1 ---
+      parsed.mapa_completo = this.buildMapaGeralFromConteudoProgramatico(parsed);
+      parsed.mapa_geral = parsed.mapa_completo;
+      parsed.mapa_geral_extraido = parsed.mapa_completo;
+      parsed.conteudo_programatico = this.buildConteudoProgramaticoFromMapaGeral(parsed.mapa_completo);
+
+      let basicas = (parsed?.mapa_completo?.disciplinas_basicas || [])
+        .filter((d: any) => d.nome && !d.nome.toLowerCase().includes('não informado') && !d.nome.toLowerCase().includes('nao informado')).length;
+
+      let especificas = (parsed?.mapa_completo?.disciplinas_especificas || [])
+        .filter((d: any) => d.nome && !d.nome.toLowerCase().includes('não informado') && !d.nome.toLowerCase().includes('nao informado')).length;
+
+      // --- FALLBACK EM CASO DE RETORNO VAZIO (0 DISCIPLINAS VÁLIDAS) ---
+      if (basicas === 0 && especificas === 0) {
+        this.logger.warn('[PROMPT 1] Extração inicial retornou 0 disciplinas válidas. Acionando Fallback Abrangente de Leitura do Edital...');
+        const fallbackPrompt = `Você é um especialista em análise de editais de concursos públicos brasileiros.
+Sua missão é extrair integralmente a estrutura do conteúdo programático do cargo solicitado no edital.
+
+CARGO ALVO SOLICITADO: "${cargo}"
+SEÇÕES A EXAMINAR: "CONTEÚDO PROGRAMÁTICO", "CONHECIMENTOS GERAIS", "CONHECIMENTOS BÁSICOS", "CONHECIMENTOS ESPECÍFICOS".
+
+REGRAS DE EXTRAÇÃO:
+- Não invente, não resuma e não altere as palavras originais do documento.
+- Sempre que houver subdivisões (letras, números, marcadores, vírgulas ou enumerações), coloque em "subtopicos".
+- Se não houver subtópicos para um tópico, utilize um array vazio [].
+- Retorne SOMENTE JSON válido.
+
+TEXTO DO EDITAL:
+${this.getEditalTextSnippet(editalText, cargo)}
+
+ESTRUTURA OBRIGATÓRIA JSON:
+{
+  "edital": "${editalTitle}",
+  "cargo": "${cargo}",
+  "conteudo_programatico": {
+    "conhecimentos_gerais": [
+      {
+        "disciplina": "Nome da disciplina",
+        "topicos": [ { "nome": "Nome do tópico", "subtopicos": ["Subtópico 1"] } ]
+      }
+    ],
+    "conhecimentos_especificos": [
+      {
+        "disciplina": "Nome da disciplina",
+        "topicos": [ { "nome": "Nome do tópico", "subtopicos": ["Subtópico 1"] } ]
+      }
+    ]
+  }
+}`;
+        content = await this.provider.invokeStructured<any>(fallbackPrompt, zodSchemaConteudoProgramatico);
+        if (!content) {
+          content = await this.provider.invoke(fallbackPrompt);
+        }
+        const fallbackParsed = typeof content === 'string' ? this.parseJsonResponse(content) : content;
+        if (fallbackParsed) {
+          await this.saveDebugJson(cargo, fallbackParsed, 'fallback_texto_abrangente');
+          fallbackParsed.mapa_completo = this.buildMapaGeralFromConteudoProgramatico(fallbackParsed);
+          fallbackParsed.mapa_geral = fallbackParsed.mapa_completo;
+          fallbackParsed.mapa_geral_extraido = fallbackParsed.mapa_completo;
+          fallbackParsed.conteudo_programatico = this.buildConteudoProgramaticoFromMapaGeral(fallbackParsed.mapa_completo);
+          parsed = fallbackParsed;
+          basicas = parsed?.mapa_completo?.disciplinas_basicas?.length ?? 0;
+          especificas = parsed?.mapa_completo?.disciplinas_especificas?.length ?? 0;
+        }
+      }
+
+      if (!parsed.concurso_info) {
+        parsed.concurso_info = {
+          concurso: editalTitle,
+          cargo: cargo,
+          mensagem_confirmacao: "Já confirmei seu Cargo no edital."
+        };
+      }
+
+      if (basicas === 0 && especificas === 0) {
+        this.logger.warn('[PROMPT 1] Extração retornou 0 disciplinas. O conteúdo programático do cargo pode não ter sido localizado explicitamente.');
+      } else {
+        this.logger.log(`[PROMPT 1] ✅ Já confirmei seu Cargo ("${cargo}") no edital! Mapa Geral das Disciplinas construído com ${basicas} disciplinas básicas + ${especificas} específicas.`);
+      }
+
+      // --- Validação pós-extração ---
+      this.validateExtraction(parsed, editalText);
+
+      return parsed;
+    } catch (error) {
+      this.logger.error(`[PROMPT 1] Falha na extração de conteúdo programático: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Constrói o Mapa Geral das Disciplinas estruturado (disciplinas_basicas e disciplinas_especificas)
+   * a partir do conteúdo programático retornado no Prompt 1 (suporta Schema de Array e Dicionário).
+   */
+  private buildMapaGeralFromConteudoProgramatico(input: any): { disciplinas_basicas: any[]; disciplinas_especificas: any[] } {
+    if (!input) {
+      return { disciplinas_basicas: [], disciplinas_especificas: [] };
+    }
+
+    // Desembrulha aninhamentos sucessivos de conteudo_programatico
+    let root = input;
+    while (root?.conteudo_programatico && typeof root.conteudo_programatico === 'object') {
+      root = root.conteudo_programatico;
+    }
+
+    // Se já é um mapa completo com disciplinas_basicas / especificas
+    if (root?.disciplinas_basicas || root?.disciplinas_especificas) {
+      return {
+        disciplinas_basicas: Array.isArray(root.disciplinas_basicas) ? root.disciplinas_basicas : [],
+        disciplinas_especificas: Array.isArray(root.disciplinas_especificas) ? root.disciplinas_especificas : []
+      };
+    }
+
+    const parseCategory = (categoryInput: any): any[] => {
+      if (!categoryInput) return [];
+      const result: any[] = [];
+
+      // NOVO SCHEMA: Array de objetos { disciplina: "...", topicos: [{ nome: "...", subtopicos: [...] }] }
+      if (Array.isArray(categoryInput)) {
+        for (const item of categoryInput) {
+          if (!item) continue;
+          const discName = item.disciplina || item.nome || item.name || 'Disciplina';
+          const rawTopicos = Array.isArray(item.topicos) ? item.topicos : (Array.isArray(item.topics) ? item.topics : (Array.isArray(item.camada_2_topicos) ? item.camada_2_topicos : []));
+
+          const topicosList = rawTopicos.map((t: any) => ({
+            nome: typeof t === 'string' ? t : (t.nome || t.name || t.titulo || String(discName)),
+            subtopicos: Array.isArray(t.subtopicos) ? t.subtopicos : (Array.isArray(t.assuntos) ? t.assuntos : (Array.isArray(t.camada_3_subtopicos) ? t.camada_3_subtopicos : []))
+          }));
+
+          result.push({
+            nome: String(discName).trim(),
+            percentual_questoes: item.percentual_questoes ?? 0,
+            topicos: topicosList.length > 0 ? topicosList : [{ nome: String(discName).trim(), subtopicos: [] }]
+          });
+        }
+        return result;
+      }
+
+      // FORMATO DICIONÁRIO (Legado / Fallback): { "Disciplina": { "subtopicos": [...] } }
+      if (typeof categoryInput === 'object') {
+        for (const [discName, discVal] of Object.entries(categoryInput)) {
+          if (!discName || typeof discName !== 'string') continue;
+
+          let topicosList: any[] = [];
+
+          if (discVal && typeof discVal === 'object') {
+            if (Array.isArray((discVal as any).topicos)) {
+              topicosList = (discVal as any).topicos.map((t: any) => ({
+                nome: typeof t === 'string' ? t : (t.nome || t.titulo || discName),
+                subtopicos: Array.isArray(t.subtopicos) ? t.subtopicos : (Array.isArray(t.assuntos) ? t.assuntos : [])
+              }));
+            } else if (Array.isArray((discVal as any).subtopicos)) {
+              topicosList = [{
+                nome: discName,
+                subtopicos: (discVal as any).subtopicos
+              }];
+            } else if (Array.isArray(discVal)) {
+              topicosList = [{
+                nome: discName,
+                subtopicos: discVal
+              }];
+            } else {
+              for (const [topicoKey, topicoVal] of Object.entries(discVal as Record<string, any>)) {
+                if (topicoKey === 'subtopicos' && Array.isArray(topicoVal)) {
+                  topicosList.push({ nome: discName, subtopicos: topicoVal });
+                } else if (Array.isArray(topicoVal)) {
+                  topicosList.push({ nome: topicoKey, subtopicos: topicoVal });
+                } else if (topicoVal && typeof topicoVal === 'object' && Array.isArray(topicoVal.subtopicos)) {
+                  topicosList.push({ nome: topicoKey, subtopicos: topicoVal.subtopicos });
+                } else if (typeof topicoVal === 'string') {
+                  topicosList.push({ nome: topicoKey, subtopicos: [topicoVal] });
+                }
+              }
+            }
+          }
+
+          if (topicosList.length === 0) {
+            topicosList = [{ nome: discName, subtopicos: [] }];
+          }
+
+          result.push({
+            nome: discName.trim(),
+            percentual_questoes: (discVal as any)?.percentual_questoes ?? 0,
+            topicos: topicosList
+          });
+        }
+      }
+
+      return result;
+    };
+
+    const basicas = parseCategory(
+      root?.conhecimentos_gerais ||
+      root?.conhecimentos_basicos ||
+      root?.disciplinas_basicas ||
+      root?.gerais ||
+      root?.basicas
+    );
+    const especificas = parseCategory(
+      root?.conhecimentos_especificos ||
+      root?.disciplinas_especificas ||
+      root?.especificos ||
+      root?.especificas
+    );
+
+    if (basicas.length === 0 && especificas.length === 0 && Array.isArray(root)) {
+      especificas.push(...parseCategory(root));
+    }
+
+    return {
+      disciplinas_basicas: basicas,
+      disciplinas_especificas: especificas
+    };
+  }
+
+  /**
+   * Converte um Mapa Geral de Disciplinas de volta para a estrutura oficial do Schema de Conteúdo Programático.
+   */
+  private buildConteudoProgramaticoFromMapaGeral(mapaCompleto: any): any {
+    const gerais: any[] = (mapaCompleto?.disciplinas_basicas || []).map((d: any) => ({
+      disciplina: d.nome,
+      topicos: (d.topicos || []).map((t: any) => ({
+        nome: t.nome || d.nome,
+        subtopicos: Array.isArray(t.subtopicos) ? t.subtopicos : (Array.isArray(t.assuntos) ? t.assuntos : [])
+      }))
+    }));
+
+    const especificas: any[] = (mapaCompleto?.disciplinas_especificas || []).map((d: any) => ({
+      disciplina: d.nome,
+      topicos: (d.topicos || []).map((t: any) => ({
+        nome: t.nome || d.nome,
+        subtopicos: Array.isArray(t.subtopicos) ? t.subtopicos : (Array.isArray(t.assuntos) ? t.assuntos : [])
+      }))
+    }));
+
+    return {
+      conteudo_programatico: {
+        conhecimentos_gerais: gerais,
+        conhecimentos_especificos: especificas
+      }
+    };
+  }
+
+  /**
+   * Validação pós-extração: verifica se as disciplinas retornadas realmente
+   * existem no texto do edital. Marca com aviso as que parecem inventadas.
+   */
+  private validateExtraction(parsed: any, editalText: string): void {
+    if (!parsed?.mapa_completo) return;
+
+    const lowerText = editalText.toLowerCase();
+    const allDisciplines = [
+      ...(parsed.mapa_completo.disciplinas_basicas ?? []),
+      ...(parsed.mapa_completo.disciplinas_especificas ?? []),
+    ];
+
+    let validated = 0;
+    let suspicious = 0;
+
+    for (const disc of allDisciplines) {
+      const discName = (disc.nome || '').toLowerCase().trim();
+      if (!discName) continue;
+
+      // Verifica se o nome da disciplina (ou parte significativa) aparece no texto
+      const keywords = discName.split(/[\s,;:–—-]+/).filter((w: string) => w.length > 3);
+      const foundCount = keywords.filter((kw: string) => lowerText.includes(kw)).length;
+      const matchRatio = keywords.length > 0 ? foundCount / keywords.length : 0;
+
+      if (matchRatio < 0.4) {
+        disc._validacao = 'SUSPEITA — nome não encontrado no texto do edital';
+        suspicious++;
+        this.logger.warn(`[Validação] Disciplina SUSPEITA: "${disc.nome}" (${Math.round(matchRatio * 100)}% das palavras-chave encontradas no edital)`);
+      } else {
+        disc._validacao = 'OK';
+        validated++;
+      }
+    }
+
+    this.logger.log(`[Validação] ${validated} disciplinas validadas, ${suspicious} disciplinas suspeitas.`);
+  }
+
+  // ===========================================================================
+  // ETAPA 2A — Classificação Pareto Recursivo (PROMPT 2)
+  // ===========================================================================
+
+  private async classifyPareto(
+    mapaCompleto: any,
+    cargo: string,
+    editalTitle: string,
+  ): Promise<any | null> {
+    if (!this.provider) return null;
+
+    try {
+      const mapaGeralDisciplinas = JSON.stringify({
+        conteudo_programatico: mapaCompleto.conteudo_programatico,
+        mapa_geral_disciplinas: mapaCompleto.mapa_completo,
+      }, null, 2);
+
+      const prompt = `# PROMPT 2 – AGENTE DE PRIORIZAÇÃO E PLANEJAMENTO DE ESTUDOS (PARETO RECURSIVO)
+
+Você é um especialista em preparação para concursos públicos brasileiros, análise estatística de provas e planejamento de estudos.
+
+Sua missão é transformar o Conteúdo Programático Oficial (extraído pelo Prompt 1) em um Mapa Inteligente de Prioridades, utilizando o Princípio de Pareto aplicado de forma hierárquica e recursiva.
+
+O objetivo não é apenas estimar frequência de cobrança, mas indicar a melhor sequência de estudo para maximizar o número de questões corretas no menor tempo possível.
+
+## ENTRADA
+CARGO: "${cargo}"
+EDITAL: "${editalTitle}"
+
+CONTEÚDO PROGRAMÁTICO (PROMPT 1):
+${mapaGeralDisciplinas}
+
+## METODOLOGIA
+A análise deve considerar simultaneamente:
+- frequência histórica nas provas;
+- tendência recente da banca organizadora;
+- peso médio da disciplina;
+- incidência para o cargo;
+- dependência entre assuntos;
+- dificuldade média;
+- custo-benefício de estudo;
+- importância como pré-requisito para outros tópicos.
+Nunca utilize apenas a frequência histórica.
+
+### Camada 1 – Priorização das Disciplinas
+Analise todas as disciplinas dos conhecimentos gerais (disciplinas_basicas) e específicos (disciplinas_especificas).
+Para cada disciplina determine:
+- percentual estimado de questões (percentual_questoes);
+- percentual recomendado do tempo de estudo (percentual_tempo);
+- prioridade: ESSENCIAL / PRIORITÁRIA / COMPLEMENTAR / RESIDUAL;
+- índice_prioridade (0–100).
+
+### Camada 2 – Priorização dos Tópicos
+Para cada disciplina, analise todos os tópicos recebidos.
+Determine:
+- frequência histórica (frequencia_historica);
+- tendência de crescimento ou queda;
+- temperatura: ESSENCIAL / QUENTE / MORNO / FRIO;
+- índice_prioridade (0–100);
+- ordem_estudo (número sequencial respeitando pré-requisitos).
+Não remova nenhum tópico.
+
+### Camada 3 – Priorização dos Subtópicos
+Para cada subtópico determine:
+- frequencia: "Alta" | "Média" | "Baixa";
+- dificuldade: "Fácil" | "Médio" | "Difícil";
+- custo_beneficio: "Alto" | "Médio" | "Baixo";
+- prioridade: número de 0 a 100;
+- incluir: boolean (true/false);
+- tempo_estimado_horas: número;
+- revisoes: número;
+- dependencias: array de strings com pré-requisitos;
+- justificativa: motivo da priorização.
+
+### Camada 4 – Ordem Recomendada de Estudo
+A ordem de estudo não deve seguir a ordem do edital. Ela deve ser calculada considerando dependências, custo-benefício, facilidade de aprendizagem, recorrência e potencial de gerar questões (ex: não estudar Microsserviços antes de REST).
+
+### Camada 5 – Regra de Corte
+Identifique em "regua_de_corte" os assuntos que podem ser adiados (baixa incidência, baixa dependência, baixo custo-benefício). Informe o trade-off.
+
+## REGRAS OBRIGATÓRIAS
+- Nunca remover disciplinas.
+- Nunca remover tópicos.
+- Nunca inventar assuntos.
+- Preservar exatamente os nomes recebidos do Prompt 1.
+- Sempre respeitar a estrutura de conhecimentos gerais (disciplinas_basicas) e específicos (disciplinas_especificas).
+
+## CRITÉRIOS DE DECISÃO
+Sempre utilizar esta ordem de importância:
+1. Dependências entre assuntos.
+2. Frequência histórica.
+3. Tendência recente da banca.
+4. Peso da disciplina.
+5. Custo-benefício.
+6. Dificuldade.
+7. Tempo necessário para dominar o assunto.
+
+## VALIDAÇÃO FINAL
+Confirme que NENHUMA disciplina, tópico ou subtópico foi omitido; todas as prioridades foram calculadas; a ordem de estudo respeita pré-requisitos; e o retorno é EXCLUSIVAMENTE JSON VÁLIDO (sem markdown ou textos fora do JSON).
+
+Retorne EXCLUSIVAMENTE o seguinte formato JSON:
+{
+  "relevance_summary": "Resumo dos pontos vitais do Pareto Recursivo",
+  "total_subjects": number,
+  "high_priority_subjects": number,
+  "coverage_percentage": number,
+  "total_hot_topics": number,
+  "total_high_cb_subtopics": number,
+  "mapa_geral": {
+    "disciplinas_basicas": [
+      {
+        "nome": "string",
+        "percentual_questoes": number,
+        "prioridade": "ESSENCIAL" | "PRIORITÁRIA" | "COMPLEMENTAR" | "RESIDUAL",
+        "percentual_tempo": number,
+        "indice_prioridade": number,
+        "camada_2_topicos": [
+          {
+            "nome": "string",
+            "frequencia_historica": "string",
+            "temperatura": "ESSENCIAL" | "QUENTE" | "MORNO" | "FRIO",
+            "indice_prioridade": number,
+            "ordem_estudo": number,
+            "camada_3_subtopicos": [
+              {
+                "nome": "string",
+                "frequencia": "Alta" | "Média" | "Baixa",
+                "dificuldade": "Fácil" | "Médio" | "Difícil",
+                "custo_beneficio": "Alto" | "Médio" | "Baixo",
+                "prioridade": number,
+                "incluir": boolean,
+                "tempo_estimado_horas": number,
+                "revisoes": number,
+                "dependencias": ["string"],
+                "justificativa": "string"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "disciplinas_especificas": [
+      {
+        "nome": "string",
+        "percentual_questoes": number,
+        "prioridade": "ESSENCIAL" | "PRIORITÁRIA" | "COMPLEMENTAR" | "RESIDUAL",
+        "percentual_tempo": number,
+        "indice_prioridade": number,
+        "camada_2_topicos": [
+          {
+            "nome": "string",
+            "frequencia_historica": "string",
+            "temperatura": "ESSENCIAL" | "QUENTE" | "MORNO" | "FRIO",
+            "indice_prioridade": number,
+            "ordem_estudo": number,
+            "camada_3_subtopicos": [
+              {
+                "nome": "string",
+                "frequencia": "Alta" | "Média" | "Baixa",
+                "dificuldade": "Fácil" | "Médio" | "Difícil",
+                "custo_beneficio": "Alto" | "Médio" | "Baixo",
+                "prioridade": number,
+                "incluir": boolean,
+                "tempo_estimado_horas": number,
+                "revisoes": number,
+                "dependencias": ["string"],
+                "justificativa": "string"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "regua_de_corte": {
+    "nao_estudar": [
+      { "item": "string", "motivo": "string", "trade_off": "string" }
+    ]
+  },
+  "alertas_banca": {
+    "banca_identificada": "string",
+    "estilo": "string",
+    "ajustes_recomendados": ["string"]
+  }
+}`;
+
+      this.logger.log(`[PROMPT 2] Com os dados do conteúdo programático extraído, enviando PROMPT 2 para Análise Pareto Recursiva para o cargo: "${cargo}"`);
+      const content = await this.provider.invoke(prompt);
+      const parsed = this.parseJsonResponse(content);
+
+      // --- Merge de segurança para garantir integridade total do Mapa Geral ---
+      if (parsed && parsed.mapa_geral && mapaCompleto?.mapa_completo) {
+        const prompt1Basicas = mapaCompleto.mapa_completo.disciplinas_basicas || [];
+        const prompt1Especificas = mapaCompleto.mapa_completo.disciplinas_especificas || [];
+
+        if ((!parsed.mapa_geral.disciplinas_basicas || parsed.mapa_geral.disciplinas_basicas.length === 0) && prompt1Basicas.length > 0) {
+          parsed.mapa_geral.disciplinas_basicas = prompt1Basicas.map((d: any) => ({
+            ...d,
+            prioridade: 'COMPLEMENTAR',
+            percentual_tempo: 10,
+            camada_2_topicos: (d.topicos || []).map((t: any) => ({
+              nome: t.nome,
+              temperatura: 'MORNO',
+              camada_3_subtopicos: (t.subtopicos || []).map((sub: any) => ({
+                nome: typeof sub === 'string' ? sub : (sub.nome || sub),
+                frequencia: 'Média',
+                dificuldade: 'Médio',
+                custo_beneficio: 'Médio',
+                incluir: true
+              }))
+            }))
+          }));
+        }
+
+        if ((!parsed.mapa_geral.disciplinas_especificas || parsed.mapa_geral.disciplinas_especificas.length === 0) && prompt1Especificas.length > 0) {
+          parsed.mapa_geral.disciplinas_especificas = prompt1Especificas.map((d: any) => ({
+            ...d,
+            prioridade: 'PRIORITÁRIA',
+            percentual_tempo: 20,
+            camada_2_topicos: (d.topicos || []).map((t: any) => ({
+              nome: t.nome,
+              temperatura: 'QUENTE',
+              camada_3_subtopicos: (t.subtopicos || []).map((sub: any) => ({
+                nome: typeof sub === 'string' ? sub : (sub.nome || sub),
+                frequencia: 'Alta',
+                dificuldade: 'Médio',
+                custo_beneficio: 'Alto',
+                incluir: true
+              }))
+            }))
+          }));
+        }
+      }
+
+      this.logger.log(`[PROMPT 2] ✅ Análise de Pareto Recursiva 80/20 concluída.`);
+      return parsed;
+    } catch (error) {
+      this.logger.error(`[PROMPT 2] Falha na classificação Pareto: ${error.message}`);
+      return null;
+    }
+  }
+
+  // ===========================================================================
+  // ETAPA 2B — Cronograma de Estudos Otimizado (PROMPT 2 - PARTE CRONOGRAMA)
+  // ===========================================================================
+
+  private async generateSchedule(
+    paretoResult: any,
+    userContext: EditalUserContext | undefined,
+    editalTitle: string,
+    semanasDisponiveis: number | null,
+    horasPorDia: number | null,
+    diasPorSemana: number | null,
+    totalHorasSemana: number | null,
+    totalHorasDisponiveis: number | null,
+    dataProvaFormatada: string,
+  ): Promise<any | null> {
+    if (!this.provider) return null;
+
+    try {
+      const cargo = userContext?.cargo || 'Geral';
+      const paretoJson = JSON.stringify({
+        mapa_geral: paretoResult.mapa_geral,
+        regua_de_corte: paretoResult.regua_de_corte,
+      }, null, 2);
+
+      const contextBlock = `
+=== CONTEXTO DO USUÁRIO ===
+- Cargo: ${cargo}
+- Data da prova: ${dataProvaFormatada}${semanasDisponiveis ? ` (${semanasDisponiveis} semanas disponíveis)` : ''}
+- Horas disponíveis por dia: ${horasPorDia ? `${horasPorDia}h/dia` : '[Não informada]'}
+- Dias disponíveis por semana: ${diasPorSemana ? `${diasPorSemana} dias/semana` : '[Não informados]'}
+- Total de horas/semana: ${totalHorasSemana ? `${totalHorasSemana}h` : '[Não calculated]'}
+- Total de horas até a prova: ${totalHorasDisponiveis ? `${totalHorasDisponiveis}h` : '[Não calculado]'}
+${semanasDisponiveis ? `O cronograma deve ter exatamente ${semanasDisponiveis} semanas.` : 'Gere um cronograma de 6 semanas por padrão.'}
+${horasPorDia && diasPorSemana ? `Cada semana comporta ${totalHorasSemana}h de estudo (${horasPorDia}h/dia × ${diasPorSemana} dias).` : ''}
+===========================`;
+
+      const prompt = `# PROMPT 2 — GERADOR DE CRONOGRAMA DE ESTUDOS OTIMIZADO (PARETO RECURSIVO)
+
+Você é um especialista em preparação para concursos públicos brasileiros.
+Sua missão é montar um cronograma de estudos otimizado por subtópico com base na Análise Pareto 80/20 Recursiva já realizada.
+
+${contextBlock}
+
+## ANÁLISE PARETO JÁ REALIZADA:
+${paretoJson}
+
+## REGRAS OBRIGATÓRIAS DO CRONOGRAMA DE ESTUDOS
+- Distribuído em semanas até a data da prova.
+- Organizado por subtópico (não por "estudar português").
+- Cada bloco de estudo deve ter:
+  - Subtópico exato
+  - Carga horária sugerida
+  - Tipo de atividade: teoria / exercicios / revisao
+  - Semana de revisão espaçada programada
+- Siga RIGOROSAMENTE esta proporção por bloco de estudo:
+  - 30% teoria
+  - 50% exercícios (questões de prova) - monte simulados somente usando o banco de questões, caso tenha, conforme a teoria de cada bloco.
+  - 20% revisão
+- O cronograma deve ser realista para as horas disponíveis informadas.
+
+Retorne EXCLUSIVAMENTE um JSON (sem texto adicional, sem markdown):
+{
+  "cronograma_estudos": {
+    "semanas": [
+      {
+        "numero": number,
+        "titulo": "string",
+        "blocos": [
+          {
+            "subtopico": "string",
+            "disciplina": "string",
+            "carga_horaria": "string (ex: 2h)",
+            "tipo_atividade": "teoria" | "exercicios" | "revisao",
+            "semana_revisao_espacada": number | null,
+            "usa_banco_questoes": boolean
+          }
+        ]
+      }
+    ]
+  },
+  "sprints": [
+    {
+      "id": "string",
+      "title": "string",
+      "duration": "string",
+      "progress": 0,
+      "topics": [
+        { "id": "string", "subject": "string", "name": "string", "is_pareto": boolean, "weight": "Alto" | "Médio" | "Baixo", "completed": false }
+      ]
+    }
+  ]
+}`;
+
+      this.logger.log(`[PROMPT 2] Gerando cronograma de estudos otimizado (30% teoria, 50% exercícios, 20% revisão) e sprints para: "${cargo}"`);
+      const content = await this.provider.invoke(prompt);
+      const parsed = this.parseJsonResponse(content);
+      this.logger.log(`[PROMPT 2] ✅ Cronograma gerado com ${parsed?.cronograma_estudos?.semanas?.length ?? 0} semanas e ${parsed?.sprints?.length ?? 0} sprints.`);
+      return parsed;
+    } catch (error) {
+      this.logger.error(`[PROMPT 2] Falha na geração do cronograma: ${error.message}`);
+      return null;
+    }
+  }
+
+  // ===========================================================================
+  // Orquestrador Principal — Análise Pareto em Etapas
+  // ===========================================================================
+
+  /**
+   * ETAPA 1 EXCLUSIVA — Extrai a Tabela Completa do Mapa Geral de Disciplinas (Prompt 1)
+   * sem executar a classificação Pareto imediata.
+   */
+  async extractEditalMapaOnly(
+    editalText: string,
+    editalTitle: string,
+    userContext?: EditalUserContext,
+    fileBuffer?: Buffer,
+    link?: string,
+  ): Promise<any> {
+    let dataProvaFormatada = '[Não informada]';
+    if (userContext?.dataProva) {
+      const prova = new Date(userContext.dataProva);
+      dataProvaFormatada = prova.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    const cargo = userContext?.cargo || 'Geral';
+
+    let etapa1Result: any = null;
+    try {
+      etapa1Result = await this.extractEditalComplete(editalText, editalTitle, cargo, undefined, fileBuffer, link);
+    } catch (e) {
+      this.logger.error(`[Extração Mapa Geral] Etapa 1 falhou: ${e.message}`);
+      return this.buildErrorResult(editalTitle, cargo, dataProvaFormatada, `Não foi possível extrair o conteúdo programático do edital: ${e.message}`);
+    }
+
+    if (!etapa1Result) {
+      return this.buildErrorResult(editalTitle, cargo, dataProvaFormatada, 'Não foi possível extrair o conteúdo programático do edital.');
+    }
+
+    const partial = this.buildPartialResult(etapa1Result, editalTitle, cargo, dataProvaFormatada);
+    partial.pareto_analisado = false;
+    return partial;
+  }
+
+  /**
+   * ETAPA 2 EXCLUSIVA — Executa a Análise Pareto (Prompt 2) sob demanda sobre a Tabela Completa já existente.
+   * Atualiza as prioridades e o cronograma in-place sem perder nenhuma disciplina da tabela original.
+   */
+  async analyzeEditalParetoOnly(existingData: any, editalTitle: string, userContext?: EditalUserContext): Promise<any> {
+    let semanasDisponiveis: number | null = null;
+    let dataProvaFormatada = '[Não informada]';
+    if (userContext?.dataProva) {
+      const hoje = new Date();
+      const prova = new Date(userContext.dataProva);
+      const diffMs = prova.getTime() - hoje.getTime();
+      semanasDisponiveis = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7)));
+      dataProvaFormatada = prova.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    const horasPorDia = userContext?.horasPorDia ?? null;
+    const diasPorSemana = userContext?.diasPorSemana ?? null;
+    const totalHorasSemana = horasPorDia && diasPorSemana ? horasPorDia * diasPorSemana : null;
+    const totalHorasDisponiveis = totalHorasSemana && semanasDisponiveis ? totalHorasSemana * semanasDisponiveis : null;
+    const cargo = userContext?.cargo || 'Geral';
+
+    const etapa1Input = {
+      concurso_info: existingData?.concurso_info || { concurso: editalTitle, cargo },
+      conteudo_programatico: existingData?.conteudo_programatico,
+      mapa_completo: existingData?.mapa_geral_extraido || existingData?.mapa_geral || existingData?.mapa_completo
+    };
+
+    const paretoResult = await this.classifyPareto(etapa1Input, cargo, editalTitle);
+    if (!paretoResult) {
+      return existingData;
+    }
+
+    const scheduleResult = await this.generateSchedule(
+      paretoResult,
+      userContext,
+      editalTitle,
+      semanasDisponiveis,
+      horasPorDia,
+      diasPorSemana,
+      totalHorasSemana,
+      totalHorasDisponiveis,
+      dataProvaFormatada,
+    );
+
+    const mergedResult = {
+      ...existingData,
+      relevance_summary: paretoResult.relevance_summary,
+      total_subjects: paretoResult.total_subjects || existingData.total_subjects,
+      high_priority_subjects: paretoResult.high_priority_subjects || existingData.high_priority_subjects,
+      coverage_percentage: paretoResult.coverage_percentage || existingData.coverage_percentage,
+      total_hot_topics: paretoResult.total_hot_topics || 0,
+      total_high_cb_subtopics: paretoResult.total_high_cb_subtopics || 0,
+      mapa_geral: paretoResult.mapa_geral || existingData.mapa_geral,
+      camada_1_mapa_prioridades: paretoResult.camada_1_mapa_prioridades || existingData.camada_1_mapa_prioridades,
+      regua_de_corte: paretoResult.regua_de_corte || existingData.regua_de_corte,
+      alertas_banca: paretoResult.alertas_banca || existingData.alertas_banca,
+      cronograma_estudos: scheduleResult?.cronograma_estudos ?? existingData.cronograma_estudos ?? { semanas: [] },
+      sprints: scheduleResult?.sprints ?? existingData.sprints ?? [],
+      pareto_analisado: true,
+      _metadata: {
+        provider: this.provider?.name || 'unknown',
+        etapas_concluidas: ['extração', 'pareto', 'cronograma'],
+        observacoes_extrator: existingData?._metadata?.observacoes_extrator ?? [],
+      },
+    };
+
+    return mergedResult;
+  }
+
+  /**
+   * Analyze an Edital PDF using a multi-phase approach:
+   * - Phase 1: Complete faithful extraction of all disciplines/topics
+   * - Phase 2A: Pareto classification (priority, temperature, cost-benefit)
+   * - Phase 2B: Study schedule + sprints generation
    */
   async analyzeEditalPareto(editalText: string, editalTitle: string, userContext?: EditalUserContext): Promise<any> {
     // --- Calcula semanas disponíveis até a prova ---
@@ -214,466 +1697,265 @@ Retorne a resposta EXCLUSIVAMENTE em formato JSON (Array de objetos), onde cada 
     const diasPorSemana = userContext?.diasPorSemana ?? null;
     const totalHorasSemana = horasPorDia && diasPorSemana ? horasPorDia * diasPorSemana : null;
     const totalHorasDisponiveis = totalHorasSemana && semanasDisponiveis ? totalHorasSemana * semanasDisponiveis : null;
+    const cargo = userContext?.cargo || 'Geral';
 
-    const contextBlock = userContext ? `
-=== CONTEXTO DO CANDIDATO ===
-- Concurso alvo: ${userContext.concurso || '[Não informado]'}
-- Cargo específico: ${userContext.cargo}
-- Data da prova: ${dataProvaFormatada}${semanasDisponiveis ? ` (${semanasDisponiveis} semanas disponíveis a partir de hoje)` : ''}
-- Disponibilidade diária: ${horasPorDia ? `${horasPorDia}h/dia` : '[Não informada]'}
-- Dias de estudo/semana: ${diasPorSemana ? `${diasPorSemana} dias/semana` : '[Não informados]'}
-- Total de horas/semana: ${totalHorasSemana ? `${totalHorasSemana}h` : '[Não calculado]'}
-- Total de horas disponíveis até a prova: ${totalHorasDisponiveis ? `${totalHorasDisponiveis}h` : '[Não calculado]'}
-
-IMPORTANTE: Analise EXCLUSIVAMENTE o conteúdo programático do cargo "${userContext.cargo}".
-Ignore completamente qualquer disciplina, cargo ou conteúdo que não esteja no edital para este cargo específico.
-${semanasDisponiveis ? `O cronograma de estudos deve ser distribuído em exatamente ${semanasDisponiveis} semanas.` : ''}
-${horasPorDia && diasPorSemana ? `Cada semana deve ter blocos de estudo respeitando ${horasPorDia}h/dia e ${diasPorSemana} dias/semana (${totalHorasSemana}h semanais).` : ''}
-=============================
-` : '';
-
-    if (this.model) {
-      try {
-        const prompt = `Você é um estrategista sênior de preparação para concursos públicos com expertise em análise de bancas e psicometria de provas.
-${contextBlock}
-Analise o conteúdo do edital "${editalTitle}" a seguir, COM FOCO EXCLUSIVO NO CARGO: "${userContext?.cargo || 'Geral'}", e aplique o Princípio de Pareto (80/20) em 3 CAMADAS:
-
-### CAMADA 1 — Edital completo (macro)
-- Liste todas as disciplinas do edital com seus respectivos pesos (% de questões)
-- Identifique os 20% das disciplinas que representam ~80% das questões ou pontos
-- Classifique cada disciplina como: PRIORITÁRIA / COMPLEMENTAR / RESIDUAL
-- Defina uma % do tempo de estudo para cada categoria
-
-### CAMADA 2 — Por disciplina (meso)
-Para CADA disciplina (começando pelas prioritárias):
-- Liste todos os tópicos previstos no edital
-- Analise a frequência histórica de cobrança de cada tópico em provas anteriores do mesmo órgão ou banca examinadora
-- Aplique Pareto: identifique os 20% dos tópicos que caem em ~80% das provas
-- Classifique cada tópico como: QUENTE / MORNO / FRIO
-
-### CAMADA 3 — Por tópico (micro)
-Para cada tópico QUENTE e MORNO:
-- Quebre em subtópicos
-- Para cada subtópico, avalie:
-  a) Frequência de cobrança (Alta / Média / Baixa)
-  b) Dificuldade típica das questões (Fácil / Médio / Difícil)
-  c) Custo-benefício de aprender (Alto / Médio / Baixo) — tempo necessário vs. questões ganhas
-- Priorize subtópicos com ALTA frequência + MÉDIO ou FÁCIL nível
-- Subtópicos de alta dificuldade e baixa frequência: deixe por último
-
-### RESTRIÇÕES
-- Seja direto. Nada de teorias longas — quero listas, tabelas e ações.
-- Analise APENAS as disciplinas do cargo "${userContext?.cargo || 'Geral'}" — nunca misture conteúdo de outros cargos do mesmo edital.
-- Se não souber a frequência histórica de algum tópico, sinalize com "[VERIFICAR]".
-- Não invente dados — se não tiver, sinalize.
-- Priorize sempre o que tem maior retorno em questões corretas por hora estudada.
-${semanasDisponiveis ? `- O cronograma deve ter exatamente ${semanasDisponiveis} semanas. Não gere mais nem menos.` : ''}
-${totalHorasSemana ? `- Cada semana comporta ${totalHorasSemana}h totais de estudo (${horasPorDia}h/dia × ${diasPorSemana} dias). Distribua a carga horária respeitando esse limite.` : ''}
-
-Texto do edital:
-${editalText.substring(0, 15000)}
-
-Retorne a resposta EXCLUSIVAMENTE em formato JSON com a seguinte estrutura:
-{
-  "total_subjects": number,
-  "high_priority_subjects": number,
-  "coverage_percentage": number,
-  "total_hot_topics": number,
-  "total_high_cb_subtopics": number,
-  "relevance_summary": "string com resumo dos pontos vitais",
-  "camada_1_mapa_prioridades": {
-    "disciplinas": [
-      {
-        "nome": "string",
-        "percentual_questoes": number,
-        "prioridade": "PRIORITÁRIA" | "COMPLEMENTAR" | "RESIDUAL",
-        "percentual_tempo": number,
-        "camada_2_topicos": [
-          {
-            "nome": "string",
-            "frequencia_historica": "string (ex: 85% das provas ou [VERIFICAR])",
-            "temperatura": "QUENTE" | "MORNO" | "FRIO",
-            "ordem_estudo": number,
-            "camada_3_subtopicos": [
-              {
-                "nome": "string",
-                "frequencia": "Alta" | "Média" | "Baixa",
-                "dificuldade": "Fácil" | "Médio" | "Difícil",
-                "custo_beneficio": "Alto" | "Médio" | "Baixo",
-                "incluir": boolean,
-                "justificativa": "string"
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  },
-  "cronograma_estudos": {
-    "semanas": [
-      {
-        "numero": number,
-        "titulo": "string",
-        "blocos": [
-          {
-            "subtopico": "string",
-            "disciplina": "string",
-            "carga_horaria": "string (ex: 2h)",
-            "tipo_atividade": "teoria" | "exercicios" | "revisao",
-            "semana_revisao_espacada": number | null
-          }
-        ]
-      }
-    ]
-  },
-  "regua_de_corte": {
-    "nao_estudar": [
-      {
-        "item": "string",
-        "motivo": "string",
-        "trade_off": "string"
-      }
-    ]
-  },
-  "alertas_banca": {
-    "banca_identificada": "string",
-    "estilo": "string",
-    "ajustes_recomendados": ["string"]
-  },
-  "sprints": [
-    {
-      "id": "sprint-1",
-      "title": "string",
-      "duration": "string (ex: 2 Semanas)",
-      "progress": 0,
-      "topics": [
-        { "id": "t-1", "subject": "string", "name": "string", "is_pareto": boolean, "weight": "Alto" | "Médio" | "Baixo", "completed": false }
-      ]
-    }
-  ]
-}`;
-
-        const response = await this.model.invoke(prompt);
-        const content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
-
-        // Extrai apenas a parte entre a primeira chave e a última chave
-        const match = content.match(/\{[\s\S]*\}/);
-        if (!match) {
-          throw new Error("Nenhum JSON válido encontrado na resposta.");
-        }
-        const cleanJson = match[0];
-        
-        const parsed = JSON.parse(cleanJson);
-        if (parsed && parsed.camada_1_mapa_prioridades) {
-          return parsed;
-        }
-      } catch (error) {
-        this.logger.error(`Falha na análise Pareto 3 camadas: ${error.message}. Usando fallback inteligente.`);
-      }
+    // =========================================================================
+    // ETAPA 1 — Extração Completa e Fiel
+    // =========================================================================
+    let etapa1Result: any = null;
+    try {
+      etapa1Result = await this.extractEditalComplete(editalText, editalTitle, cargo);
+    } catch (e) {
+      this.logger.error(`[Análise Pareto] Etapa 1 falhou: ${e.message}`);
+      return this.buildErrorResult(editalTitle, cargo, dataProvaFormatada, `Não foi possível extrair o conteúdo programático do edital: ${e.message}. Tente usar um edital com formatação mais simples ou dividi-lo.`);
     }
 
-    // Intelligent Fallback — Pareto 3 Camadas completo
-    const ts = Date.now();
+    if (!etapa1Result) {
+      // Modelo indisponível ou falha total — retorna ERRO EXPLÍCITO
+      this.logger.error('[Análise Pareto] Etapa 1 falhou silenciosamente. Retornando erro.');
+      return this.buildErrorResult(editalTitle, cargo, dataProvaFormatada, 'Não foi possível extrair o conteúdo programático do edital. O modelo não retornou dados.');
+    }
+
+    // =========================================================================
+    // ETAPA 2A — Classificação Pareto
+    // =========================================================================
+    const paretoResult = await this.classifyPareto(etapa1Result, cargo, editalTitle);
+
+    if (!paretoResult) {
+      // Etapa 2A falhou — retorna resultado parcial com extração pura, SEM dados inventados
+      this.logger.warn('[Análise Pareto] Etapa 2A falhou. Retornando mapa de extração sem classificação Pareto.');
+      return this.buildPartialResult(etapa1Result, editalTitle, cargo, dataProvaFormatada);
+    }
+
+    // =========================================================================
+    // ETAPA 2B — Cronograma + Sprints
+    // =========================================================================
+    const scheduleResult = await this.generateSchedule(
+      paretoResult,
+      userContext,
+      editalTitle,
+      semanasDisponiveis,
+      horasPorDia,
+      diasPorSemana,
+      totalHorasSemana,
+      totalHorasDisponiveis,
+      dataProvaFormatada,
+    );
+
+    // =========================================================================
+    // Montagem do resultado final
+    // =========================================================================
+    const result = {
+      concurso_info: etapa1Result.concurso_info,
+      conteudo_programatico: etapa1Result.conteudo_programatico,
+      mapa_geral_extraido: etapa1Result.mapa_completo,
+      relevance_summary: paretoResult.relevance_summary,
+      total_subjects: paretoResult.total_subjects,
+      high_priority_subjects: paretoResult.high_priority_subjects,
+      coverage_percentage: paretoResult.coverage_percentage,
+      total_hot_topics: paretoResult.total_hot_topics,
+      total_high_cb_subtopics: paretoResult.total_high_cb_subtopics,
+      mapa_geral: paretoResult.mapa_geral,
+      camada_1_mapa_prioridades: paretoResult.camada_1_mapa_prioridades,
+      regua_de_corte: paretoResult.regua_de_corte,
+      alertas_banca: paretoResult.alertas_banca,
+      cronograma_estudos: scheduleResult?.cronograma_estudos ?? { semanas: [] },
+      sprints: scheduleResult?.sprints ?? [],
+      _metadata: {
+        provider: this.provider?.name || 'unknown',
+        etapas_concluidas: scheduleResult ? ['extração', 'pareto', 'cronograma'] : ['extração', 'pareto'],
+        observacoes_extrator: etapa1Result.observacoes_extrator ?? [],
+      },
+    };
+
+    // --- Normalização de segurança ---
+    if (!result.mapa_geral) {
+      result.mapa_geral = { disciplinas_basicas: [], disciplinas_especificas: [] };
+    }
+    if (Array.isArray((result.mapa_geral as any).disciplinas)) {
+      const discs = (result.mapa_geral as any).disciplinas;
+      result.mapa_geral.disciplinas_basicas = discs.filter(
+        (d: any) => d.prioridade === 'COMPLEMENTAR' || d.prioridade === 'RESIDUAL',
+      );
+      result.mapa_geral.disciplinas_especificas = discs.filter(
+        (d: any) => d.prioridade === 'ESSENCIAL' || d.prioridade === 'PRIORITÁRIA' || !d.prioridade,
+      );
+    }
+    if (!result.mapa_geral.disciplinas_basicas) result.mapa_geral.disciplinas_basicas = [];
+    if (!result.mapa_geral.disciplinas_especificas) result.mapa_geral.disciplinas_especificas = [];
+
+    // Fallback: se mapa_geral do Prompt 2 veio vazio, restaura a partir da extração do Prompt 1
+    if (
+      result.mapa_geral.disciplinas_basicas.length === 0 &&
+      result.mapa_geral.disciplinas_especificas.length === 0 &&
+      etapa1Result?.mapa_completo
+    ) {
+      this.logger.warn('[Análise Pareto] mapa_geral do Prompt 2 veio vazio. Restaurando disciplinas do Prompt 1.');
+      result.mapa_geral = {
+        disciplinas_basicas: (etapa1Result.mapa_completo.disciplinas_basicas || []).map((d: any) => ({
+          nome: d.nome,
+          percentual_questoes: d.percentual_questoes ?? 0,
+          prioridade: 'COMPLEMENTAR',
+          camada_2_topicos: (d.topicos || []).map((t: any, i: number) => ({
+            nome: t.nome,
+            temperatura: 'MORNO',
+            ordem_estudo: i + 1,
+            camada_3_subtopicos: (t.subtopicos || []).map((s: any) => ({
+              nome: typeof s === 'string' ? s : (s.nome || String(s)),
+              custo_beneficio: 'Médio',
+              incluir: true
+            }))
+          }))
+        })),
+        disciplinas_especificas: (etapa1Result.mapa_completo.disciplinas_especificas || []).map((d: any) => ({
+          nome: d.nome,
+          percentual_questoes: d.percentual_questoes ?? 0,
+          prioridade: 'PRIORITÁRIA',
+          camada_2_topicos: (d.topicos || []).map((t: any, i: number) => ({
+            nome: t.nome,
+            temperatura: 'QUENTE',
+            ordem_estudo: i + 1,
+            camada_3_subtopicos: (t.subtopicos || []).map((s: any) => ({
+              nome: typeof s === 'string' ? s : (s.nome || String(s)),
+              custo_beneficio: 'Médio',
+              incluir: true
+            }))
+          }))
+        }))
+      };
+    }
+
+    const sanitizeTopics = (discs: any[]) => {
+      discs.forEach((d: any) => {
+        if (!Array.isArray(d.camada_2_topicos)) {
+          d.camada_2_topicos = d.topicos || [];
+        }
+        d.camada_2_topicos.forEach((t: any) => {
+          if (!Array.isArray(t.camada_3_subtopicos)) {
+            t.camada_3_subtopicos = t.subtopicos || t.assuntos || [];
+          }
+        });
+      });
+    };
+    sanitizeTopics(result.mapa_geral.disciplinas_basicas);
+    sanitizeTopics(result.mapa_geral.disciplinas_especificas);
+
+    if (!result.camada_1_mapa_prioridades) {
+      result.camada_1_mapa_prioridades = { disciplinas: [] };
+    }
+    if (!result.camada_1_mapa_prioridades.disciplinas?.length) {
+      result.camada_1_mapa_prioridades.disciplinas = [
+        ...result.mapa_geral.disciplinas_especificas,
+        ...result.mapa_geral.disciplinas_basicas,
+      ];
+    }
+
+    result.total_subjects =
+      result.mapa_geral.disciplinas_basicas.length + result.mapa_geral.disciplinas_especificas.length;
+
+    this.logger.log(`[Análise Pareto] ✅ Concluída com sucesso. Total de disciplinas: ${result.total_subjects} | Provider: ${this.provider?.name}`);
+    return result;
+  }
+
+  // ===========================================================================
+  // Resultados de Erro e Parciais (SEM DADOS FICTÍCIOS)
+  // ===========================================================================
+
+  /**
+   * Retorna um objeto de erro explícito quando a análise falha completamente.
+   * NUNCA retorna dados inventados — o frontend deve exibir a mensagem de erro.
+   */
+  private buildErrorResult(editalTitle: string, cargo: string, dataProvaFormatada: string, errorMessage: string): any {
     return {
-      total_subjects: 5,
-      high_priority_subjects: 2,
-      coverage_percentage: 82,
-      total_hot_topics: 6,
-      total_high_cb_subtopics: 10,
-      relevance_summary: `Análise Pareto 3 Camadas para ${editalTitle}: 82% dos pontos concentram-se em Direito Administrativo e Tecnologia da Informação. 6 tópicos quentes identificados com 10 subtópicos de alto custo-benefício.`,
-      camada_1_mapa_prioridades: {
-        disciplinas: [
-          {
-            nome: 'Direito Administrativo',
-            percentual_questoes: 35,
-            prioridade: 'PRIORITÁRIA',
-            percentual_tempo: 40,
-            camada_2_topicos: [
-              {
-                nome: 'Atos Administrativos',
-                frequencia_historica: '90% das provas',
-                temperatura: 'QUENTE',
-                ordem_estudo: 1,
-                camada_3_subtopicos: [
-                  { nome: 'Atributos dos Atos (Presunção, Imperatividade, Autoexecutoriedade, Tipicidade)', frequencia: 'Alta', dificuldade: 'Médio', custo_beneficio: 'Alto', incluir: true, justificativa: 'Questão certa em 9/10 provas. Conceitual e direto.' },
-                  { nome: 'Anulação vs Revogação (Súmulas 346 e 473 STF)', frequencia: 'Alta', dificuldade: 'Fácil', custo_beneficio: 'Alto', incluir: true, justificativa: 'Diferenciação clássica. Alta incidência, baixa dificuldade.' },
-                  { nome: 'Classificação dos Atos (Vinculado x Discricionário)', frequencia: 'Média', dificuldade: 'Fácil', custo_beneficio: 'Alto', incluir: true, justificativa: 'Complementa o entendimento dos atributos.' },
-                  { nome: 'Convalidação de Atos Administrativos', frequencia: 'Baixa', dificuldade: 'Difícil', custo_beneficio: 'Baixo', incluir: false, justificativa: 'Pouco cobrado e exige conhecimento aprofundado de vícios.' }
-                ]
-              },
-              {
-                nome: 'Licitações e Contratos (Lei 14.133/21)',
-                frequencia_historica: '85% das provas',
-                temperatura: 'QUENTE',
-                ordem_estudo: 2,
-                camada_3_subtopicos: [
-                  { nome: 'Modalidades de Licitação (Concorrência, Pregão, Diálogo Competitivo)', frequencia: 'Alta', dificuldade: 'Médio', custo_beneficio: 'Alto', incluir: true, justificativa: 'Cobrança certa. Comparações entre modalidades são frequentes.' },
-                  { nome: 'Dispensa e Inexigibilidade (Arts. 74-75)', frequencia: 'Alta', dificuldade: 'Fácil', custo_beneficio: 'Alto', incluir: true, justificativa: 'Distinção clássica, memorização de hipóteses.' },
-                  { nome: 'Fases do Procedimento Licitatório', frequencia: 'Média', dificuldade: 'Médio', custo_beneficio: 'Médio', incluir: true, justificativa: 'Ordem das fases é cobrada com frequência.' }
-                ]
-              },
-              {
-                nome: 'Poderes Administrativos',
-                frequencia_historica: '70% das provas',
-                temperatura: 'MORNO',
-                ordem_estudo: 3,
-                camada_3_subtopicos: [
-                  { nome: 'Poder de Polícia (Atributos e Limites)', frequencia: 'Alta', dificuldade: 'Fácil', custo_beneficio: 'Alto', incluir: true, justificativa: 'Tema mais cobrado entre os poderes.' },
-                  { nome: 'Poder Disciplinar vs Poder Hierárquico', frequencia: 'Média', dificuldade: 'Fácil', custo_beneficio: 'Médio', incluir: true, justificativa: 'Diferenciação conceitual simples.' }
-                ]
-              },
-              {
-                nome: 'Responsabilidade Civil do Estado',
-                frequencia_historica: '40% das provas',
-                temperatura: 'FRIO',
-                ordem_estudo: 5,
-                camada_3_subtopicos: []
-              }
-            ]
-          },
-          {
-            nome: 'Tecnologia da Informação',
-            percentual_questoes: 30,
-            prioridade: 'PRIORITÁRIA',
-            percentual_tempo: 35,
-            camada_2_topicos: [
-              {
-                nome: 'Banco de Dados e SQL',
-                frequencia_historica: '88% das provas',
-                temperatura: 'QUENTE',
-                ordem_estudo: 1,
-                camada_3_subtopicos: [
-                  { nome: 'Modelagem Relacional (Normalização 1FN-3FN)', frequencia: 'Alta', dificuldade: 'Médio', custo_beneficio: 'Alto', incluir: true, justificativa: 'Questões garantidas em qualquer prova de TI.' },
-                  { nome: 'SQL: SELECT, JOINs, GROUP BY, Subqueries', frequencia: 'Alta', dificuldade: 'Médio', custo_beneficio: 'Alto', incluir: true, justificativa: 'Prática direta com alta incidência.' },
-                  { nome: 'Transações ACID e Controle de Concorrência', frequencia: 'Média', dificuldade: 'Difícil', custo_beneficio: 'Médio', incluir: true, justificativa: 'Conceitual mas importante para provas de nível superior.' }
-                ]
-              },
-              {
-                nome: 'Segurança da Informação',
-                frequencia_historica: '80% das provas',
-                temperatura: 'QUENTE',
-                ordem_estudo: 2,
-                camada_3_subtopicos: [
-                  { nome: 'Criptografia (Simétrica vs Assimétrica, Hashing)', frequencia: 'Alta', dificuldade: 'Médio', custo_beneficio: 'Alto', incluir: true, justificativa: 'Comparações entre algoritmos são cobranças certas.' },
-                  { nome: 'LGPD (Princípios, Bases Legais, Controlador vs Operador)', frequencia: 'Alta', dificuldade: 'Fácil', custo_beneficio: 'Alto', incluir: true, justificativa: 'Lei recente com alta cobrança. Texto legal direto.' },
-                  { nome: 'ISO 27001/27002 (Controles e SGSI)', frequencia: 'Média', dificuldade: 'Médio', custo_beneficio: 'Médio', incluir: true, justificativa: 'Normas importantes mas com volume grande de conteúdo.' }
-                ]
-              },
-              {
-                nome: 'Engenharia de Software',
-                frequencia_historica: '50% das provas [VERIFICAR]',
-                temperatura: 'MORNO',
-                ordem_estudo: 3,
-                camada_3_subtopicos: [
-                  { nome: 'Metodologias Ágeis (Scrum, Kanban)', frequencia: 'Alta', dificuldade: 'Fácil', custo_beneficio: 'Alto', incluir: true, justificativa: 'Papéis e cerimônias do Scrum são muito cobrados.' },
-                  { nome: 'UML (Diagramas de Caso de Uso e Classes)', frequencia: 'Média', dificuldade: 'Médio', custo_beneficio: 'Médio', incluir: true, justificativa: 'Saber ler diagramas é suficiente na maioria das provas.' }
-                ]
-              }
-            ]
-          },
-          {
-            nome: 'Direito Constitucional',
-            percentual_questoes: 15,
-            prioridade: 'COMPLEMENTAR',
-            percentual_tempo: 15,
-            camada_2_topicos: [
-              {
-                nome: 'Direitos e Garantias Fundamentais (Art. 5º)',
-                frequencia_historica: '95% das provas',
-                temperatura: 'QUENTE',
-                ordem_estudo: 1,
-                camada_3_subtopicos: [
-                  { nome: 'Remédios Constitucionais (HC, HD, MS, MI, AP)', frequencia: 'Alta', dificuldade: 'Fácil', custo_beneficio: 'Alto', incluir: true, justificativa: 'Tema mais cobrado do Direito Constitucional.' },
-                  { nome: 'Direitos Sociais (Art. 6º a 11)', frequencia: 'Média', dificuldade: 'Fácil', custo_beneficio: 'Médio', incluir: true, justificativa: 'Leitura seca da CF resolve a maioria das questões.' }
-                ]
-              },
-              {
-                nome: 'Organização do Estado',
-                frequencia_historica: '55% das provas',
-                temperatura: 'MORNO',
-                ordem_estudo: 2,
-                camada_3_subtopicos: [
-                  { nome: 'Competências da União, Estados e Municípios', frequencia: 'Média', dificuldade: 'Médio', custo_beneficio: 'Médio', incluir: true, justificativa: 'Arts. 21-24 CF. Cobrança por comparação entre entes.' }
-                ]
-              }
-            ]
-          },
-          {
-            nome: 'Língua Portuguesa',
-            percentual_questoes: 12,
-            prioridade: 'COMPLEMENTAR',
-            percentual_tempo: 7,
-            camada_2_topicos: [
-              {
-                nome: 'Interpretação de Texto',
-                frequencia_historica: '100% das provas',
-                temperatura: 'QUENTE',
-                ordem_estudo: 1,
-                camada_3_subtopicos: [
-                  { nome: 'Compreensão e Inferência Textual', frequencia: 'Alta', dificuldade: 'Médio', custo_beneficio: 'Alto', incluir: true, justificativa: 'Habilidade transversal. Praticar com questões da banca.' }
-                ]
-              },
-              {
-                nome: 'Concordância e Regência',
-                frequencia_historica: '75% das provas',
-                temperatura: 'MORNO',
-                ordem_estudo: 2,
-                camada_3_subtopicos: [
-                  { nome: 'Crase (Regras obrigatórias e facultativas)', frequencia: 'Alta', dificuldade: 'Fácil', custo_beneficio: 'Alto', incluir: true, justificativa: 'Regras objetivas de fácil memorização.' },
-                  { nome: 'Regência Verbal (Verbos assistir, visar, obedecer)', frequencia: 'Média', dificuldade: 'Médio', custo_beneficio: 'Médio', incluir: true, justificativa: 'Lista finita de verbos mais cobrados.' }
-                ]
-              }
-            ]
-          },
-          {
-            nome: 'Raciocínio Lógico',
-            percentual_questoes: 8,
-            prioridade: 'RESIDUAL',
-            percentual_tempo: 3,
-            camada_2_topicos: [
-              {
-                nome: 'Lógica Proposicional',
-                frequencia_historica: '80% das provas',
-                temperatura: 'QUENTE',
-                ordem_estudo: 1,
-                camada_3_subtopicos: [
-                  { nome: 'Tabelas Verdade e Equivalências', frequencia: 'Alta', dificuldade: 'Fácil', custo_beneficio: 'Alto', incluir: true, justificativa: 'Mecanismo automático. Prática resolve.' },
-                  { nome: 'Negação de Proposições Compostas', frequencia: 'Alta', dificuldade: 'Fácil', custo_beneficio: 'Alto', incluir: true, justificativa: 'Regras De Morgan cobradas diretamente.' }
-                ]
-              },
-              {
-                nome: 'Probabilidade e Combinatória',
-                frequencia_historica: '40% das provas [VERIFICAR]',
-                temperatura: 'FRIO',
-                ordem_estudo: 3,
-                camada_3_subtopicos: []
-              }
-            ]
-          }
-        ]
+      concurso_info: {
+        concurso: editalTitle,
+        cargo: cargo,
+        data_prova: dataProvaFormatada,
+        banca: '[VERIFICAR NO EDITAL]',
       },
-      cronograma_estudos: {
-        semanas: [
-          {
-            numero: 1,
-            titulo: 'Semana 1 — Base Prioritária: Dir. Administrativo (Atos)',
-            blocos: [
-              { subtopico: 'Atributos dos Atos Administrativos', disciplina: 'Direito Administrativo', carga_horaria: '2h', tipo_atividade: 'teoria', semana_revisao_espacada: 3 },
-              { subtopico: 'Atributos dos Atos Administrativos', disciplina: 'Direito Administrativo', carga_horaria: '3h', tipo_atividade: 'exercicios', semana_revisao_espacada: null },
-              { subtopico: 'Anulação vs Revogação (Súmulas 346 e 473)', disciplina: 'Direito Administrativo', carga_horaria: '1.5h', tipo_atividade: 'teoria', semana_revisao_espacada: 3 },
-              { subtopico: 'Anulação vs Revogação (Súmulas 346 e 473)', disciplina: 'Direito Administrativo', carga_horaria: '2.5h', tipo_atividade: 'exercicios', semana_revisao_espacada: null },
-              { subtopico: 'Atos Administrativos — Consolidação', disciplina: 'Direito Administrativo', carga_horaria: '1h', tipo_atividade: 'revisao', semana_revisao_espacada: null }
-            ]
-          },
-          {
-            numero: 2,
-            titulo: 'Semana 2 — Licitações + Banco de Dados',
-            blocos: [
-              { subtopico: 'Modalidades de Licitação (Lei 14.133/21)', disciplina: 'Direito Administrativo', carga_horaria: '2h', tipo_atividade: 'teoria', semana_revisao_espacada: 4 },
-              { subtopico: 'Modalidades de Licitação', disciplina: 'Direito Administrativo', carga_horaria: '3h', tipo_atividade: 'exercicios', semana_revisao_espacada: null },
-              { subtopico: 'Modelagem Relacional (Normalização 1FN-3FN)', disciplina: 'Tecnologia da Informação', carga_horaria: '2h', tipo_atividade: 'teoria', semana_revisao_espacada: 4 },
-              { subtopico: 'SQL: SELECT, JOINs, GROUP BY', disciplina: 'Tecnologia da Informação', carga_horaria: '3h', tipo_atividade: 'exercicios', semana_revisao_espacada: null },
-              { subtopico: 'Semana 2 — Revisão geral', disciplina: 'Misto', carga_horaria: '1h', tipo_atividade: 'revisao', semana_revisao_espacada: null }
-            ]
-          },
-          {
-            numero: 3,
-            titulo: 'Semana 3 — Segurança da Informação + Revisão Espaçada S1',
-            blocos: [
-              { subtopico: 'Criptografia (Simétrica vs Assimétrica)', disciplina: 'Tecnologia da Informação', carga_horaria: '2h', tipo_atividade: 'teoria', semana_revisao_espacada: 5 },
-              { subtopico: 'LGPD (Princípios e Bases Legais)', disciplina: 'Tecnologia da Informação', carga_horaria: '1.5h', tipo_atividade: 'teoria', semana_revisao_espacada: 5 },
-              { subtopico: 'Segurança da Informação', disciplina: 'Tecnologia da Informação', carga_horaria: '3h', tipo_atividade: 'exercicios', semana_revisao_espacada: null },
-              { subtopico: 'Revisão Espaçada: Atos Administrativos (S1)', disciplina: 'Direito Administrativo', carga_horaria: '1.5h', tipo_atividade: 'revisao', semana_revisao_espacada: null },
-              { subtopico: 'Poder de Polícia', disciplina: 'Direito Administrativo', carga_horaria: '1h', tipo_atividade: 'teoria', semana_revisao_espacada: 5 }
-            ]
-          },
-          {
-            numero: 4,
-            titulo: 'Semana 4 — Constitucional + Revisão Espaçada S2',
-            blocos: [
-              { subtopico: 'Remédios Constitucionais (HC, HD, MS, MI, AP)', disciplina: 'Direito Constitucional', carga_horaria: '2h', tipo_atividade: 'teoria', semana_revisao_espacada: 6 },
-              { subtopico: 'Direitos e Garantias Fundamentais', disciplina: 'Direito Constitucional', carga_horaria: '3h', tipo_atividade: 'exercicios', semana_revisao_espacada: null },
-              { subtopico: 'Revisão Espaçada: Licitações + BD (S2)', disciplina: 'Misto', carga_horaria: '1.5h', tipo_atividade: 'revisao', semana_revisao_espacada: null },
-              { subtopico: 'Metodologias Ágeis (Scrum, Kanban)', disciplina: 'Tecnologia da Informação', carga_horaria: '1.5h', tipo_atividade: 'teoria', semana_revisao_espacada: 6 },
-              { subtopico: 'Metodologias Ágeis', disciplina: 'Tecnologia da Informação', carga_horaria: '2h', tipo_atividade: 'exercicios', semana_revisao_espacada: null }
-            ]
-          },
-          {
-            numero: 5,
-            titulo: 'Semana 5 — Português + Lógica + Revisão Espaçada S3',
-            blocos: [
-              { subtopico: 'Interpretação de Texto (Questões da Banca)', disciplina: 'Língua Portuguesa', carga_horaria: '2h', tipo_atividade: 'exercicios', semana_revisao_espacada: null },
-              { subtopico: 'Crase e Regência Verbal', disciplina: 'Língua Portuguesa', carga_horaria: '1h', tipo_atividade: 'teoria', semana_revisao_espacada: null },
-              { subtopico: 'Tabelas Verdade e Equivalências', disciplina: 'Raciocínio Lógico', carga_horaria: '1h', tipo_atividade: 'teoria', semana_revisao_espacada: null },
-              { subtopico: 'Negação de Proposições Compostas', disciplina: 'Raciocínio Lógico', carga_horaria: '2h', tipo_atividade: 'exercicios', semana_revisao_espacada: null },
-              { subtopico: 'Revisão Espaçada: Segurança + Poderes Adm (S3)', disciplina: 'Misto', carga_horaria: '1.5h', tipo_atividade: 'revisao', semana_revisao_espacada: null }
-            ]
-          },
-          {
-            numero: 6,
-            titulo: 'Semana 6 — Simulado Final + Revisão Geral',
-            blocos: [
-              { subtopico: 'Simulado Completo (Todas as disciplinas)', disciplina: 'Simulado', carga_horaria: '4h', tipo_atividade: 'exercicios', semana_revisao_espacada: null },
-              { subtopico: 'Correção do Simulado e Revisão de Erros', disciplina: 'Misto', carga_horaria: '2h', tipo_atividade: 'revisao', semana_revisao_espacada: null },
-              { subtopico: 'Revisão Espaçada Final: Constitucional + Ágeis (S4)', disciplina: 'Misto', carga_horaria: '1.5h', tipo_atividade: 'revisao', semana_revisao_espacada: null },
-              { subtopico: 'Revisão Relâmpago: Tópicos Quentes (Flashcards)', disciplina: 'Misto', carga_horaria: '1.5h', tipo_atividade: 'revisao', semana_revisao_espacada: null }
-            ]
-          }
-        ]
+      _error: true,
+      _error_message: errorMessage,
+      total_subjects: 0,
+      high_priority_subjects: 0,
+      coverage_percentage: 0,
+      total_hot_topics: 0,
+      total_high_cb_subtopics: 0,
+      relevance_summary: `⚠️ ${errorMessage}`,
+      mapa_geral: { disciplinas_basicas: [], disciplinas_especificas: [] },
+      camada_1_mapa_prioridades: { disciplinas: [] },
+      cronograma_estudos: { semanas: [] },
+      regua_de_corte: { nao_estudar: [] },
+      alertas_banca: { banca_identificada: '[VERIFICAR NO EDITAL]', estilo: '', ajustes_recomendados: [] },
+      sprints: [],
+      _metadata: {
+        provider: this.provider?.name || 'none',
+        etapas_concluidas: [],
+        observacoes_extrator: [errorMessage],
       },
-      regua_de_corte: {
-        nao_estudar: [
-          { item: 'Convalidação de Atos Administrativos', motivo: 'Baixa frequência (<15% das provas) e alta dificuldade conceitual', trade_off: 'Pode perder 1 questão rara, mas libera ~3h para tópicos de alto retorno.' },
-          { item: 'Responsabilidade Civil do Estado (aprofundamento)', motivo: 'Apenas 40% das provas. Saber o básico (teoria objetiva + excludentes) é suficiente.', trade_off: 'Conhecimento superficial cobre 90% das questões possíveis sobre o tema.' },
-          { item: 'Probabilidade e Combinatória (Raciocínio Lógico)', motivo: 'Frequência baixa (~40%) e questões de dificuldade alta que consomem muito tempo na prova.', trade_off: 'Focar em Lógica Proposicional garante 2-3 questões com menos esforço.' },
-          { item: 'ISO 27001/27002 (aprofundamento completo)', motivo: 'Volume extenso de norma. Focar nos conceitos-chave (SGSI, PDCA, controles) é suficiente.', trade_off: 'Leitura integral da norma consome ~8h. Resumo focado resolve em 2h.' }
-        ]
+    };
+  }
+
+  /**
+   * Retorna resultado parcial quando a Etapa 1 funcionou mas a Etapa 2 falhou.
+   * Exibe os dados reais extraídos, sem classificação Pareto inventada.
+   */
+  private buildPartialResult(etapa1Result: any, editalTitle: string, cargo: string, dataProvaFormatada: string): any {
+    const mapaCompleto = etapa1Result?.mapa_completo || this.buildMapaGeralFromConteudoProgramatico(etapa1Result?.conteudo_programatico || etapa1Result);
+
+    const formatCategory = (list: any[], isBasica: boolean) => {
+      return (list || []).map((d: any) => ({
+        nome: String(d.nome || d.disciplina || d.name || 'Disciplina').trim(),
+        percentual_questoes: d.percentual_questoes ?? 0,
+        prioridade: d.prioridade || (isBasica ? 'COMPLEMENTAR' : 'PRIORITÁRIA'),
+        percentual_tempo: 0,
+        camada_2_topicos: (d.topicos || d.camada_2_topicos || []).map((t: any, i: number) => ({
+          nome: typeof t === 'string' ? t : String(t.nome || t.name || t.titulo || 'Tópico').trim(),
+          frequencia_historica: '[ANÁLISE PARETO PENDENTE]',
+          temperatura: t.temperatura || (isBasica ? 'MORNO' : 'QUENTE'),
+          ordem_estudo: i + 1,
+          camada_3_subtopicos: (t.subtopicos || t.camada_3_subtopicos || t.assuntos || []).map((s: any) => {
+            const subName = typeof s === 'string' ? s : String(s.nome || s.name || s.titulo || 'Assunto').trim();
+            return {
+              nome: subName,
+              frequencia: 'Média',
+              dificuldade: 'Médio',
+              custo_beneficio: 'Médio',
+              incluir: true,
+              justificativa: '[Aguardando Análise Pareto]',
+            };
+          }),
+        })),
+      }));
+    };
+
+    const basicasFormatted = formatCategory(mapaCompleto?.disciplinas_basicas || [], true);
+    const especificasFormatted = formatCategory(mapaCompleto?.disciplinas_especificas || [], false);
+
+    const formattedMapa = {
+      disciplinas_basicas: basicasFormatted,
+      disciplinas_especificas: especificasFormatted
+    };
+
+    return {
+      concurso_info: etapa1Result?.concurso_info || { concurso: editalTitle, cargo, data_prova: dataProvaFormatada, banca: '[VERIFICAR NO EDITAL]' },
+      conteudo_programatico: etapa1Result?.conteudo_programatico || this.buildConteudoProgramaticoFromMapaGeral(formattedMapa),
+      mapa_completo: formattedMapa,
+      mapa_geral: formattedMapa,
+      mapa_geral_extraido: formattedMapa,
+      pareto_analisado: false,
+      total_subjects: basicasFormatted.length + especificasFormatted.length,
+      high_priority_subjects: 0,
+      coverage_percentage: 100,
+      total_hot_topics: 0,
+      total_high_cb_subtopics: 0,
+      regua_de_corte: { nao_estudar: [] },
+      alertas_banca: { banca_identificada: '[VERIFICAR NO EDITAL]', estilo: '', ajustes_recomendados: [] },
+      sprints: [],
+      _metadata: {
+        provider: this.provider?.name || 'unknown',
+        etapas_concluidas: ['extração'],
+        observacoes_extrator: etapa1Result.observacoes_extrator ?? ['Classificação Pareto falhou. Dados são somente de extração.'],
       },
-      alertas_banca: {
-        banca_identificada: '[VERIFICAR — identificar banca no edital]',
-        estilo: 'Análise genérica baseada nas bancas mais comuns (CESPE/FGV/FCC). Após identificar a banca, os ajustes serão refinados.',
-        ajustes_recomendados: [
-          'CESPE/CEBRASPE: Priorizar questões Certo/Errado. Cuidado com itens que misturam conceitos corretos com uma palavra errada. Treinar a técnica de "achei errado? Marca errado".',
-          'FGV: Interpretação de texto com alta dificuldade. Redação legislativa cobrada ipsis litteris. Focar em leitura seca de leis.',
-          'FCC: Gramática normativa pesada (concordância, regência, crase). Questões mais diretas e menos interpretativas. Focar em exercícios massivos de gramática.'
-        ]
-      },
-      sprints: [
-        {
-          id: 'sprint-1',
-          title: 'Sprint 1 — Núcleo Pareto: Dir. Administrativo + TI',
-          duration: '2 Semanas',
-          progress: 0,
-          topics: [
-            { id: `t-p3c-${ts}-1`, subject: 'Direito Administrativo', name: 'Atos Administrativos (Atributos, Anulação/Revogação)', is_pareto: true, weight: 'Alto', completed: false },
-            { id: `t-p3c-${ts}-2`, subject: 'Direito Administrativo', name: 'Licitações e Contratos — Lei 14.133/21 (Modalidades, Dispensa)', is_pareto: true, weight: 'Alto', completed: false },
-            { id: `t-p3c-${ts}-3`, subject: 'Tecnologia da Informação', name: 'Banco de Dados e SQL (Normalização, JOINs, ACID)', is_pareto: true, weight: 'Alto', completed: false }
-          ]
-        },
-        {
-          id: 'sprint-2',
-          title: 'Sprint 2 — Segurança + Poderes + Constitucional',
-          duration: '2 Semanas',
-          progress: 0,
-          topics: [
-            { id: `t-p3c-${ts}-4`, subject: 'Tecnologia da Informação', name: 'Segurança da Informação (Criptografia, LGPD)', is_pareto: true, weight: 'Alto', completed: false },
-            { id: `t-p3c-${ts}-5`, subject: 'Direito Administrativo', name: 'Poder de Polícia e Poderes Administrativos', is_pareto: true, weight: 'Médio', completed: false },
-            { id: `t-p3c-${ts}-6`, subject: 'Direito Constitucional', name: 'Direitos Fundamentais e Remédios Constitucionais', is_pareto: false, weight: 'Médio', completed: false },
-            { id: `t-p3c-${ts}-7`, subject: 'Tecnologia da Informação', name: 'Metodologias Ágeis (Scrum, Kanban)', is_pareto: false, weight: 'Médio', completed: false }
-          ]
-        },
-        {
-          id: 'sprint-3',
-          title: 'Sprint 3 — Complementares + Simulado Final',
-          duration: '2 Semanas',
-          progress: 0,
-          topics: [
-            { id: `t-p3c-${ts}-8`, subject: 'Língua Portuguesa', name: 'Interpretação de Texto + Crase e Regência', is_pareto: false, weight: 'Baixo', completed: false },
-            { id: `t-p3c-${ts}-9`, subject: 'Raciocínio Lógico', name: 'Lógica Proposicional (Tabelas Verdade, Negação)', is_pareto: false, weight: 'Baixo', completed: false },
-            { id: `t-p3c-${ts}-10`, subject: 'Simulado', name: 'Simulado Final Completo + Correção de Erros', is_pareto: false, weight: 'Alto', completed: false }
-          ]
-        }
-      ]
     };
   }
 }

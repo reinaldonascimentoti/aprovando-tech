@@ -236,19 +236,90 @@ export class SupabaseService {
   // EDITAIS
   // ----------------------------------------------------------------
 
-  async getEditais() {
+  async getEditais(userId?: string) {
     if (!this.adminClient) return [];
 
-    const { data, error } = await this.adminClient
+    let dismissedIds: string[] = [];
+    if (userId) {
+      const { data: dismissed } = await this.adminClient
+        .from('user_edital_dismissals')
+        .select('edital_id')
+        .eq('user_id', userId);
+      dismissedIds = (dismissed ?? []).map((d: any) => d.edital_id);
+    }
+
+    let query = this.adminClient
       .from('editais')
       .select('*')
       .order('created_at', { ascending: false });
 
+    if (dismissedIds.length > 0) {
+      query = query.not('id', 'in', `(${dismissedIds.join(',')})`);
+    }
+
+    const { data, error } = await query;
     if (error) {
       this.logger.error(`getEditais error: ${error.message}`);
       return [];
     }
     return data ?? [];
+  }
+
+  async updateEditalContext(id: string, userContext: EditalUserContext) {
+    if (!this.adminClient) return null;
+
+    const { data, error } = await this.adminClient
+      .from('editais')
+      .update({
+        cargo: userContext.cargo || null,
+        concurso: userContext.concurso || null,
+        data_prova: userContext.dataProva || null,
+        horas_por_dia: userContext.horasPorDia || null,
+        dias_por_semana: userContext.diasPorSemana || null,
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      this.logger.error(`updateEditalContext error: ${error.message}`);
+      return null;
+    }
+    return data;
+  }
+
+  async dismissEdital(editalId: string, userId: string) {
+    if (!this.adminClient) return null;
+
+    const { data, error } = await this.adminClient
+      .from('user_edital_dismissals')
+      .insert({ user_id: userId, edital_id: editalId })
+      .select()
+      .single();
+
+    if (error) {
+      // Ignora duplicatas (já dispensado)
+      if (error.code === '23505') return { already_dismissed: true };
+      this.logger.error(`dismissEdital error: ${error.message}`);
+      return null;
+    }
+    return data;
+  }
+
+  async deleteEdital(editalId: string) {
+    if (!this.adminClient) return false;
+
+    const { error } = await this.adminClient
+      .from('editais')
+      .delete()
+      .eq('id', editalId);
+
+    if (error) {
+      this.logger.error(`deleteEdital error: ${error.message}`);
+      return false;
+    }
+
+    return true;
   }
 
   async getEditalById(id: string) {
@@ -264,6 +335,27 @@ export class SupabaseService {
       this.logger.warn(`getEditalById (${id}) not found: ${error.message}`);
       return null;
     }
+
+    // Tenta buscar também na tabela dedicada conteudo_programatico se existir
+    try {
+      const { data: cpData } = await this.adminClient
+        .from('conteudo_programatico')
+        .select('*')
+        .eq('edital_id', id)
+        .maybeSingle();
+
+      if (cpData && data) {
+        if (!data.pareto_data) data.pareto_data = {};
+        if (typeof data.pareto_data === 'string') {
+          try { data.pareto_data = JSON.parse(data.pareto_data); } catch (e) {}
+        }
+        data.pareto_data.mapa_geral = cpData.mapa_geral || data.pareto_data.mapa_geral;
+        data.pareto_data.conteudo_programatico = cpData.raw_json || data.pareto_data.conteudo_programatico;
+      }
+    } catch (e) {
+      // Tabela conteudo_programatico opcional se ainda não criada
+    }
+
     return data;
   }
 
@@ -301,6 +393,24 @@ export class SupabaseService {
       this.logger.error(`addEdital error: ${error.message}`);
       return null;
     }
+
+    // Salva também na tabela dedicada conteudo_programatico
+    if (data?.id && paretoData) {
+      try {
+        await this.adminClient
+          .from('conteudo_programatico')
+          .upsert({
+            edital_id: data.id,
+            cargo: userContext?.cargo || null,
+            concurso: userContext?.concurso || null,
+            mapa_geral: paretoData.mapa_geral || paretoData.mapa_completo || paretoData.mapa_geral_extraido || {},
+            raw_json: paretoData.conteudo_programatico || paretoData
+          }, { onConflict: 'edital_id' });
+      } catch (e) {
+        this.logger.warn(`Salvamento opcional na tabela conteudo_programatico: ${e.message}`);
+      }
+    }
+
     return data;
   }
 

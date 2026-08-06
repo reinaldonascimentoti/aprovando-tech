@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService, UserProfile } from '../../services/auth.service';
+import { EditalCardComponent } from '../../components/edital-card/edital-card.component';
 
 @Component({
   selector: 'app-student-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, EditalCardComponent],
   template: `
     <div class="min-h-screen bg-[#f7f9fc] p-4 md:p-8">
       <!-- Top Navigation Bar -->
@@ -92,36 +93,25 @@ import { AuthService, UserProfile } from '../../services/auth.service';
 
         <!-- 1. My Editais List -->
         <div *ngIf="activeTab === 'editais'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div *ngFor="let ed of editais" class="neo-pressed rounded-3xl p-6 flex flex-col justify-between hover:shadow-inner transition-all">
-            <div>
-              <div class="flex items-center justify-between mb-3">
-                <span class="bg-[#6b38d4]/10 text-[#6b38d4] text-xs font-bold px-3 py-1 rounded-full">
-                  {{ ed.pareto_data?.high_priority_subjects || 2 }} Matérias Vitais (20%)
-                </span>
-                <span class="text-xs font-semibold text-[#767587]">{{ ed.created_at | date:'dd/MM/yyyy' }}</span>
-              </div>
-              <h3 class="text-lg font-bold text-[#191c1e] mb-2">{{ ed.title }}</h3>
-              <p class="text-xs text-[#464556] mb-6 leading-relaxed">{{ ed.pareto_data?.relevance_summary }}</p>
-            </div>
+          <div *ngFor="let ed of editais">
+            <app-edital-card
+              [edital]="ed"
+              [isAdmin]="false"
+              [dismissConfirmId]="dismissConfirmId"
+              (editEdital)="openEditModal($event)"
+              (requestDismiss)="confirmDismiss($event)"
+              (confirmDismiss)="executeDismiss($event)"
+              (cancelDismiss)="dismissConfirmId = null">
+            </app-edital-card>
+          </div>
 
-            <div class="space-y-2">
-              <div class="flex justify-between items-center text-xs font-bold mb-1">
-                <span class="text-[#464556]">Progresso do Edital</span>
-                <span class="text-[#433fe5]">66% Concluído</span>
-              </div>
-              <div class="w-full h-2.5 neo-pressed rounded-full overflow-hidden p-0.5 mb-4">
-                <div class="h-full bg-gradient-to-r from-[#433fe5] to-[#6b38d4] rounded-full" style="width: 66%;"></div>
-              </div>
-
-              <div class="flex gap-3">
-                <a [routerLink]="['/pareto', ed.id]" class="btn-mesh flex-1 py-3 rounded-xl text-xs font-bold text-center">
-                  Ver Pareto 80/20
-                </a>
-                <a [routerLink]="['/sprints', ed.id]" class="btn-neo flex-1 py-3 rounded-xl text-xs font-bold text-center">
-                  Cronograma Sprints
-                </a>
-              </div>
-            </div>
+          <!-- Empty state -->
+          <div *ngIf="editais.length === 0" class="col-span-2 flex flex-col items-center justify-center py-16 text-center gap-4">
+            <span class="material-symbols-outlined !text-[64px] text-[#c7c4d8]">folder_open</span>
+            <p class="text-sm font-semibold text-[#767587]">Nenhuma análise de edital ainda.</p>
+            <button (click)="activeTab = 'upload'" class="btn-mesh px-6 py-3 rounded-2xl text-sm font-bold flex items-center gap-2">
+              <span class="material-symbols-outlined">add</span>Analisar Primeiro Edital
+            </button>
           </div>
         </div>
 
@@ -274,7 +264,7 @@ import { AuthService, UserProfile } from '../../services/auth.service';
               [disabled]="!isEditalFormValid || isSubmitting"
               class="btn-mesh w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm mt-2">
               <span class="material-symbols-outlined">auto_awesome</span>
-              <span>{{ isSubmitting ? 'Gerando Análise Pareto...' : 'Analisar Edital com IA Pareto 80/20' }}</span>
+              <span>{{ isSubmitting ? 'Já confirmei seu Cargo! Gerando Análise Pareto 80/20... Por favor, aguarde.' : 'Analisar Edital com IA Pareto 80/20' }}</span>
             </button>
           </div>
         </div>
@@ -347,6 +337,158 @@ import { AuthService, UserProfile } from '../../services/auth.service';
 
       </div>
     </div>
+
+    <!-- ===== EDIT MODAL ===== -->
+    <div *ngIf="showEditModal"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(25,28,30,0.55); backdrop-filter: blur(6px);">
+      <div class="neo-raised rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-fadeIn">
+
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[#c7c4d8]/30">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl neo-raised flex items-center justify-center text-[#433fe5]">
+              <span class="material-symbols-outlined !text-[20px]">edit_document</span>
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-[#191c1e]">Editar Edital</h2>
+              <p class="text-[11px] text-[#767587]">{{ editingEdital?.title }}</p>
+            </div>
+          </div>
+          <button (click)="closeEditModal()" class="w-8 h-8 rounded-full neo-raised flex items-center justify-center text-[#464556] hover:text-[#ba1a1a] transition-colors">
+            <span class="material-symbols-outlined !text-[18px]">close</span>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="px-6 py-5 space-y-3 max-h-[60vh] overflow-y-auto">
+
+          <!-- Informação sobre re-análise -->
+          <div class="bg-[#e9ddff]/50 rounded-xl px-3 py-2.5 flex items-start gap-2 text-[11px] text-[#5516be]">
+            <span class="material-symbols-outlined !text-[15px] shrink-0 mt-0.5">info</span>
+            <span><strong>Salvar</strong> atualiza os dados do contexto. <strong>Salvar e Reenviar</strong> refaz toda a análise Pareto com IA.</span>
+          </div>
+
+          <!-- Cargo -->
+          <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
+            <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">badge</span>
+            <input
+              [(ngModel)]="editCargo"
+              type="text"
+              placeholder="Cargo *"
+              class="w-full bg-transparent border-none outline-none text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+          </div>
+
+          <!-- Concurso -->
+          <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
+            <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">emoji_events</span>
+            <input
+              [(ngModel)]="editConcurso"
+              type="text"
+              placeholder="Concurso alvo"
+              class="w-full bg-transparent border-none outline-none text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+          </div>
+
+          <!-- Data da prova -->
+          <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
+            <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">event</span>
+            <input
+              [(ngModel)]="editDataProva"
+              type="date"
+              [min]="today"
+              class="w-full bg-transparent border-none outline-none text-sm text-[#191c1e]">
+          </div>
+
+          <!-- Horas/dia + Dias/semana -->
+          <div class="grid grid-cols-2 gap-2">
+            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
+              <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">schedule</span>
+              <input
+                [(ngModel)]="editHorasPorDia"
+                type="number"
+                min="0.5" max="24" step="0.5"
+                placeholder="Horas/dia"
+                class="w-full bg-transparent border-none outline-none text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+            </div>
+            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
+              <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">calendar_view_week</span>
+              <input
+                [(ngModel)]="editDiasPorSemana"
+                type="number"
+                min="1" max="7" step="1"
+                placeholder="Dias/semana"
+                class="w-full bg-transparent border-none outline-none text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+            </div>
+          </div>
+
+          <!-- Seção de re-análise: novo arquivo/link (opcional) -->
+          <div class="rounded-xl border border-dashed border-[#c7c4d8] p-3 space-y-2">
+            <p class="text-[11px] font-bold text-[#767587] uppercase tracking-wider flex items-center gap-1.5">
+              <span class="material-symbols-outlined !text-[14px]">refresh</span>
+              Re-análise (opcional — somente para "Salvar e Reenviar")
+            </p>
+            <!-- Modo link / pdf -->
+            <div class="flex gap-2 bg-[#eceef1] p-0.5 rounded-lg">
+              <button type="button"
+                (click)="editUploadMode = 'none'"
+                [ngClass]="editUploadMode === 'none' ? 'bg-white shadow-sm text-[#433fe5]' : 'text-[#464556]'"
+                class="flex-1 py-1 text-[11px] font-bold rounded-md transition-all">Sem novo arquivo</button>
+              <button type="button"
+                (click)="editUploadMode = 'link'"
+                [ngClass]="editUploadMode === 'link' ? 'bg-white shadow-sm text-[#433fe5]' : 'text-[#464556]'"
+                class="flex-1 py-1 text-[11px] font-bold rounded-md transition-all">Novo Link</button>
+              <button type="button"
+                (click)="editUploadMode = 'pdf'"
+                [ngClass]="editUploadMode === 'pdf' ? 'bg-white shadow-sm text-[#433fe5]' : 'text-[#464556]'"
+                class="flex-1 py-1 text-[11px] font-bold rounded-md transition-all">Novo PDF</button>
+            </div>
+
+            <div *ngIf="editUploadMode === 'link'" class="neo-pressed rounded-lg p-2.5 flex items-center gap-2">
+              <span class="material-symbols-outlined text-[#433fe5] !text-[16px]">link</span>
+              <input [(ngModel)]="editLink" type="text" placeholder="Cole aqui a URL do edital"
+                class="w-full bg-transparent border-none outline-none text-xs text-[#191c1e]">
+            </div>
+
+            <div *ngIf="editUploadMode === 'pdf'" class="neo-pressed rounded-xl p-4 border-2 border-dashed border-[#c7c4d8] flex flex-col items-center text-center relative hover:border-[#6b38d4] transition-colors cursor-pointer">
+              <span class="material-symbols-outlined !text-[28px] text-[#6b38d4] mb-1">picture_as_pdf</span>
+              <p class="text-xs font-semibold text-[#191c1e]">{{ editFile ? editFile.name : 'Selecionar novo PDF' }}</p>
+              <input type="file" (change)="onEditFileSelected($event)" accept="application/pdf" class="absolute inset-0 opacity-0 cursor-pointer">
+            </div>
+          </div>
+
+          <!-- Toast do modal -->
+          <div *ngIf="showEditToast"
+               class="rounded-xl p-3 text-xs font-bold flex items-center gap-2 animate-fadeIn"
+               [ngClass]="editToastType === 'success' ? 'bg-[#eefff2] text-[#005236]' : 'bg-[#ffdad6] text-[#93000a]'">
+            <span class="material-symbols-outlined !text-[16px]">{{ editToastType === 'success' ? 'check_circle' : 'error' }}</span>
+            <span>{{ editToastMsg }}</span>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 pb-6 pt-4 border-t border-[#c7c4d8]/30 flex gap-3">
+          <button
+            (click)="closeEditModal()"
+            class="flex-1 py-3 rounded-xl text-sm font-bold border border-[#c7c4d8] text-[#464556] hover:border-[#433fe5] hover:text-[#433fe5] transition-colors">
+            Cancelar
+          </button>
+          <button
+            (click)="saveEditalContext()"
+            [disabled]="!editCargo.trim() || isSaving"
+            class="flex-1 py-3 rounded-xl text-sm font-bold btn-neo flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined !text-[18px]">save</span>
+            <span>{{ isSaving ? 'Salvando...' : 'Salvar' }}</span>
+          </button>
+          <button
+            (click)="saveAndReanalyze()"
+            [disabled]="!editCargo.trim() || isSaving || isReanalyzing"
+            class="flex-1 py-3 rounded-xl text-sm font-bold btn-mesh flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined !text-[18px]">{{ isReanalyzing ? 'hourglass_top' : 'auto_awesome' }}</span>
+            <span>{{ isReanalyzing ? 'Analisando...' : 'Salvar e Reenviar' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
   `
 })
 export class StudentDashboardComponent implements OnInit {
@@ -355,6 +497,7 @@ export class StudentDashboardComponent implements OnInit {
   questions: any[] = [];
   activeTab: 'editais' | 'upload' | 'questions' = 'editais';
 
+  // ---- Upload form ----
   editalTitle = '';
   editalLink = '';
   editalCargo = '';
@@ -362,19 +505,40 @@ export class StudentDashboardComponent implements OnInit {
   editalDataProva = '';
   editalHorasPorDia: number | null = null;
   editalDiasPorSemana: number | null = null;
-
   editalUploadMode: 'link' | 'pdf' = 'link';
   selectedFile: File | null = null;
   isSubmitting = false;
+
+  // ---- Questions ----
   searchSubject = '';
   selectedAnswers: { [key: string]: string } = {};
 
-  readonly today = new Date().toISOString().split('T')[0];
-
-  // Toast state for upload feedback
+  // ---- Toast (upload) ----
   uploadToastMsg = '';
   uploadToastType: 'success' | 'error' = 'success';
   showUploadToast = false;
+
+  // ---- Dismiss ----
+  dismissConfirmId: string | null = null;
+
+  // ---- Edit modal ----
+  showEditModal = false;
+  editingEdital: any = null;
+  editCargo = '';
+  editConcurso = '';
+  editDataProva = '';
+  editHorasPorDia: number | null = null;
+  editDiasPorSemana: number | null = null;
+  editUploadMode: 'none' | 'link' | 'pdf' = 'none';
+  editLink = '';
+  editFile: File | null = null;
+  isSaving = false;
+  isReanalyzing = false;
+  showEditToast = false;
+  editToastMsg = '';
+  editToastType: 'success' | 'error' = 'success';
+
+  readonly today = new Date().toISOString().split('T')[0];
 
   constructor(
     private apiService: ApiService,
@@ -388,7 +552,7 @@ export class StudentDashboardComponent implements OnInit {
   }
 
   loadData() {
-    this.apiService.getEditais().subscribe(eds => this.editais = eds);
+    this.apiService.getEditais(this.user?.id).subscribe(eds => this.editais = eds);
     this.apiService.getQuestions(true).subscribe(qs => this.questions = qs);
   }
 
@@ -434,6 +598,12 @@ export class StudentDashboardComponent implements OnInit {
     }
   }
 
+  onEditFileSelected(event: any) {
+    if (event.target.files && event.target.files.length > 0) {
+      this.editFile = event.target.files[0];
+    }
+  }
+
   submitEdital() {
     if (!this.isEditalFormValid) return;
     this.isSubmitting = true;
@@ -454,8 +624,12 @@ export class StudentDashboardComponent implements OnInit {
       diasPorSemana:  this.editalDiasPorSemana  ?? undefined,
     };
     
+    this.uploadToastMsg = 'Já confirmei seu Cargo no edital! Enviando para Análise Pareto 80/20 Recursiva e Cronograma de Estudos... Por favor, aguarde alguns instantes.';
+    this.uploadToastType = 'success';
+    this.showUploadToast = true;
+
     this.apiService.uploadEdital(fileToUpload, title, linkToSend, this.user?.id || 'usr-2', userContext).subscribe({
-      next: (res) => {
+      next: (res: any) => {
         this.isSubmitting = false;
         this.selectedFile = null;
         this.editalLink = '';
@@ -467,22 +641,124 @@ export class StudentDashboardComponent implements OnInit {
         this.editalDiasPorSemana = null;
         this.loadData();
         this.activeTab = 'editais';
-        // Show success toast
-        this.uploadToastMsg = 'Edital enviado e análise iniciada com sucesso!';
-        this.uploadToastType = 'success';
-        this.showUploadToast = true;
-        setTimeout(() => { this.showUploadToast = false; }, 5000);
+
+        const newId = res?.data?.id || res?.id;
+        if (newId) {
+          this.router.navigate(['/disciplinas', newId]);
+        }
       },
       error: (err) => {
         this.isSubmitting = false;
-        // Show error toast
-        this.uploadToastMsg = 'Erro ao enviar o edital. Tente novamente.';
+        this.uploadToastMsg = 'Erro ao processar o edital. Tente novamente.';
         this.uploadToastType = 'error';
         this.showUploadToast = true;
         setTimeout(() => { this.showUploadToast = false; }, 5000);
       }
     });
   }
+
+  // ---- Edit Modal ----
+
+  openEditModal(ed: any) {
+    this.editingEdital = ed;
+    this.editCargo = ed.cargo || '';
+    this.editConcurso = ed.concurso || '';
+    this.editDataProva = ed.data_prova || '';
+    this.editHorasPorDia = ed.horas_por_dia || null;
+    this.editDiasPorSemana = ed.dias_por_semana || null;
+    this.editUploadMode = 'none';
+    this.editLink = '';
+    this.editFile = null;
+    this.showEditToast = false;
+    this.showEditModal = true;
+  }
+
+  closeEditModal() {
+    this.showEditModal = false;
+    this.editingEdital = null;
+  }
+
+  saveEditalContext() {
+    if (!this.editCargo?.trim() || !this.editingEdital) return;
+    this.isSaving = true;
+
+    const context = {
+      cargo: this.editCargo.trim(),
+      concurso: this.editConcurso.trim() || undefined,
+      dataProva: this.editDataProva || undefined,
+      horasPorDia: this.editHorasPorDia ?? undefined,
+      diasPorSemana: this.editDiasPorSemana ?? undefined,
+    };
+
+    this.apiService.updateEditalContext(this.editingEdital.id, context).subscribe({
+      next: () => {
+        this.isSaving = false;
+        this.loadData();
+        this.closeEditModal();
+      },
+      error: () => {
+        this.isSaving = false;
+        this.editToastMsg = 'Erro ao salvar. Tente novamente.';
+        this.editToastType = 'error';
+        this.showEditToast = true;
+        setTimeout(() => { this.showEditToast = false; }, 4000);
+      }
+    });
+  }
+
+  saveAndReanalyze() {
+    if (!this.editCargo?.trim() || !this.editingEdital) return;
+    this.isReanalyzing = true;
+
+    const file = this.editUploadMode === 'pdf' ? this.editFile : null;
+    const link = this.editUploadMode === 'link' ? this.editLink : '';
+
+    const context = {
+      cargo: this.editCargo.trim(),
+      concurso: this.editConcurso.trim() || undefined,
+      dataProva: this.editDataProva || undefined,
+      horasPorDia: this.editHorasPorDia ?? undefined,
+      diasPorSemana: this.editDiasPorSemana ?? undefined,
+    };
+
+    this.apiService.reanalyzeEdital(this.editingEdital.id, file, link, context).subscribe({
+      next: () => {
+        this.isReanalyzing = false;
+        this.loadData();
+        this.closeEditModal();
+      },
+      error: () => {
+        this.isReanalyzing = false;
+        this.editToastMsg = 'Erro ao reenviar análise. Tente novamente.';
+        this.editToastType = 'error';
+        this.showEditToast = true;
+        setTimeout(() => { this.showEditToast = false; }, 4000);
+      }
+    });
+  }
+
+  // ---- Dismiss ----
+
+  confirmDismiss(editalId: string) {
+    this.dismissConfirmId = editalId;
+  }
+
+  executeDismiss(ed: any) {
+    const userId = this.user?.id;
+    if (!userId) return;
+
+    this.apiService.dismissEdital(ed.id, userId).subscribe({
+      next: () => {
+        this.dismissConfirmId = null;
+        this.editais = this.editais.filter(e => e.id !== ed.id);
+      },
+      error: () => {
+        this.dismissConfirmId = null;
+      }
+    });
+  }
+
+  // ---- Questions ----
 
   selectOption(questionId: string, letter: string) {
     this.selectedAnswers[questionId] = letter;

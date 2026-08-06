@@ -91,6 +91,10 @@ create table if not exists public.editais (
   status       text not null default 'processing' check (status in ('processing', 'completed', 'error')),
   pareto_data  jsonb default '{}'::jsonb,
   cargo        text,
+  concurso     text,
+  data_prova   text,
+  horas_por_dia numeric,
+  dias_por_semana numeric,
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
@@ -378,3 +382,52 @@ create policy "uea_delete_admin"
 
 grant select on public.user_edital_assignments to authenticated, service_role;
 grant insert, delete on public.user_edital_assignments to service_role;
+
+-- ---------------------------------------------------------------
+-- 7. TABELA CONTEUDO_PROGRAMATICO (Mapa Geral de Disciplinas Extraído)
+-- ---------------------------------------------------------------
+create table if not exists public.conteudo_programatico (
+  id           uuid primary key default gen_random_uuid(),
+  edital_id    text not null references public.editais(id) on delete cascade,
+  cargo        text,
+  concurso     text,
+  mapa_geral   jsonb default '{}'::jsonb,
+  raw_json     jsonb default '{}'::jsonb,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  unique(edital_id)
+);
+
+create trigger conteudo_programatico_updated_at
+  before update on public.conteudo_programatico
+  for each row execute function public.set_updated_at();
+
+-- RLS: conteudo_programatico
+alter table public.conteudo_programatico enable row level security;
+
+create policy "cp_select_authenticated"
+  on public.conteudo_programatico for select
+  to authenticated
+  using ( true );
+
+create policy "cp_insert_authenticated"
+  on public.conteudo_programatico for insert
+  to authenticated
+  with check ( true );
+
+create policy "cp_update_authenticated"
+  on public.conteudo_programatico for update
+  to authenticated
+  using ( true );
+
+create policy "cp_delete_admin"
+  on public.conteudo_programatico for delete
+  to authenticated
+  using (
+    exists (
+      select 1 from public.profiles
+      where id = (select auth.uid()) and role = 'admin'
+    )
+  );
+
+grant select, insert, update, delete on public.conteudo_programatico to authenticated, service_role;

@@ -24,10 +24,29 @@ import { AuthService, UserProfile } from '../../services/auth.service';
       <!-- Main Header Card -->
       <div class="neo-raised rounded-3xl p-6 md:p-8 mb-8 space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 class="text-2xl md:text-3xl font-black text-[#191c1e] mb-1">
+          <div class="flex-1 min-w-0">
+            <h1 class="text-2xl md:text-3xl font-black text-[#191c1e] mb-2">
               Cronograma de Estudos - {{ edital?.title || 'Edital Concurso' }}
             </h1>
+            <!-- Concurso Info Badges -->
+            <div class="flex flex-wrap gap-2 mb-2" *ngIf="concursoInfo">
+              <span *ngIf="concursoInfo.concurso" class="inline-flex items-center gap-1 bg-[#e1dfff] text-[#2b20d2] text-[11px] font-extrabold px-3 py-1 rounded-full">
+                <span class="material-symbols-outlined !text-[13px]">emoji_events</span>
+                {{ concursoInfo.concurso }}
+              </span>
+              <span *ngIf="concursoInfo.cargo" class="inline-flex items-center gap-1 bg-[#e9ddff] text-[#5516be] text-[11px] font-extrabold px-3 py-1 rounded-full">
+                <span class="material-symbols-outlined !text-[13px]">badge</span>
+                {{ concursoInfo.cargo }}
+              </span>
+              <span *ngIf="concursoInfo.data_prova" class="inline-flex items-center gap-1 bg-[#eefff2] text-[#005236] text-[11px] font-extrabold px-3 py-1 rounded-full">
+                <span class="material-symbols-outlined !text-[13px]">event</span>
+                Prova: {{ concursoInfo.data_prova }}
+              </span>
+              <span *ngIf="concursoInfo.banca" class="inline-flex items-center gap-1 bg-[#fff3e0] text-[#e65100] text-[11px] font-extrabold px-3 py-1 rounded-full">
+                <span class="material-symbols-outlined !text-[13px]">shield</span>
+                {{ concursoInfo.banca }}
+              </span>
+            </div>
             <p class="text-xs text-[#464556]">
               Organizado por subtópico com proporção 30% Teoria / 50% Exercícios / 20% Revisão. Marque os itens concluídos.
             </p>
@@ -219,7 +238,11 @@ import { AuthService, UserProfile } from '../../services/auth.service';
                 </div>
               </div>
 
-              <div>
+              <div class="flex items-center gap-2 flex-wrap justify-end">
+                <span *ngIf="topic.usa_banco_questoes" class="inline-flex items-center gap-1 bg-[#e3f2fd] text-[#1565c0] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">
+                  <span class="material-symbols-outlined !text-[12px]">quiz</span>
+                  Banco de Questões
+                </span>
                 <span 
                   [class.bg-[#eefff2]]="topic.completed"
                   [class.text-[#005236]]="topic.completed"
@@ -242,6 +265,7 @@ import { AuthService, UserProfile } from '../../services/auth.service';
 export class SprintScheduleComponent implements OnInit {
   @Input() editalId = 'ed-1';
   edital: any = null;
+  paretoData: any = null;
   sprints: any[] = [];
   semanas: any[] = [];
   user: UserProfile | null = null;
@@ -263,11 +287,25 @@ export class SprintScheduleComponent implements OnInit {
   }
 
   loadEditalSprints() {
-    this.apiService.getEditalDetails(this.editalId).subscribe(ed => {
+    this.apiService.getEditalDetails(this.editalId).subscribe(res => {
+      const ed = res?.data || res;
       this.edital = ed;
-      this.sprints = ed?.pareto_data?.sprints || [];
-      this.semanas = ed?.pareto_data?.cronograma_estudos?.semanas || [];
+      let pd = ed?.pareto_data || ed;
+      if (typeof pd === 'string') {
+        try { pd = JSON.parse(pd); } catch (e) {}
+      }
+      this.paretoData = pd;
+      this.semanas = pd?.cronograma_estudos?.semanas || [];
+      this.sprints = pd?.sprints || [];
     });
+  }
+
+  get concursoInfo(): any {
+    return this.paretoData?.concurso_info || null;
+  }
+
+  get usaBancoQuestoes(): boolean {
+    return this.paretoData?.usa_banco_questoes || false;
   }
 
   get overallProgress(): number {

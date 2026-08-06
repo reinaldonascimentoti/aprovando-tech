@@ -12,6 +12,123 @@
       "high_priority_subjects": 2,
       "coverage_percentage": 82,
       "relevance_summary": "Foco massivo em Direito Tributário e Contabilidade Geral, correspondendo a 82% das questões históricas da banca.",
+      "mapa_geral": {
+        "disciplinas_basicas": [
+          {
+            "nome": "Língua Portuguesa",
+            "percentual_questoes": 3,
+            "prioridade": "RESIDUAL",
+            "percentual_tempo": 3,
+            "camada_2_topicos": [
+              {
+                "nome": "Interpretação de Texto",
+                "frequencia_historica": "100% das provas",
+                "temperatura": "QUENTE",
+                "ordem_estudo": 1,
+                "camada_3_subtopicos": [
+                  { "nome": "Compreensão e Inferência Textual", "frequencia": "Alta", "dificuldade": "Médio", "custo_beneficio": "Alto", "incluir": true, "justificativa": "Habilidade essencial." }
+                ]
+              }
+            ]
+          },
+          {
+            "nome": "Raciocínio Lógico",
+            "percentual_questoes": 2,
+            "prioridade": "RESIDUAL",
+            "percentual_tempo": 2,
+            "camada_2_topicos": [
+              {
+                "nome": "Lógica Proposicional",
+                "frequencia_historica": "80% das provas",
+                "temperatura": "QUENTE",
+                "ordem_estudo": 1,
+                "camada_3_subtopicos": [
+                  { "nome": "Tabelas Verdade", "frequencia": "Alta", "dificuldade": "Fácil", "custo_beneficio": "Alto", "incluir": true, "justificativa": "Questões diretas." }
+                ]
+              }
+            ]
+          },
+          {
+            "nome": "Direito Constitucional",
+            "percentual_questoes": 5,
+            "prioridade": "COMPLEMENTAR",
+            "percentual_tempo": 5,
+            "camada_2_topicos": [
+              {
+                "nome": "Direitos e Garantias Fundamentais",
+                "frequencia_historica": "95% das provas",
+                "temperatura": "QUENTE",
+                "ordem_estudo": 1,
+                "camada_3_subtopicos": [
+                  { "nome": "Remédios Constitucionais", "frequencia": "Alta", "dificuldade": "Fácil", "custo_beneficio": "Alto", "incluir": true, "justificativa": "Alta incidência." }
+                ]
+              }
+            ]
+          },
+          {
+            "nome": "Direito Administrativo",
+            "percentual_questoes": 8,
+            "prioridade": "COMPLEMENTAR",
+            "percentual_tempo": 8,
+            "camada_2_topicos": [
+              {
+                "nome": "Licitações e Contratos",
+                "frequencia_historica": "85% das provas",
+                "temperatura": "QUENTE",
+                "ordem_estudo": 1,
+                "camada_3_subtopicos": [
+                  { "nome": "Modalidades de Licitação (Lei 14.133/21)", "frequencia": "Alta", "dificuldade": "Médio", "custo_beneficio": "Alto", "incluir": true, "justificativa": "Nova lei de licitações." }
+                ]
+              }
+            ]
+          }
+        ],
+        "disciplinas_especificas": [
+          {
+            "nome": "Direito Tributário",
+            "percentual_questoes": 45,
+            "prioridade": "PRIORITÁRIA",
+            "percentual_tempo": 45,
+            "camada_2_topicos": [
+              {
+                "nome": "Impostos de Competência da União",
+                "frequencia_historica": "90% das provas",
+                "temperatura": "QUENTE",
+                "ordem_estudo": 1,
+                "camada_3_subtopicos": [
+                  { "nome": "IR, IPI, ITR e Impostos Extraordinários", "frequencia": "Alta", "dificuldade": "Médio", "custo_beneficio": "Alto", "incluir": true, "justificativa": "Núcleo duro do edital de Auditor." }
+                ]
+              },
+              {
+                "nome": "Lançamento e Crédito Tributário",
+                "frequencia_historica": "88% das provas",
+                "temperatura": "QUENTE",
+                "ordem_estudo": 2,
+                "camada_3_subtopicos": [
+                  { "nome": "Hipóteses de Suspensão e Extinção", "frequencia": "Alta", "dificuldade": "Fácil", "custo_beneficio": "Alto", "incluir": true, "justificativa": "Cobrança garantida." }
+                ]
+              }
+            ]
+          },
+          {
+            "nome": "Contabilidade Geral",
+            "percentual_questoes": 37,
+            "prioridade": "PRIORITÁRIA",
+            "percentual_tempo": 37,
+            "camada_2_topicos": [
+              {
+                "nome": "Balanço Patrimonial e DRE",
+                "frequencia_historica": "92% das provas",
+                "temperatura": "QUENTE",
+                "ordem_estudo": 1,
+                "camada_3_subtopicos": [
+                  { "nome": "Estrutura do Balanço e DRE", "frequencia": "Alta", "dificuldade": "Médio", "custo_beneficio": "Alto", "incluir": true, "justificativa": "Base para análises de demonstrações." }
+                ]
+              }
+            ]
+          }
+        ]
+      },
       "subjects": [
         {
           "name": "Direito Tributário",

@@ -106,14 +106,21 @@ export class ApiService {
     }).pipe(catchError(() => of([])));
   }
 
-  getEditais(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/editais`, {
+  getEditais(userId?: string): Observable<any[]> {
+    const params = userId ? `?userId=${userId}` : '';
+    return this.http.get<any[]>(`${this.baseUrl}/editais${params}`, {
       headers: this.getHeaders()
     }).pipe(catchError(() => of([])));
   }
 
   getEditalDetails(id: string): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/editais/${id}`, {
+      headers: this.getHeaders()
+    });
+  }
+
+  analyzeEditalPareto(id: string, userContext?: any): Observable<any> {
+    return this.http.post(`${this.baseUrl}/editais/${id}/analisar-pareto`, userContext || {}, {
       headers: this.getHeaders()
     });
   }
@@ -130,6 +137,68 @@ export class ApiService {
     return this.http.post(
       `${this.baseUrl}/editais/${editalId}/send-to-user`,
       { userId },
+      { headers: this.getHeaders() }
+    );
+  }
+
+  updateEditalContext(
+    id: string,
+    userContext: {
+      cargo: string;
+      concurso?: string;
+      dataProva?: string;
+      horasPorDia?: number;
+      diasPorSemana?: number;
+    },
+  ): Observable<any> {
+    return this.http.patch(
+      `${this.baseUrl}/editais/${id}/context`,
+      {
+        cargo: userContext.cargo,
+        concurso: userContext.concurso,
+        dataProva: userContext.dataProva,
+        horasPorDia: userContext.horasPorDia != null ? String(userContext.horasPorDia) : undefined,
+        diasPorSemana: userContext.diasPorSemana != null ? String(userContext.diasPorSemana) : undefined,
+      },
+      { headers: this.getHeaders() }
+    );
+  }
+
+  reanalyzeEdital(
+    id: string,
+    file: File | null,
+    link: string,
+    userContext: {
+      cargo: string;
+      concurso?: string;
+      dataProva?: string;
+      horasPorDia?: number;
+      diasPorSemana?: number;
+    },
+  ): Observable<any> {
+    const formData = new FormData();
+    if (file) formData.append('file', file);
+    if (link) formData.append('link', link);
+    if (userContext.cargo)         formData.append('cargo', userContext.cargo);
+    if (userContext.concurso)      formData.append('concurso', userContext.concurso);
+    if (userContext.dataProva)     formData.append('dataProva', userContext.dataProva);
+    if (userContext.horasPorDia)   formData.append('horasPorDia', String(userContext.horasPorDia));
+    if (userContext.diasPorSemana) formData.append('diasPorSemana', String(userContext.diasPorSemana));
+    return this.http.post(`${this.baseUrl}/editais/${id}/reanalyze`, formData, {
+      headers: this.getFormHeaders()
+    });
+  }
+
+  dismissEdital(id: string, userId: string): Observable<any> {
+    return this.http.delete(
+      `${this.baseUrl}/editais/${id}/dismiss`,
+      { headers: this.getHeaders(), body: { userId } }
+    );
+  }
+
+  deleteEdital(id: string): Observable<any> {
+    return this.http.delete(
+      `${this.baseUrl}/editais/${id}`,
       { headers: this.getHeaders() }
     );
   }

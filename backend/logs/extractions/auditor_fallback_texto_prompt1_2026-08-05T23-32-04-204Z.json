@@ -1,0 +1,27 @@
+{
+  "edital": "Edital Teste",
+  "cargo": "Auditor",
+  "conteudo_programatico": {
+    "conhecimentos_gerais": [],
+    "conhecimentos_especificos": [
+      {
+        "disciplina": "Direito Constitucional",
+        "topicos": [
+          {
+            "nome": "Direito Constitucional",
+            "subtopicos": []
+          }
+        ]
+      },
+      {
+        "disciplina": "Direito Administrativo",
+        "topicos": [
+          {
+            "nome": "Direito Administrativo",
+            "subtopicos": []
+          }
+        ]
+      }
+    ]
+  }
+}

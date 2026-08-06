@@ -4,6 +4,7 @@ import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard
 import { StudentDashboardComponent } from './pages/student-dashboard/student-dashboard.component';
 import { ParetoAnalysisComponent } from './pages/pareto-analysis/pareto-analysis.component';
 import { SprintScheduleComponent } from './pages/sprint-schedule/sprint-schedule.component';
+import { DisciplinesSheetComponent } from './pages/disciplines-sheet/disciplines-sheet.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -12,5 +13,6 @@ export const routes: Routes = [
   { path: 'student', component: StudentDashboardComponent },
   { path: 'pareto/:id', component: ParetoAnalysisComponent },
   { path: 'sprints/:id', component: SprintScheduleComponent },
+  { path: 'disciplinas/:id', component: DisciplinesSheetComponent },
   { path: '**', redirectTo: 'login' }
 ];

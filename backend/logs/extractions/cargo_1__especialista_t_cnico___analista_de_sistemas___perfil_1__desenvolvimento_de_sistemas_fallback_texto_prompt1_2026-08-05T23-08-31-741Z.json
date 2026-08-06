@@ -1,0 +1,460 @@
+{
+  "edital": "BNB 2027",
+  "cargo": "CARGO 1: ESPECIALISTA TÉCNICO – ANALISTA DE SISTEMAS – PERFIL 1: DESENVOLVIMENTO DE SISTEMAS",
+  "conteudo_programatico": {
+    "conhecimentos_gerais": [
+      {
+        "disciplina": "Língua Portuguesa",
+        "topicos": [
+          {
+            "nome": "Compreensão e Interpretação de Textos",
+            "subtopicos": [
+              "Compreensão de textos de gêneros variados",
+              "Interpretação de textos de gêneros variados"
+            ]
+          },
+          {
+            "nome": "Tipologia e Gêneros Textuais",
+            "subtopicos": [
+              "Reconhecimento de tipos textuais",
+              "Reconhecimento de gêneros textuais"
+            ]
+          },
+          {
+            "nome": "Ortografia Oficial",
+            "subtopicos": [
+              "Domínio da ortografia oficial"
+            ]
+          },
+          {
+            "nome": "Coesão Textual",
+            "subtopicos": [
+              "Elementos de referenciação",
+              "Elementos de substituição",
+              "Elementos de repetição",
+              "Conectores",
+              "Elementos de sequenciação textual",
+              "Emprego de tempos e modos verbais"
+            ]
+          },
+          {
+            "nome": "Estrutura Morfossintática do Período",
+            "subtopicos": [
+              "Emprego das classes de palavras",
+              "Relações de coordenação entre orações e entre termos da oração",
+              "Relações de subordinação entre orações e entre termos da oração",
+              "Emprego dos sinais de pontuação",
+              "Concordância verbal",
+              "Concordância nominal",
+              "Regência verbal",
+              "Regência nominal",
+              "Emprego do sinal indicativo de crase",
+              "Colocação dos pronomes átonos"
+            ]
+          },
+          {
+            "nome": "Reescrita e Semântica Textual",
+            "subtopicos": [
+              "Significação das palavras",
+              "Substituição de palavras ou de trechos de texto",
+              "Reorganização da estrutura de orações e de períodos do texto",
+              "Reescrita de textos de diferentes gêneros e níveis de formalidade"
+            ]
+          }
+        ]
+      },
+      {
+        "disciplina": "Raciocínio Lógico e Quantitativo",
+        "topicos": [
+          {
+            "nome": "Estruturas Lógicas",
+            "subtopicos": [
+              "Compreensão e aplicação de estruturas lógicas"
+            ]
+          },
+          {
+            "nome": "Lógica de Argumentação",
+            "subtopicos": [
+              "Analogias",
+              "Inferências",
+              "Deduções",
+              "Conclusões"
+            ]
+          },
+          {
+            "nome": "Lógica Sentencial (Proposicional)",
+            "subtopicos": [
+              "Proposições simples",
+              "Proposições compostas",
+              "Tabelas-verdade",
+              "Equivalências lógicas",
+              "Diagramas lógicos"
+            ]
+          },
+          {
+            "nome": "Lógica de Primeira Ordem",
+            "subtopicos": [
+              "Conceitos de lógica de primeira ordem"
+            ]
+          },
+          {
+            "nome": "Contagem e Probabilidade",
+            "subtopicos": [
+              "Princípios de contagem",
+              "Cálculo de probabilidade"
+            ]
+          },
+          {
+            "nome": "Teoria dos Conjuntos",
+            "subtopicos": [
+              "Pertinência",
+              "Inclusão",
+              "Operação de união",
+              "Operação de intersecção",
+              "Complemento de conjuntos",
+              "Diferença de conjuntos",
+              "Leis de De Morgan",
+              "Problemas com conjuntos"
+            ]
+          },
+          {
+            "nome": "Raciocínio Lógico Aplicado",
+            "subtopicos": [
+              "Problemas aritméticos",
+              "Problemas geométricos",
+              "Problemas matriciais"
+            ]
+          }
+        ]
+      }
+    ],
+    "conhecimentos_especificos": [
+      {
+        "disciplina": "Lógica de Programação",
+        "topicos": [
+          {
+            "nome": "Algoritmos e Estruturas de Dados",
+            "subtopicos": [
+              "Construção de algoritmos",
+              "Tipos de dados simples",
+              "Tipos de dados estruturados",
+              "Variáveis",
+              "Constantes",
+              "Comandos de atribuição",
+              "Comandos de entrada e saída",
+              "Avaliação de expressões",
+              "Funções pré-definidas",
+              "Conceito de bloco de comandos"
+            ]
+          },
+          {
+            "nome": "Estruturas de Controle e Operadores",
+            "subtopicos": [
+              "Estruturas de controle",
+              "Estruturas de seleção",
+              "Estruturas de repetição",
+              "Estruturas de desvio",
+              "Operadores e expressões"
+            ]
+          },
+          {
+            "nome": "Paradigmas e Técnicas de Programação",
+            "subtopicos": [
+              "Passagem de parâmetros",
+              "Recursividade",
+              "Conceitos básicos de programação estruturada",
+              "Conceitos básicos de programação orientada a objetos",
+              "Métodos de ordenação",
+              "Métodos de pesquisa",
+              "Hashing"
+            ]
+          }
+        ]
+      },
+      {
+        "disciplina": "Arquitetura de Software",
+        "topicos": [
+          {
+            "nome": "Padrões e Estilos Arquiteturais",
+            "subtopicos": [
+              "Arquitetura de software",
+              "Arquitetura de Aplicações",
+              "Padrão Model-View-Controller (MVC)",
+              "Sistemas de N camadas",
+              "Microsserviços",
+              "Arquitetura orientada a eventos",
+              "Refatoração e Modernização de aplicações",
+              "Padrões de design de software (Design Patterns)",
+              "Técnicas de componentização de software",
+              "Arquitetura Cloud Native",
+              "Arquitetura de Sistemas WEB e WEB Standards (W3C)",
+              "Arquitetura de soluções Mobile"
+            ]
+          },
+          {
+            "nome": "Integração e Interoperabilidade",
+            "subtopicos": [
+              "APIs",
+              "API Gateway",
+              "Barramento de Serviços Corporativos (ESB)",
+              "Interoperabilidade entre aplicações",
+              "Serviços de mensageria",
+              "SOAP",
+              "REST",
+              "XML",
+              "XSLT",
+              "UDDI",
+              "WSDL",
+              "JSON",
+              "RMI",
+              "XML-HTTPRequest"
+            ]
+          },
+          {
+            "nome": "Infraestrutura de Aplicação e DevOps",
+            "subtopicos": [
+              "Servidores de aplicações",
+              "Conteinerização de Aplicação",
+              "Conceitos e ferramentas de DevOps",
+              "Técnicas de Integração Contínua (CI)",
+              "Técnicas de Implantação Contínua (CD)",
+              "Gerência de configuração de software",
+              "GIT",
+              "Gestão de Ativos"
+            ]
+          },
+          {
+            "nome": "Persistência de Dados",
+            "subtopicos": [
+              "Frameworks de persistência de dados",
+              "Mapeamento objeto-relacional (ORM)"
+            ]
+          }
+        ]
+      },
+      {
+        "disciplina": "Engenharia de Software",
+        "topicos": [
+          {
+            "nome": "Processos de Desenvolvimento e Práticas Ágeis",
+            "subtopicos": [
+              "Conceitos e técnicas do projeto de software",
+              "Processo iterativo e incremental",
+              "Práticas ágeis de desenvolvimento",
+              "Minimum Viable Product (MVP)",
+              "Gerenciamento de produtos com Scrum",
+              "Gerenciamento de produtos com Kanban"
+            ]
+          },
+          {
+            "nome": "Desenvolvimento Orientado a Testes e Comportamento",
+            "subtopicos": [
+              "Desenvolvimento orientado por comportamento (BDD)",
+              "Desenvolvimento guiado por testes (TDD)",
+              "Desenvolvimento guiado por testes de aceitação (ATDD)"
+            ]
+          },
+          {
+            "nome": "Engenharia de Requisitos e Experiência do Usuário",
+            "subtopicos": [
+              "Elicitação de Requisitos",
+              "Gerenciamento de Requisitos",
+              "Requisitos e Experiência do Usuário (UX)",
+              "Histórias do usuário",
+              "Critérios de Aceitação",
+              "Prototipação",
+              "Projeto centrado no usuário de software",
+              "Storytelling"
+            ]
+          },
+          {
+            "nome": "Testes e Qualidade de Software",
+            "subtopicos": [
+              "Testes unitários",
+              "Testes de integração",
+              "Testes funcionais",
+              "Testes de aceitação",
+              "Testes de desempenho",
+              "Testes de carga",
+              "Testes de vulnerabilidade",
+              "Ferramentas para automatização de testes"
+            ]
+          },
+          {
+            "nome": "Métricas de Software",
+            "subtopicos": [
+              "Análise por pontos de função (IFPUG)",
+              "Análise por pontos de função (NESMA)"
+            ]
+          }
+        ]
+      },
+      {
+        "disciplina": "Linguagens e Tecnologias de Programação",
+        "topicos": [
+          {
+            "nome": "Conceitos de Linguagens e Concorrência",
+            "subtopicos": [
+              "Características estruturais das linguagens de programação",
+              "Orientação a objetos",
+              "Threads",
+              "Escalonamento",
+              "Primitivas de sincronização e deadlocks",
+              "Tratamento de exceções",
+              "Técnicas de refatoração de software",
+              "Tratamento do débito técnico"
+            ]
+          },
+          {
+            "nome": "Linguagens e Frameworks Backend",
+            "subtopicos": [
+              "Java",
+              "Spring Boot",
+              ".NET Core",
+              "Python"
+            ]
+          },
+          {
+            "nome": "Desenvolvimento Web Frontend",
+            "subtopicos": [
+              "HTML 5",
+              "CSS 3",
+              "JavaScript",
+              "Protocolo HTTP",
+              "Protocolo HTTPS"
+            ]
+          },
+          {
+            "nome": "Desenvolvimento Mobile",
+            "subtopicos": [
+              "Android",
+              "iOS",
+              "Ionic"
+            ]
+          },
+          {
+            "nome": "Segurança e Criptografia em Aplicações",
+            "subtopicos": [
+              "Criptografia simétrica",
+              "Criptografia assimétrica",
+              "Assinatura digital",
+              "Certificação digital"
+            ]
+          },
+          {
+            "nome": "Automação e Inteligência Artificial",
+            "subtopicos": [
+              "Robot Process Automation (RPA)",
+              "Low Code",
+              "No Code",
+              "Inteligência Artificial (IA)",
+              "Machine Learning"
+            ]
+          }
+        ]
+      },
+      {
+        "disciplina": "Bancos de Dados",
+        "topicos": [
+          {
+            "nome": "Modelagem e Arquitetura de Dados",
+            "subtopicos": [
+              "Arquitetura de dados",
+              "Modelagem conceitual de dados",
+              "Modelagem lógica de dados",
+              "Modelagem física de dados",
+              "Criação e alteração dos modelos lógico e físico",
+              "Abordagem relacional",
+              "Normalização das estruturas de dados",
+              "Integridade referencial",
+              "Metadados",
+              "Modelagem dimensional",
+              "Avaliação de modelos de dados",
+              "Técnicas de engenharia reversa"
+            ]
+          },
+          {
+            "nome": "Linguagem SQL e Transações",
+            "subtopicos": [
+              "Linguagem de Consulta Estruturada (SQL)",
+              "Linguagem de Definição de Dados (DDL)",
+              "Linguagem de Manipulação de Dados (DML)",
+              "Sistema Gerenciador de Banco de Dados (SGBD)",
+              "Propriedade de Atomicidade",
+              "Propriedade de Consistência",
+              "Propriedade de Isolamento",
+              "Propriedade de Durabilidade",
+              "Independência de dados",
+              "Transações de bancos de dados",
+              "Melhoria de performance de banco de dados"
+            ]
+          },
+          {
+            "nome": "Soluções de Analytics, Big Data e Governança",
+            "subtopicos": [
+              "Bancos de dados NoSQL",
+              "ETL",
+              "Transferência de Arquivos",
+              "Integração via Base de Dados",
+              "Qualidade de dados",
+              "Gestão de dados mestres e de referência",
+              "Data Lakes",
+              "Soluções para Big Data",
+              "Construção de relatórios e dashboards interativos em BI",
+              "Self-service BI",
+              "Governança de dados",
+              "Metodologia DAMA-DMBoK"
+            ]
+          },
+          {
+            "nome": "Administração de SGBD",
+            "subtopicos": [
+              "IBM DB2",
+              "MS SQL Server",
+              "PostgreSQL"
+            ]
+          }
+        ]
+      },
+      {
+        "disciplina": "Computação em Nuvem",
+        "topicos": [
+          {
+            "nome": "Fundamentos e Modelos de Nuvem",
+            "subtopicos": [
+              "Conceitos básicos de computação em nuvem",
+              "Infrastructure as a Service (IaaS)",
+              "Platform as a Service (PaaS)",
+              "Software as a Service (SaaS)",
+              "Nuvem privada",
+              "Nuvem pública",
+              "Nuvem híbrida",
+              "Alta disponibilidade",
+              "Escalabilidade",
+              "Elasticidade",
+              "Agilidade",
+              "Recuperação de desastres"
+            ]
+          },
+          {
+            "nome": "Arquitetura, Segurança e Automação em Nuvem",
+            "subtopicos": [
+              "Distribuição geográfica",
+              "Regiões",
+              "Zonas de disponibilidade",
+              "Subscrições",
+              "Grupos de gestão",
+              "Recursos",
+              "Identidade na nuvem",
+              "Privacidade na nuvem",
+              "Conformidade na nuvem",
+              "Segurança na nuvem",
+              "Infrastructure as Code (IaC)",
+              "Automação"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
