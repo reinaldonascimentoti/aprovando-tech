@@ -1,0 +1,27 @@
+<section class="features" id="beneficios" aria-labelledby="features-title">
+  <div class="features__container">
+    <div class="section-header">
+      <span class="section-badge">Benefícios</span>
+      <h2 id="features-title" class="section-title">
+        Tudo que você precisa para
+        <span class="gradient-text">aprovar</span>
+      </h2>
+      <p class="section-sub">
+        Ferramentas de IA projetadas especificamente para candidatos a concursos públicos.
+      </p>
+    </div>
+
+    <div class="features__grid">
+      @for (feature of features; track feature.title) {
+        <article class="feature-card" [attr.aria-label]="feature.title">
+          <div class="feature-icon" [style.background]="feature.color + '18'">
+            <span class="material-symbols-outlined filled" aria-hidden="true"
+                  [style.color]="feature.color">{{ feature.icon }}</span>
+          </div>
+          <h3 class="feature-title">{{ feature.title }}</h3>
+          <p class="feature-desc">{{ feature.description }}</p>
+        </article>
+      }
+    </div>
+  </div>
+</section>

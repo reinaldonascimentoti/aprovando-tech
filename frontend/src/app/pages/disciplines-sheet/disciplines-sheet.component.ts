@@ -1,8 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
+import { SupabaseService } from '../../services/supabase.service';
+import { ThemeService } from '../../services/theme.service';
 
 export interface CheckedItemState {
   [key: string]: boolean;
@@ -13,96 +16,115 @@ export interface CheckedItemState {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
-    <div class="min-h-screen bg-[#f7f9fc] p-4 md:p-8 max-w-7xl mx-auto">
+    <div class="min-h-screen w-full bg-[var(--background)] text-[var(--on-surface)] transition-colors duration-300">
+      <div class="max-w-7xl mx-auto p-4 md:p-8">
       <!-- Back Navigation & Header -->
       <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <button (click)="goBack()" class="btn-neo px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2">
-          <span class="material-symbols-outlined !text-[18px]">arrow_back</span>
-          <span>Voltar ao Painel</span>
-        </button>
+        <div class="flex items-center gap-3">
+          <button (click)="goBack()" class="btn-neo px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2">
+            <span class="material-symbols-outlined !text-[18px]">arrow_back</span>
+            <span>Voltar ao Painel</span>
+          </button>
+          <button (click)="themeService.toggle()" class="btn-neo px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 text-[var(--on-surface)] transition-all cursor-pointer" [title]="themeService.isDark() ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'">
+            <span class="material-symbols-outlined !text-[16px] text-[var(--primary)]">{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</span>
+            <span>{{ themeService.isDark() ? 'Claro' : 'Escuro' }}</span>
+          </button>
+        </div>
 
         <div class="flex items-center gap-2 flex-wrap">
-          <span class="bg-[#e9ddff] text-[#5516be] text-xs font-extrabold px-3 py-1 rounded-full flex items-center gap-1">
+          <span class="bg-[var(--secondary)]/15 text-[var(--secondary)] text-xs font-extrabold px-3 py-1 rounded-full flex items-center gap-1">
             <span class="material-symbols-outlined !text-[14px]">grid_view</span>
             Mapa das Disciplinas
           </span>
-
-          <!-- Passo 3: Botão Análise de Pareto -->
-          <button (click)="runParetoAnalysis()" [disabled]="isAnalyzingPareto" class="bg-gradient-to-r from-[#433fe5] to-[#6b38d4] text-white px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 cursor-pointer">
-            <span class="material-symbols-outlined !text-[18px]" [class.animate-spin]="isAnalyzingPareto">donut_large</span>
-            <span>{{ isAnalyzingPareto ? 'Realizando Análise de Pareto...' : 'Análise de Pareto' }}</span>
-          </button>
-
-          <!-- Passo 4: Opção Ver Pareto -->
-          <a *ngIf="editalId && paretoData?.pareto_analisado" [routerLink]="['/pareto', editalId]" class="btn-mesh px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 shadow-md hover:shadow-lg transition-all">
-            <span class="material-symbols-outlined !text-[18px]">analytics</span>
-            <span>Ver Pareto</span>
-          </a>
         </div>
       </div>
 
       <!-- Main Edital Info Card -->
       <div class="neo-raised rounded-3xl p-6 md:p-8 mb-8 space-y-4">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-2 flex-wrap">
-              <span class="bg-[#e1dfff] text-[#2b20d2] text-[11px] font-extrabold px-3 py-1 rounded-full">
-                {{ edital?.concurso || 'Edital Oficial' }}
-              </span>
-              <span *ngIf="edital?.cargo" class="bg-[#e9ddff] text-[#5516be] text-[11px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1">
-                <span class="material-symbols-outlined !text-[13px]">badge</span>
-                {{ edital.cargo }}
-              </span>
-            </div>
-            <h1 class="text-2xl md:text-3xl font-black text-[#191c1e] mb-2">Mapa Geral das Disciplinas</h1>
-            <p class="text-xs text-[#464556] mb-4">Visão estruturada de todo o conteúdo programático do edital em 3 camadas (Disciplinas, Tópicos e Subtópicos) gerada automaticamente a partir do edital.</p>
-            
-            <div class="flex items-center gap-3 flex-wrap">
-              <!-- Passo 3: Botão Análise de Pareto -->
-              <button (click)="runParetoAnalysis()" [disabled]="isAnalyzingPareto" class="bg-gradient-to-r from-[#433fe5] to-[#6b38d4] text-white px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 cursor-pointer">
-                <span class="material-symbols-outlined !text-[18px]" [class.animate-spin]="isAnalyzingPareto">donut_large</span>
-                <span>{{ isAnalyzingPareto ? 'Realizando Análise de Pareto...' : 'Análise de Pareto' }}</span>
-              </button>
+        <!-- Top Row: Badges (Left) & Action Buttons: Cronograma + Pareto (Right) -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--outline-variant)]/30">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="bg-[var(--primary)]/15 text-[var(--primary)] text-[11px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1">
+              <span class="material-symbols-outlined !text-[13px]">emoji_events</span>
+              {{ edital?.concurso || 'Edital Oficial' }}
+            </span>
+            <span *ngIf="edital?.cargo" class="bg-[var(--secondary)]/15 text-[var(--secondary)] text-[11px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1">
+              <span class="material-symbols-outlined !text-[13px]">badge</span>
+              {{ edital.cargo }}
+            </span>
+          </div>
 
-              <!-- Passo 4: Opção Ver Pareto -->
-              <a *ngIf="editalId && paretoData?.pareto_analisado" [routerLink]="['/pareto', editalId]" class="btn-mesh px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-2 shadow-md hover:shadow-lg transition-all">
-                <span class="material-symbols-outlined !text-[18px]">analytics</span>
-                <span>Ver Pareto</span>
-              </a>
-            </div>
+          <!-- Action Buttons on Top Right of Card -->
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <!-- Botão Cronograma (leva para /sprints se feito ou abre gerador se não) -->
+            <button
+               (click)="handleCronogramaClick()"
+               class="btn-neo px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 text-[var(--on-surface)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-all cursor-pointer shadow-xs"
+               [title]="hasSchedule ? 'Abrir Cronograma de Estudos' : 'Configurar e Gerar Cronograma de Estudos'">
+              <span class="material-symbols-outlined !text-[16px] text-[var(--primary)]">
+                {{ hasSchedule ? 'calendar_month' : 'calendar_add_on' }}
+              </span>
+              <span>{{ hasSchedule ? 'Cronograma' : 'Gerar Cronograma' }}</span>
+            </button>
+
+            <!-- Botão Ver Pareto (se já analisado) -->
+            <a *ngIf="paretoData?.pareto_analisado"
+               [routerLink]="['/pareto', editalId]"
+               class="btn-mesh px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md hover:scale-105 transition-all cursor-pointer"
+               title="Ver Relatório Pareto 80/20">
+              <span class="material-symbols-outlined !text-[16px]">donut_large</span>
+              <span>Ver Pareto</span>
+            </a>
+
+            <!-- Botão Executar Análise de Pareto (se ainda não analisado) -->
+            <button *ngIf="!paretoData?.pareto_analisado"
+                    (click)="runParetoAnalysis()"
+                    [disabled]="isAnalyzingPareto"
+                    class="bg-gradient-to-r from-[#433fe5] to-[#6b38d4] text-white px-3.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                    title="Executar Análise de Pareto com IA">
+              <span class="material-symbols-outlined !text-[16px]" [class.animate-spin]="isAnalyzingPareto">donut_large</span>
+              <span>{{ isAnalyzingPareto ? 'Analisando...' : 'Análise de Pareto' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
+          <div class="flex-1 min-w-0">
+            <h1 class="text-2xl md:text-3xl font-black text-[var(--on-surface)] mb-2">Mapa Geral das Disciplinas</h1>
+            <p class="text-xs text-[var(--on-surface-variant)] font-medium">Visão estruturada de todo o conteúdo programático do edital em 3 camadas (Disciplinas, Tópicos e Subtópicos) gerada automaticamente a partir do edital.</p>
           </div>
 
           <!-- Overall Progress Card -->
           <div class="neo-pressed rounded-2xl p-5 min-w-[240px] text-center">
-            <p class="text-xs font-bold text-[#464556] mb-1">Progresso Geral do Edital</p>
-            <div class="text-3xl font-black text-[#433fe5] mb-2">{{ totalProgressPercentage }}%</div>
-            <div class="w-full h-2.5 bg-[#dce1e9] rounded-full overflow-hidden p-0.5">
-              <div class="h-full bg-gradient-to-r from-[#433fe5] to-[#00845a] rounded-full transition-all duration-500"
+            <p class="text-xs font-extrabold text-[var(--on-surface-variant)] mb-1">Progresso Geral do Edital</p>
+            <div class="text-3xl font-black text-[var(--primary)] mb-2">{{ totalProgressPercentage }}%</div>
+            <div class="w-full h-2.5 bg-[var(--surface-container-high)] rounded-full overflow-hidden p-0.5">
+              <div class="h-full bg-gradient-to-r from-[var(--primary)] to-[var(--tertiary-container)] rounded-full transition-all duration-500"
                    [style.width.%]="totalProgressPercentage"></div>
             </div>
-            <p class="text-[10px] text-[#767587] mt-2">
+            <p class="text-[10px] text-[var(--on-surface-variant)] font-semibold mt-2">
               <strong>{{ totalCompletedItems }}</strong> de <strong>{{ totalCheckableItems }}</strong> assuntos concluídos
             </p>
           </div>
         </div>
 
         <!-- Stat Badges Row -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-[#c7c4d8]/30">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-[var(--outline-variant)]/40">
           <div class="neo-pressed rounded-xl p-3 text-center">
-            <span class="text-[10px] font-bold text-[#767587] block">Disciplinas Totais</span>
-            <span class="text-lg font-black text-[#191c1e]">{{ allDisciplines.length }}</span>
+            <span class="text-[10px] font-extrabold text-[var(--on-surface-variant)] block">Disciplinas Totais</span>
+            <span class="text-lg font-black text-[var(--on-surface)]">{{ allDisciplines.length }}</span>
           </div>
           <div class="neo-pressed rounded-xl p-3 text-center">
-            <span class="text-[10px] font-bold text-[#767587] block">Prioritárias (20% Pareto)</span>
-            <span class="text-lg font-black text-[#433fe5]">{{ paretoData?.high_priority_subjects || specificDisciplines.length }}</span>
+            <span class="text-[10px] font-extrabold text-[var(--on-surface-variant)] block">Prioritárias (20% Pareto)</span>
+            <span class="text-lg font-black text-[var(--primary)]">{{ paretoData?.high_priority_subjects || specificDisciplines.length }}</span>
           </div>
           <div class="neo-pressed rounded-xl p-3 text-center">
-            <span class="text-[10px] font-bold text-[#767587] block">Cobertura Estimada</span>
-            <span class="text-lg font-black text-[#00845a]">{{ paretoData?.coverage_percentage || 80 }}%</span>
+            <span class="text-[10px] font-extrabold text-[var(--on-surface-variant)] block">Cobertura Estimada</span>
+            <span class="text-lg font-black text-[#00845a] dark:text-[#4edea3]">{{ paretoData?.coverage_percentage || 80 }}%</span>
           </div>
           <div class="neo-pressed rounded-xl p-3 text-center">
-            <span class="text-[10px] font-bold text-[#767587] block">Tópicos Quentes 🔥</span>
-            <span class="text-lg font-black text-[#ba1a1a]">{{ paretoData?.total_hot_topics || 0 }}</span>
+            <span class="text-[10px] font-extrabold text-[var(--on-surface-variant)] block">Tópicos Quentes 🔥</span>
+            <span class="text-lg font-black text-[var(--error)]">{{ paretoData?.total_hot_topics || 0 }}</span>
           </div>
         </div>
       </div>
@@ -113,32 +135,32 @@ export interface CheckedItemState {
           
           <!-- Search input -->
           <div class="md:col-span-5 neo-pressed rounded-2xl p-3 flex items-center gap-2">
-            <span class="material-symbols-outlined text-[#433fe5] !text-[20px]">search</span>
+            <span class="material-symbols-outlined text-[var(--primary)] !text-[20px]">search</span>
             <input
               [(ngModel)]="searchQuery"
               type="text"
               placeholder="Buscar disciplina, tópico ou assunto..."
-              class="w-full bg-transparent border-none outline-none text-xs md:text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+              class="w-full bg-transparent border-none outline-none text-xs md:text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)] font-medium">
           </div>
 
           <!-- Filter Category (Básicas / Específicas / Todas) -->
-          <div class="md:col-span-4 flex gap-1.5 bg-[#eceef1] p-1 rounded-xl">
+          <div class="md:col-span-4 flex gap-1.5 bg-[var(--surface-container)] p-1 rounded-xl">
             <button
               (click)="categoryFilter = 'todas'"
-              [ngClass]="categoryFilter === 'todas' ? 'bg-white shadow-sm text-[#433fe5]' : 'text-[#464556]'"
-              class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all">
+              [ngClass]="categoryFilter === 'todas' ? 'bg-[var(--card-bg)] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
+              class="flex-1 py-1.5 text-xs font-extrabold rounded-lg transition-all">
               Todas ({{ allDisciplines.length }})
             </button>
             <button
               (click)="categoryFilter = 'basicas'"
-              [ngClass]="categoryFilter === 'basicas' ? 'bg-white shadow-sm text-[#433fe5]' : 'text-[#464556]'"
-              class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all">
+              [ngClass]="categoryFilter === 'basicas' ? 'bg-[var(--card-bg)] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
+              class="flex-1 py-1.5 text-xs font-extrabold rounded-lg transition-all">
               Básicas ({{ basicDisciplines.length }})
             </button>
             <button
               (click)="categoryFilter = 'especificas'"
-              [ngClass]="categoryFilter === 'especificas' ? 'bg-white shadow-sm text-[#433fe5]' : 'text-[#464556]'"
-              class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all">
+              [ngClass]="categoryFilter === 'especificas' ? 'bg-[var(--card-bg)] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
+              class="flex-1 py-1.5 text-xs font-extrabold rounded-lg transition-all">
               Específicas ({{ specificDisciplines.length }})
             </button>
           </div>
@@ -147,7 +169,7 @@ export interface CheckedItemState {
           <div class="md:col-span-3 flex gap-2 justify-end">
             <select
               [(ngModel)]="statusFilter"
-              class="bg-white border border-[#c7c4d8] rounded-xl text-xs font-bold px-3 py-2 text-[#191c1e] outline-none cursor-pointer">
+              class="bg-[var(--card-bg)] border border-[var(--outline-variant)] rounded-xl text-xs font-bold px-3 py-2 text-[var(--on-surface)] outline-none cursor-pointer">
               <option value="todos">Todos os Status</option>
               <option value="pendentes">Apenas Pendentes</option>
               <option value="concluidos">Apenas Concluídos</option>
@@ -156,26 +178,26 @@ export interface CheckedItemState {
         </div>
 
         <!-- Secondary Controls Bar -->
-        <div class="flex items-center justify-between text-xs text-[#767587] pt-2 border-t border-[#c7c4d8]/40 flex-wrap gap-2">
+        <div class="flex items-center justify-between text-xs text-[var(--on-surface-variant)] font-semibold pt-2 border-t border-[var(--outline-variant)]/40 flex-wrap gap-2">
           <div class="flex items-center gap-3">
-            <button (click)="expandAll()" class="hover:text-[#433fe5] font-bold flex items-center gap-1">
+            <button (click)="expandAll()" class="hover:text-[var(--primary)] text-[var(--on-surface-variant)] font-extrabold flex items-center gap-1">
               <span class="material-symbols-outlined !text-[15px]">unfold_more</span>
               Expandir Tudo
             </button>
             <span>•</span>
-            <button (click)="collapseAll()" class="hover:text-[#433fe5] font-bold flex items-center gap-1">
+            <button (click)="collapseAll()" class="hover:text-[var(--primary)] text-[var(--on-surface-variant)] font-extrabold flex items-center gap-1">
               <span class="material-symbols-outlined !text-[15px]">unfold_less</span>
               Recolher Tudo
             </button>
           </div>
 
           <div class="flex items-center gap-3">
-            <button (click)="reanalyzeMapaGeral()" [disabled]="isReanalyzing" class="text-[#433fe5] hover:underline font-bold flex items-center gap-1 disabled:opacity-50">
+            <button (click)="reanalyzeMapaGeral()" [disabled]="isReanalyzing" class="text-[var(--primary)] hover:underline font-extrabold flex items-center gap-1 disabled:opacity-50">
               <span class="material-symbols-outlined !text-[15px]" [class.animate-spin]="isReanalyzing">autorenew</span>
               <span>{{ isReanalyzing ? 'Reanalisando Mapa Geral...' : 'Reanalisar / Refazer Mapa' }}</span>
             </button>
             <span>•</span>
-            <button (click)="resetChecklist()" class="text-[#ba1a1a] hover:underline font-bold flex items-center gap-1">
+            <button (click)="resetChecklist()" class="text-[var(--error)] hover:underline font-extrabold flex items-center gap-1">
               <span class="material-symbols-outlined !text-[15px]">restart_alt</span>
               Resetar Progresso
             </button>
@@ -186,13 +208,13 @@ export interface CheckedItemState {
       <!-- Control Bar View Mode Toggle (Tabela vs Cards) -->
       <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div class="flex items-center gap-2">
-          <span class="text-xs font-bold text-[#464556]">Modo de Visualização:</span>
-          <div class="flex items-center gap-1 bg-[#eceef1] p-1 rounded-xl">
-            <button (click)="viewMode = 'table'" [ngClass]="viewMode === 'table' ? 'bg-white shadow-sm text-[#433fe5]' : 'text-[#464556]'" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1">
+          <span class="text-xs font-bold text-[var(--on-surface)]">Modo de Visualização:</span>
+          <div class="flex items-center gap-1 bg-[var(--surface-container)] p-1 rounded-xl">
+            <button (click)="changeViewMode('table')" [ngClass]="viewMode === 'table' ? 'bg-[var(--card-bg)] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1">
               <span class="material-symbols-outlined !text-[15px]">table_chart</span>
               <span>Tabela Tática</span>
             </button>
-            <button (click)="viewMode = 'cards'" [ngClass]="viewMode === 'cards' ? 'bg-white shadow-sm text-[#433fe5]' : 'text-[#464556]'" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1">
+            <button (click)="changeViewMode('cards')" [ngClass]="viewMode === 'cards' ? 'bg-[var(--card-bg)] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1">
               <span class="material-symbols-outlined !text-[15px]">view_agenda</span>
               <span>Cards</span>
             </button>
@@ -205,123 +227,176 @@ export interface CheckedItemState {
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse min-w-[950px]">
             <thead>
-              <tr class="bg-[#eceef1] text-[#464556] text-[11px] font-black uppercase tracking-wider border-b border-[#c7c4d8]">
-                <th class="py-3 px-3 w-12 text-center">Status</th>
-                <th class="py-3 px-3 w-1/4">Disciplina (Camada 1)</th>
-                <th class="py-3 px-3 w-1/4">Tópico (Camada 2)</th>
-                <th class="py-3 px-3 w-1/3">Subtópico / Assunto (Camada 3)</th>
-                <th class="py-3 px-3 w-28 text-center">Métricas & CB</th>
+              <tr class="bg-[var(--surface-container-high)] text-[var(--on-surface)] text-[11px] font-black uppercase tracking-wider border-b border-[var(--outline-variant)]">
+                <th class="py-3.5 px-4 w-16 text-center">Status</th>
+                <th class="py-3.5 px-4 w-3/12">Tópico (Camada 2)</th>
+                <th class="py-3.5 px-4 w-1/2">Subtópico / Assunto (Camada 3)</th>
+                <th class="py-3.5 px-1 w-20 text-center">CB</th>
+                <th class="py-3.5 px-1 w-20 text-center">Métricas</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-[#c7c4d8]/40 text-xs">
+            <tbody class="divide-y divide-[var(--outline-variant)]/40 text-xs">
               <ng-container *ngFor="let disc of filteredDisciplines">
-                <!-- Group Header Row for Discipline -->
-                <tr class="bg-[#f0f3f8] font-bold text-[#191c1e]">
-                  <td colspan="5" class="py-3 px-3 border-y-2 border-[#433fe5]/20">
-                    <div class="flex items-center justify-between flex-wrap gap-2">
-                      <div class="flex items-center gap-2">
-                        <span [ngClass]="disc.isBasica ? 'bg-[#e1dfff] text-[#2b20d2]' : 'bg-[#e9ddff] text-[#5516be]'" class="text-[9px] font-black uppercase px-2 py-0.5 rounded">
+                <!-- Disciplina (Camada 1) — Linha Única por Disciplina -->
+                <tr class="bg-[var(--surface-container-low)] font-bold text-[var(--on-surface)] border-y border-[var(--outline-variant)]/60">
+                  <td colspan="5" class="py-3.5 px-4">
+                    <div class="flex items-center justify-between flex-wrap gap-3">
+                      <div class="flex items-center gap-2.5">
+                        <span [ngClass]="disc.isBasica ? 'bg-[var(--primary)]/15 text-[var(--primary)]' : 'bg-[var(--secondary)]/15 text-[var(--secondary)]'" class="text-[10px] font-black uppercase px-2.5 py-1 rounded">
                           {{ disc.isBasica ? 'Básica' : 'Específica' }}
                         </span>
                         <span *ngIf="disc.prioridade" [ngClass]="{
-                          'bg-[#eefff2] text-[#005236]': disc.prioridade === 'PRIORITÁRIA',
-                          'bg-[#e9ddff] text-[#5516be]': disc.prioridade === 'COMPLEMENTAR',
-                          'bg-[#eceef1] text-[#464556]': disc.prioridade === 'RESIDUAL'
-                        }" class="text-[9px] font-black uppercase px-2 py-0.5 rounded">
+                          'bg-[#00845a]/15 text-[#00845a] dark:bg-[#4edea3]/20 dark:text-[#4edea3]': disc.prioridade === 'PRIORITÁRIA',
+                          'bg-[var(--secondary)]/15 text-[var(--secondary)]': disc.prioridade === 'COMPLEMENTAR',
+                          'bg-[var(--surface-container-highest)] text-[var(--on-surface-variant)]': disc.prioridade === 'RESIDUAL'
+                        }" class="text-[10px] font-black uppercase px-2.5 py-1 rounded">
                           {{ disc.prioridade === 'PRIORITÁRIA' ? '🔥 20% PARETO' : disc.prioridade }}
                         </span>
-                        <span class="text-sm font-black text-[#191c1e]">{{ disc.nome }}</span>
+                        <span class="text-base font-black text-[var(--on-surface)]">{{ disc.nome }}</span>
                       </div>
-                      <div class="flex items-center gap-3 text-[11px]">
-                        <span *ngIf="disc.percentual_questoes" class="text-[#767587]">~{{ disc.percentual_questoes }}% questões</span>
-                        <span *ngIf="disc.percentual_tempo" class="text-[#6b38d4] font-bold">⏳ {{ disc.percentual_tempo }}% tempo</span>
-                        <span class="text-[#433fe5] font-extrabold bg-white px-2 py-0.5 rounded-lg border border-[#c7c4d8]/40">
-                          {{ getDisciplineCompletedCount(disc) }}/{{ getDisciplineTotalCheckableCount(disc) }} ({{ getDisciplineProgressPercentage(disc) }}%)
+                      <div class="flex items-center gap-4 text-xs">
+                        <span *ngIf="disc.percentual_questoes" class="text-[var(--on-surface-variant)] font-semibold">~{{ disc.percentual_questoes }}% questões</span>
+                        <span *ngIf="disc.percentual_tempo" class="text-[var(--secondary)] font-bold">⏳ {{ disc.percentual_tempo }}% tempo</span>
+                        <span class="text-[var(--primary)] font-extrabold bg-[var(--card-bg)] px-3 py-1 rounded-xl border border-[var(--outline-variant)]/60 shadow-sm">
+                          {{ getDisciplineCompletedCount(disc) }}/{{ getDisciplineTotalCheckableCount(disc) }} assuntos ({{ getDisciplineProgressPercentage(disc) }}%)
                         </span>
                       </div>
                     </div>
                   </td>
                 </tr>
 
-                <!-- Rows for Topics & Subtopics -->
+                <!-- Tópicos (Camada 2) e Subtópicos (Camada 3) -->
                 <ng-container *ngFor="let topic of disc.camada_2_topicos">
-                  <!-- If no subtopics, single topic row -->
+                  
+                  <!-- Caso 1: Sem subtópicos (Camada 3 vazia) -->
                   <tr *ngIf="!topic.camada_3_subtopicos || topic.camada_3_subtopicos.length === 0"
-                      class="hover:bg-white/80 transition-colors"
-                      [ngClass]="{ 'bg-[#eefff2]/40': isChecked(getItemKey(disc.nome, topic.nome, topic.nome)) }">
-                    <td class="py-2.5 px-3 text-center">
+                      class="hover:bg-[var(--surface-container-low)]/80 transition-colors border-b border-[var(--outline-variant)]/20"
+                      [ngClass]="{ 'bg-[#eefff2]/20 dark:bg-[#005236]/20': isTopicChecked(disc.nome, topic) }">
+                    <td class="py-3 px-4 text-center align-top pt-3.5">
                       <input
                         type="checkbox"
-                        [checked]="isChecked(getItemKey(disc.nome, topic.nome, topic.nome))"
-                        (change)="toggleCheck(getItemKey(disc.nome, topic.nome, topic.nome))"
-                        class="w-4 h-4 accent-[#433fe5] cursor-pointer rounded">
+                        [checked]="isTopicChecked(disc.nome, topic)"
+                        (change)="toggleTopicCheck(disc.nome, topic, $event)"
+                        class="w-5 h-5 accent-[var(--primary)] cursor-pointer rounded transition-transform hover:scale-110"
+                        title="Concluir Tópico (Camada 2)">
                     </td>
-                    <td class="py-2.5 px-3 text-[#767587] font-medium">{{ disc.nome }}</td>
-                    <td class="py-2.5 px-3 font-bold text-[#191c1e]">
-                      <div class="flex items-center gap-1.5">
-                        <span [ngClass]="{
-                          'bg-[#ffdad6] text-[#ba1a1a]': topic.temperatura === 'QUENTE',
-                          'bg-[#fff3e0] text-[#e65100]': topic.temperatura === 'MORNO',
-                          'bg-[#e1f5fe] text-[#0288d1]': topic.temperatura === 'FRIO' || !topic.temperatura
-                        }" class="text-[9px] font-black px-1.5 py-0.5 rounded">
+                    <td class="py-3 px-4 align-top">
+                      <div class="flex items-start gap-2 flex-wrap">
+                        <span [class]="getTopicBadgeClass(topic.temperatura)" class="text-[9px] font-black uppercase px-2 py-0.5 rounded-md shrink-0 mt-0.5">
                           {{ topic.temperatura || 'GERAL' }}
                         </span>
-                        <span>{{ topic.nome }}</span>
+                        <span class="font-bold text-sm text-[var(--on-surface)]" [class.line-through]="isTopicChecked(disc.nome, topic)" [class.opacity-60]="isTopicChecked(disc.nome, topic)">
+                          {{ topic.nome }}
+                        </span>
+                      </div>
+                      <p *ngIf="topic.frequencia_historica" class="text-[11px] text-[var(--on-surface-variant)] mt-1 font-medium">
+                        Frequência: {{ topic.frequencia_historica }}
+                      </p>
+                      <!-- Barra de Progresso do Tópico (Camada 2) -->
+                      <div class="mt-2.5 pt-2 border-t border-[var(--outline-variant)]/20">
+                        <div class="flex items-center justify-between text-[10px] font-extrabold mb-1">
+                          <span class="text-[var(--on-surface-variant)]">Progresso</span>
+                          <span class="text-[var(--primary)] font-black">{{ getTopicProgressPercentage(disc.nome, topic) }}%</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-[var(--surface-container-high)] rounded-full overflow-hidden p-0.5">
+                          <div class="h-full bg-gradient-to-r from-[var(--primary)] to-[var(--tertiary-container)] rounded-full transition-all duration-300"
+                               [style.width.%]="getTopicProgressPercentage(disc.nome, topic)"></div>
+                        </div>
                       </div>
                     </td>
-                    <td class="py-2.5 px-3 text-[#464556]" [class.line-through]="isChecked(getItemKey(disc.nome, topic.nome, topic.nome))">
+                    <td class="py-3 px-4 align-top text-xs text-[var(--on-surface-variant)] italic">
                       Estudo completo do tópico
                     </td>
-                    <td class="py-2.5 px-3 text-center">
-                      <span class="text-[10px] text-[#767587]">{{ topic.frequencia_historica || '-' }}</span>
-                    </td>
+                    <td class="py-3 px-3 text-center align-middle"></td>
+                    <td class="py-3 px-3 text-center align-middle"></td>
                   </tr>
 
-                  <!-- Rows for Subtopics -->
-                  <tr *ngFor="let sub of topic.camada_3_subtopicos"
-                      class="hover:bg-white/80 transition-colors"
-                      [ngClass]="{ 'bg-[#eefff2]/40': isChecked(getItemKey(disc.nome, topic.nome, sub.nome)) }">
-                    <td class="py-2.5 px-3 text-center">
-                      <input
-                        type="checkbox"
-                        [checked]="isChecked(getItemKey(disc.nome, topic.nome, sub.nome))"
-                        (change)="toggleCheck(getItemKey(disc.nome, topic.nome, sub.nome))"
-                        class="w-4 h-4 accent-[#433fe5] cursor-pointer rounded">
-                    </td>
-                    <td class="py-2.5 px-3 text-[#767587] font-medium">{{ disc.nome }}</td>
-                    <td class="py-2.5 px-3 font-semibold text-[#191c1e]">
-                      <div class="flex items-center gap-1.5">
-                        <span [ngClass]="{
-                          'bg-[#ffdad6] text-[#ba1a1a]': topic.temperatura === 'QUENTE',
-                          'bg-[#fff3e0] text-[#e65100]': topic.temperatura === 'MORNO',
-                          'bg-[#e1f5fe] text-[#0288d1]': topic.temperatura === 'FRIO' || !topic.temperatura
-                        }" class="text-[9px] font-black px-1.5 py-0.5 rounded">
-                          {{ topic.temperatura || 'GERAL' }}
-                        </span>
-                        <span>{{ topic.nome }}</span>
-                      </div>
-                    </td>
-                    <td class="py-2.5 px-3">
-                      <span class="font-semibold text-[#191c1e]" [class.line-through]="isChecked(getItemKey(disc.nome, topic.nome, sub.nome))" [class.text-[#767587]]="isChecked(getItemKey(disc.nome, topic.nome, sub.nome))">
-                        {{ sub.nome }}
-                      </span>
-                      <p *ngIf="sub.justificativa" class="text-[10px] text-[#767587] italic mt-0.5">{{ sub.justificativa }}</p>
-                    </td>
-                    <td class="py-2.5 px-3 text-center">
-                      <div class="flex items-center justify-center gap-1 flex-wrap">
+                  <!-- Caso 2: Com subtópicos (Uma linha (tr) por subtópico) -->
+                  <ng-container *ngIf="topic.camada_3_subtopicos && topic.camada_3_subtopicos.length > 0">
+                    <tr *ngFor="let sub of topic.camada_3_subtopicos; let i = index; let last = last"
+                        class="hover:bg-[var(--surface-container-low)]/80 transition-colors"
+                        [ngClass]="{ 
+                          'bg-[#eefff2]/20 dark:bg-[#005236]/20': isTopicChecked(disc.nome, topic),
+                          'border-b border-[var(--outline-variant)]/20': last 
+                        }">
+                      
+                      <!-- Coluna 1 & 2 (aparecem apenas na primeira linha, com rowspan) -->
+                      <td *ngIf="i === 0" [attr.rowspan]="topic.camada_3_subtopicos.length" class="py-3 px-4 text-center align-top pt-3.5 border-b border-[var(--outline-variant)]/20">
+                        <input
+                          type="checkbox"
+                          [checked]="isTopicChecked(disc.nome, topic)"
+                          (change)="toggleTopicCheck(disc.nome, topic, $event)"
+                          class="w-5 h-5 accent-[var(--primary)] cursor-pointer rounded transition-transform hover:scale-110"
+                          title="Concluir Tópico (Camada 2)">
+                      </td>
+                      <td *ngIf="i === 0" [attr.rowspan]="topic.camada_3_subtopicos.length" class="py-3 px-4 align-top border-b border-[var(--outline-variant)]/20">
+                        <div class="flex items-start gap-2 flex-wrap">
+                          <span [class]="getTopicBadgeClass(topic.temperatura)" class="text-[9px] font-black uppercase px-2 py-0.5 rounded-md shrink-0 mt-0.5">
+                            {{ topic.temperatura || 'GERAL' }}
+                          </span>
+                          <span class="font-bold text-sm text-[var(--on-surface)]" [class.line-through]="isTopicChecked(disc.nome, topic)" [class.opacity-60]="isTopicChecked(disc.nome, topic)">
+                            {{ topic.nome }}
+                          </span>
+                        </div>
+                        <p *ngIf="topic.frequencia_historica" class="text-[11px] text-[var(--on-surface-variant)] mt-1 font-medium">
+                          Frequência: {{ topic.frequencia_historica }}
+                        </p>
+                        <!-- Barra de Progresso do Tópico (Camada 2) -->
+                        <div class="mt-2.5 pt-2 border-t border-[var(--outline-variant)]/20">
+                          <div class="flex items-center justify-between text-[10px] font-extrabold mb-1 gap-1">
+                            <span class="text-[var(--on-surface-variant)] font-semibold truncate">
+                              {{ getTopicCompletedCount(disc.nome, topic) }}/{{ getTopicTotalCount(topic) }} assuntos
+                            </span>
+                            <span class="text-[var(--primary)] font-black shrink-0">{{ getTopicProgressPercentage(disc.nome, topic) }}%</span>
+                          </div>
+                          <div class="w-full h-1.5 bg-[var(--surface-container-high)] rounded-full overflow-hidden p-0.5">
+                            <div class="h-full bg-gradient-to-r from-[var(--primary)] to-[var(--tertiary-container)] rounded-full transition-all duration-300"
+                                 [style.width.%]="getTopicProgressPercentage(disc.nome, topic)"></div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- Coluna 3: Subtópico / Assunto -->
+                      <td class="py-2.5 px-4 align-middle" [ngClass]="{'border-b border-[var(--outline-variant)]/10': !last}">
+                        <div class="flex items-start gap-2 text-[13px] leading-snug">
+                          <input
+                            type="checkbox"
+                            [checked]="isChecked(getItemKey(disc.nome, topic.nome, sub.nome))"
+                            (change)="toggleSubtopicCheck(disc.nome, topic, sub.nome)"
+                            class="w-3.5 h-3.5 accent-[var(--primary)] cursor-pointer rounded mt-0.5 shrink-0">
+                          <div>
+                            <span class="font-semibold text-[var(--on-surface)]" [class.line-through]="isChecked(getItemKey(disc.nome, topic.nome, sub.nome))" [class.opacity-60]="isChecked(getItemKey(disc.nome, topic.nome, sub.nome))">
+                              {{ sub.nome }}
+                            </span>
+                            <p *ngIf="sub.justificativa" class="text-[11px] text-[var(--on-surface-variant)] italic mt-0.5">
+                              {{ sub.justificativa }}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- Coluna 4: CB -->
+                      <td class="py-2.5 px-0.5 text-center align-middle" [ngClass]="{'border-b border-[var(--outline-variant)]/10': !last}">
                         <span *ngIf="sub.custo_beneficio" [ngClass]="{
-                          'bg-[#eefff2] text-[#005236]': sub.custo_beneficio === 'Alto',
-                          'bg-[#fff3e0] text-[#e65100]': sub.custo_beneficio === 'Médio',
-                          'bg-[#eceef1] text-[#464556]': sub.custo_beneficio === 'Baixo'
-                        }" class="text-[9px] font-bold px-1.5 py-0.5 rounded">
-                          CB: {{ sub.custo_beneficio }}
+                          'bg-[#6058cc] text-[#ffffff] dark:bg-[#6058cc]/80 dark:text-[#e0e0ff]': sub.custo_beneficio === 'Alto',
+                          'bg-[#ff9933] text-[#ffffff] dark:bg-[#ff9933]/80 dark:text-[#fff2e0]': sub.custo_beneficio === 'Médio',
+                          'bg-[#3399ff] text-[#ffffff] dark:bg-[#3399ff]/80 dark:text-[#e0f4ff]': sub.custo_beneficio === 'Baixo'
+                        }" class="text-[9px] font-black px-0.5 py-0.5 rounded-md inline-flex items-center justify-center gap-1 uppercase w-[76px]">
+                          <span *ngIf="sub.custo_beneficio === 'Alto'">⭐️ ALTO</span>
+                          <span *ngIf="sub.custo_beneficio === 'Médio'">🔥 MÉDIO</span>
+                          <span *ngIf="sub.custo_beneficio === 'Baixo'">🧊 BAIXO</span>
                         </span>
-                        <span *ngIf="sub.dificuldade" class="text-[9px] text-[#767587] bg-[#f2f4f7] px-1.5 py-0.5 rounded">
+                      </td>
+
+                      <!-- Coluna 5: Métricas (Dificuldade) -->
+                      <td class="py-2.5 px-0.5 text-center align-middle" [ngClass]="{'border-b border-[var(--outline-variant)]/10': !last}">
+                        <span *ngIf="sub.dificuldade" [class]="getDificuldadeBadgeClass(sub.dificuldade)" class="text-[9px] px-1.5 py-0.5 rounded-md inline-flex items-center justify-center uppercase w-[70px]">
                           {{ sub.dificuldade }}
                         </span>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+
+                    </tr>
+                  </ng-container>
                 </ng-container>
               </ng-container>
             </tbody>
@@ -337,7 +412,7 @@ export interface CheckedItemState {
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer"
                (click)="toggleDisciplineExpand(disc.nome)">
             <div class="flex items-center gap-3 flex-1 min-w-0">
-              <button class="w-8 h-8 rounded-xl neo-pressed flex items-center justify-center shrink-0 text-[#433fe5]">
+              <button class="w-8 h-8 rounded-xl neo-pressed flex items-center justify-center shrink-0 text-[var(--primary)]">
                 <span class="material-symbols-outlined transition-transform duration-200"
                       [class.rotate-90]="expandedDisciplines.has(disc.nome)">
                   chevron_right
@@ -345,25 +420,25 @@ export interface CheckedItemState {
               </button>
               <div>
                 <div class="flex items-center gap-2 flex-wrap mb-1">
-                  <span [ngClass]="disc.isBasica ? 'bg-[#e1dfff] text-[#2b20d2]' : 'bg-[#e9ddff] text-[#5516be]'"
+                  <span [ngClass]="disc.isBasica ? 'bg-[var(--primary)]/15 text-[var(--primary)]' : 'bg-[var(--secondary)]/15 text-[var(--secondary)]'"
                         class="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md">
                     {{ disc.isBasica ? 'Básica' : 'Específica' }}
                   </span>
                   <span *ngIf="disc.prioridade" [ngClass]="{
-                    'bg-[#eefff2] text-[#005236]': disc.prioridade === 'PRIORITÁRIA',
-                    'bg-[#e9ddff] text-[#5516be]': disc.prioridade === 'COMPLEMENTAR',
-                    'bg-[#eceef1] text-[#464556]': disc.prioridade === 'RESIDUAL'
+                    'bg-[#00845a]/15 text-[#00845a] dark:bg-[#4edea3]/20 dark:text-[#4edea3]': disc.prioridade === 'PRIORITÁRIA',
+                    'bg-[var(--secondary)]/15 text-[var(--secondary)]': disc.prioridade === 'COMPLEMENTAR',
+                    'bg-[var(--surface-container-highest)] text-[var(--on-surface-variant)]': disc.prioridade === 'RESIDUAL'
                   }" class="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md">
                     {{ disc.prioridade === 'PRIORITÁRIA' ? '🔥 PRIORITÁRIA (20% PARETO)' : disc.prioridade }}
                   </span>
-                  <span *ngIf="disc.percentual_questoes" class="text-[11px] font-bold text-[#767587]">
+                  <span *ngIf="disc.percentual_questoes" class="text-[10px] font-bold text-[var(--on-surface-variant)]">
                     ~{{ disc.percentual_questoes }}% das questões
                   </span>
-                  <span *ngIf="disc.percentual_tempo" class="text-[11px] font-bold text-[#6b38d4] bg-[#f0e7ff] px-2 py-0.5 rounded-md">
+                  <span *ngIf="disc.percentual_tempo" class="text-[10px] font-bold text-[var(--secondary)] bg-[var(--secondary)]/10 px-2 py-0.5 rounded-md">
                     ⏳ {{ disc.percentual_tempo }}% do tempo
                   </span>
                 </div>
-                <h2 class="text-base md:text-lg font-black text-[#191c1e]">{{ disc.nome }}</h2>
+                <h2 class="text-base md:text-lg font-black text-[var(--on-surface)]">{{ disc.nome }}</h2>
               </div>
             </div>
 
@@ -371,101 +446,113 @@ export interface CheckedItemState {
             <div class="flex items-center gap-4 shrink-0 min-w-[200px]">
               <div class="flex-1">
                 <div class="flex justify-between items-center text-xs font-extrabold mb-1">
-                  <span class="text-[#767587]">Concluído</span>
-                  <span class="text-[#433fe5]">{{ getDisciplineProgressPercentage(disc) }}%</span>
+                  <span class="text-[var(--on-surface-variant)]">Concluído</span>
+                  <span class="text-[var(--primary)]">{{ getDisciplineProgressPercentage(disc) }}%</span>
                 </div>
-                <div class="w-full h-2 bg-[#eceef1] rounded-full overflow-hidden p-0.5">
-                  <div class="h-full bg-[#433fe5] rounded-full transition-all duration-300"
+                <div class="w-full h-2 bg-[var(--surface-container-high)] rounded-full overflow-hidden p-0.5">
+                  <div class="h-full bg-[var(--primary)] rounded-full transition-all duration-300"
                        [style.width.%]="getDisciplineProgressPercentage(disc)"></div>
                 </div>
               </div>
-              <span class="text-xs font-bold text-[#464556]">
+              <span class="text-xs font-black text-[var(--on-surface)]">
                 {{ getDisciplineCompletedCount(disc) }}/{{ getDisciplineTotalCheckableCount(disc) }}
               </span>
             </div>
           </div>
 
           <!-- Topics & Subtopics List (Expanded Content) -->
-          <div *ngIf="expandedDisciplines.has(disc.nome)" class="mt-6 pt-6 border-t border-[#c7c4d8]/40 space-y-4 animate-fadeIn">
+          <div *ngIf="expandedDisciplines.has(disc.nome)" class="mt-6 pt-6 border-t border-[var(--outline-variant)]/40 space-y-4 animate-fadeIn">
             
-            <div *ngIf="!disc.camada_2_topicos || disc.camada_2_topicos.length === 0" class="text-xs text-[#767587] italic p-4 bg-white/60 rounded-xl">
+            <div *ngIf="!disc.camada_2_topicos || disc.camada_2_topicos.length === 0" class="text-xs text-[var(--on-surface-variant)] italic p-4 bg-[var(--surface-container-low)] rounded-xl">
               Nenhum tópico detalhado para esta disciplina no edital.
             </div>
 
             <div *ngFor="let topic of disc.camada_2_topicos; let topicIdx = index" class="neo-pressed rounded-2xl p-4 md:p-5">
               
               <!-- Topic Row -->
-              <div class="flex items-center justify-between gap-3 mb-3">
+              <div class="flex items-center justify-between gap-3 mb-2">
                 <div class="flex items-center gap-3 flex-1 min-w-0">
-                  <span [ngClass]="{
-                    'bg-[#ffdad6] text-[#ba1a1a]': topic.temperatura === 'QUENTE',
-                    'bg-[#fff3e0] text-[#e65100]': topic.temperatura === 'MORNO',
-                    'bg-[#e1f5fe] text-[#0288d1]': topic.temperatura === 'FRIO' || !topic.temperatura
-                  }" class="text-[10px] font-black px-2 py-0.5 rounded-full shrink-0">
+                  <span [class]="getTopicBadgeClass(topic.temperatura)" class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full shrink-0">
                     {{ topic.temperatura || 'GERAL' }}
                   </span>
-                  <h3 class="text-xs md:text-sm font-bold text-[#191c1e]">{{ topic.nome }}</h3>
+                  <h3 class="text-xs md:text-sm font-bold text-[var(--on-surface)]">{{ topic.nome }}</h3>
                 </div>
 
                 <div class="flex items-center gap-2">
-                  <span *ngIf="topic.frequencia_historica" class="text-[11px] text-[#767587] hidden sm:inline">
+                  <span *ngIf="topic.frequencia_historica" class="text-[11px] text-[var(--on-surface-variant)] font-semibold hidden sm:inline">
                     {{ topic.frequencia_historica }}
                   </span>
                   <!-- Topic Master Checkbox -->
-                  <label class="flex items-center gap-1.5 cursor-pointer bg-white px-2.5 py-1 rounded-xl neo-raised-sm hover:border-[#433fe5]">
+                  <label class="flex items-center gap-1.5 cursor-pointer bg-[var(--card-bg)] px-2.5 py-1 rounded-xl neo-raised-sm hover:border-[var(--primary)]">
                     <input
                       type="checkbox"
                       [checked]="isTopicFullyChecked(disc.nome, topic)"
                       (change)="toggleTopicAll(disc.nome, topic, $event)"
-                      class="w-4 h-4 accent-[#433fe5] cursor-pointer rounded">
-                    <span class="text-[11px] font-bold text-[#433fe5]">Concluir Tópico</span>
+                      class="w-4 h-4 accent-[var(--primary)] cursor-pointer rounded">
+                    <span class="text-[11px] font-bold text-[var(--primary)]">Concluir Tópico</span>
                   </label>
                 </div>
               </div>
 
+              <!-- Barra de Progresso do Tópico (Camada 2) -->
+              <div class="mb-3">
+                <div class="flex items-center justify-between text-[11px] font-extrabold text-[var(--on-surface-variant)] mb-1">
+                  <span>Progresso do Tópico</span>
+                  <span class="text-[var(--primary)] font-black">
+                    {{ getTopicProgressPercentage(disc.nome, topic) }}% ({{ getTopicCompletedCount(disc.nome, topic) }}/{{ getTopicTotalCount(topic) }})
+                  </span>
+                </div>
+                <div class="w-full h-1.5 bg-[var(--surface-container-high)] rounded-full overflow-hidden p-0.5">
+                  <div class="h-full bg-gradient-to-r from-[var(--primary)] to-[var(--tertiary-container)] rounded-full transition-all duration-300"
+                       [style.width.%]="getTopicProgressPercentage(disc.nome, topic)"></div>
+                </div>
+              </div>
+
               <!-- Subtopics / Assuntos List -->
-              <div class="space-y-2 pl-2 md:pl-4 border-l-2 border-[#433fe5]/30 mt-3">
+              <div class="space-y-2 pl-2 md:pl-4 border-l-2 border-[var(--primary)]/30 mt-3">
                 
                 <!-- If no subtopics exist, show topic as single checkable item -->
                 <div *ngIf="!topic.camada_3_subtopicos || topic.camada_3_subtopicos.length === 0"
-                     class="flex items-center justify-between p-2.5 rounded-xl bg-white/70 hover:bg-white transition-colors">
+                     class="flex items-center justify-between p-2.5 rounded-xl bg-[var(--surface-container-low)] hover:bg-[var(--surface-container)] transition-colors">
                   <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
                     <input
                       type="checkbox"
                       [checked]="isChecked(getItemKey(disc.nome, topic.nome, topic.nome))"
                       (change)="toggleCheck(getItemKey(disc.nome, topic.nome, topic.nome))"
-                      class="w-4 h-4 accent-[#433fe5] cursor-pointer rounded shrink-0">
-                    <span class="text-xs text-[#191c1e]" [class.line-through]="isChecked(getItemKey(disc.nome, topic.nome, topic.nome))" [class.text-[#767587]="isChecked(getItemKey(disc.nome, topic.nome, topic.nome))">
+                      class="w-4 h-4 accent-[var(--primary)] cursor-pointer rounded shrink-0">
+                    <span class="text-xs text-[var(--on-surface)]" [class.line-through]="isChecked(getItemKey(disc.nome, topic.nome, topic.nome))" [class.opacity-60]="isChecked(getItemKey(disc.nome, topic.nome, topic.nome))">
                       Estudo completo do tópico
                     </span>
                   </label>
                 </div>
 
                 <div *ngFor="let sub of topic.camada_3_subtopicos; let subIdx = index"
-                     class="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 rounded-xl bg-white/70 hover:bg-white transition-colors gap-2">
+                     class="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 rounded-xl bg-[var(--surface-container-low)] hover:bg-[var(--surface-container)] transition-colors gap-2">
                   
                   <label class="flex items-start sm:items-center gap-3 cursor-pointer flex-1 min-w-0">
                     <input
                       type="checkbox"
                       [checked]="isChecked(getItemKey(disc.nome, topic.nome, sub.nome))"
                       (change)="toggleCheck(getItemKey(disc.nome, topic.nome, sub.nome))"
-                      class="w-4 h-4 accent-[#433fe5] cursor-pointer rounded shrink-0 mt-0.5 sm:mt-0">
-                    <span class="text-xs font-semibold text-[#191c1e]"
+                      class="w-4 h-4 accent-[var(--primary)] cursor-pointer rounded shrink-0 mt-0.5 sm:mt-0">
+                    <span class="text-[13px] leading-snug font-semibold text-[var(--on-surface)]"
                           [class.line-through]="isChecked(getItemKey(disc.nome, topic.nome, sub.nome))"
-                          [class.text-[#767587]]="isChecked(getItemKey(disc.nome, topic.nome, sub.nome))">
+                          [class.opacity-60]="isChecked(getItemKey(disc.nome, topic.nome, sub.nome))">
                       {{ sub.nome }}
                     </span>
                   </label>
 
                   <div class="flex items-center gap-2 pl-7 sm:pl-0">
                     <span *ngIf="sub.custo_beneficio" [ngClass]="{
-                      'bg-[#eefff2] text-[#005236]': sub.custo_beneficio === 'Alto',
-                      'bg-[#fff3e0] text-[#e65100]': sub.custo_beneficio === 'Médio',
-                      'bg-[#eceef1] text-[#464556]': sub.custo_beneficio === 'Baixo'
-                    }" class="text-[10px] font-bold px-2 py-0.5 rounded">
-                      CB: {{ sub.custo_beneficio }}
+                      'bg-[#ffe4e1] text-[#990000] dark:bg-[#7f1d1d]/80 dark:text-[#fecaca]': sub.custo_beneficio === 'Alto',
+                      'bg-[#ffedd5] text-[#9a3412] dark:bg-[#7c2d12]/80 dark:text-[#fed7aa]': sub.custo_beneficio === 'Médio',
+                      'bg-[#e0f2fe] text-[#0369a1] dark:bg-[#0c4a6e]/80 dark:text-[#bae6fd]': sub.custo_beneficio === 'Baixo'
+                    }" class="text-[9px] font-black px-1.5 py-0.5 rounded-md inline-flex items-center justify-center gap-1 uppercase w-[76px]">
+                      <span *ngIf="sub.custo_beneficio === 'Alto'">⭐️ ALTO</span>
+                      <span *ngIf="sub.custo_beneficio === 'Médio'">🔥 MÉDIO</span>
+                      <span *ngIf="sub.custo_beneficio === 'Baixo'">🧊 BAIXO</span>
                     </span>
-                    <span *ngIf="sub.dificuldade" class="text-[10px] text-[#767587] bg-[#f2f4f7] px-2 py-0.5 rounded">
+                    <span *ngIf="sub.dificuldade" [class]="getDificuldadeBadgeClass(sub.dificuldade)" class="text-[9px] px-1.5 py-0.5 rounded-md inline-flex items-center justify-center uppercase w-[70px]">
                       {{ sub.dificuldade }}
                     </span>
                   </div>
@@ -482,28 +569,144 @@ export interface CheckedItemState {
 
       <!-- EMPTY STATE: Nenhuma disciplina encontrada -->
       <div *ngIf="allDisciplines.length === 0" class="neo-raised rounded-3xl p-8 md:p-12 text-center space-y-4 my-8">
-        <div class="w-16 h-16 bg-[#e1dfff] text-[#433fe5] rounded-full flex items-center justify-center mx-auto">
+        <div class="w-16 h-16 bg-[var(--primary)]/15 text-[var(--primary)] rounded-full flex items-center justify-center mx-auto">
           <span class="material-symbols-outlined !text-[36px]">find_in_page</span>
         </div>
-        <h3 class="text-xl font-extrabold text-[#191c1e]">Conteúdo Programático não Gerado para este Edital</h3>
-        <p class="text-xs md:text-sm text-[#767587] max-w-lg mx-auto">
+        <h3 class="text-xl font-extrabold text-[var(--on-surface)]">Conteúdo Programático não Gerado para este Edital</h3>
+        <p class="text-xs md:text-sm text-[var(--on-surface-variant)] max-w-lg mx-auto">
           Este edital ainda não possui o Mapa Geral de Disciplinas estruturado em 3 camadas. Clique no botão abaixo para processar o edital e gerar o mapa completo das disciplinas.
         </p>
         <div class="pt-2">
-          <button (click)="reanalyzeMapaGeral()" [disabled]="isReanalyzing" class="btn-neo px-6 py-3 rounded-2xl text-xs font-bold text-[#433fe5] flex items-center gap-2 mx-auto disabled:opacity-50">
+          <button (click)="reanalyzeMapaGeral()" [disabled]="isReanalyzing" class="btn-neo px-6 py-3 rounded-2xl text-xs font-bold text-[var(--primary)] flex items-center gap-2 mx-auto disabled:opacity-50">
             <span class="material-symbols-outlined !text-[20px]" [class.animate-spin]="isReanalyzing">autorenew</span>
             <span>{{ isReanalyzing ? 'Gerando Mapa das Disciplinas com IA...' : 'Gerar Mapa das Disciplinas Agora' }}</span>
           </button>
         </div>
       </div>
 
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <!-- MODAL: Configurar / Gerar Cronograma                       -->
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <div *ngIf="showScheduleModal"
+           class="fixed inset-0 z-50 flex items-center justify-center p-4"
+           (click)="closeScheduleModal()">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div class="relative bg-white dark:bg-[#1a1a2e] text-[var(--on-surface)] rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-[var(--outline-variant)]/40 animate-fadeIn"
+             (click)="$event.stopPropagation()">
+
+          <!-- Header do modal -->
+          <div class="p-5 sm:p-6 border-b border-[var(--outline-variant)]/30 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white flex items-center justify-center shadow-md">
+                <span class="material-symbols-outlined !text-[22px]">calendar_month</span>
+              </div>
+              <div>
+                <h3 class="text-sm sm:text-base font-black text-[var(--on-surface)]">Gerar Cronograma de Estudos</h3>
+                <p class="text-[11px] text-[var(--on-surface-variant)]">Defina seu ritmo para distribuir as disciplinas em sprints</p>
+              </div>
+            </div>
+            <button (click)="closeScheduleModal()" class="w-8 h-8 rounded-xl neo-pressed flex items-center justify-center text-[var(--on-surface-variant)] hover:text-[var(--primary)] transition-colors cursor-pointer">
+              <span class="material-symbols-outlined !text-[18px]">close</span>
+            </button>
+          </div>
+
+          <!-- Corpo do modal -->
+          <div class="p-5 sm:p-6 space-y-4">
+            <!-- Edital selecionado -->
+            <div class="bg-[var(--primary)]/10 dark:bg-[var(--primary)]/20 rounded-xl px-4 py-3 border border-[var(--primary)]/20">
+              <p class="text-[11px] font-bold text-[var(--primary)] uppercase tracking-wide mb-0.5">Edital</p>
+              <p class="text-xs font-bold text-[var(--on-surface)] truncate">{{ edital?.cargo || edital?.title || 'Edital Oficial' }}</p>
+            </div>
+
+            <!-- Data da prova -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
+                <span class="material-symbols-outlined !text-[14px]">event</span>
+                Data da Prova (Opcional)
+              </label>
+              <div class="neo-pressed rounded-xl p-3 flex items-center gap-2 bg-[var(--card-bg)]">
+                <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">event</span>
+                <input
+                  [(ngModel)]="scheduleDataProva"
+                  type="date"
+                  [min]="today"
+                  class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)]">
+              </div>
+            </div>
+
+            <!-- Horas por dia -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
+                <span class="material-symbols-outlined !text-[14px]">schedule</span>
+                Horas de Estudo por Dia <span class="text-red-500">*</span>
+              </label>
+              <div class="neo-pressed rounded-xl p-3 flex items-center gap-2 bg-[var(--card-bg)]">
+                <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">schedule</span>
+                <input
+                  [(ngModel)]="scheduleHorasPorDia"
+                  type="number"
+                  min="0.5" max="24" step="0.5"
+                  placeholder="Ex: 2"
+                  class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+                <span class="text-xs text-[var(--on-surface-variant)] shrink-0 font-bold">h/dia</span>
+              </div>
+            </div>
+
+            <!-- Dias por semana -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
+                <span class="material-symbols-outlined !text-[14px]">calendar_view_week</span>
+                Dias de Estudo por Semana <span class="text-red-500">*</span>
+              </label>
+              <div class="neo-pressed rounded-xl p-3 flex items-center gap-2 bg-[var(--card-bg)]">
+                <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">calendar_view_week</span>
+                <input
+                  [(ngModel)]="scheduleDiasPorSemana"
+                  type="number"
+                  min="1" max="7" step="1"
+                  placeholder="Ex: 5"
+                  class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+                <span class="text-xs text-[var(--on-surface-variant)] shrink-0 font-bold">dias/sem</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer do modal -->
+          <div class="p-5 sm:p-6 border-t border-[var(--outline-variant)]/30 flex items-center gap-3">
+            <button
+              (click)="closeScheduleModal()"
+              class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold border border-[var(--outline-variant)] text-[var(--on-surface-variant)] hover:border-[var(--primary)] transition-all cursor-pointer">
+              Cancelar
+            </button>
+            <button
+              (click)="saveScheduleAndOpen()"
+              [disabled]="!scheduleHorasPorDia || !scheduleDiasPorSemana || isSavingSchedule"
+              class="flex-1 py-2.5 px-4 rounded-xl text-xs font-extrabold btn-mesh flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-all cursor-pointer disabled:opacity-50">
+              <span class="material-symbols-outlined !text-[16px]">{{ isSavingSchedule ? 'hourglass_top' : 'auto_awesome' }}</span>
+              <span>{{ isSavingSchedule ? 'Gerando...' : 'Gerar Cronograma' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   `
 })
 export class DisciplinesSheetComponent implements OnInit {
+  public themeService = inject(ThemeService);
   editalId: string | null = null;
   edital: any = null;
   paretoData: any = null;
+  hasSchedule: boolean = false;
+  currentUser: any = null;
+
+  showScheduleModal: boolean = false;
+  isSavingSchedule: boolean = false;
+  scheduleHorasPorDia: number | null = 3;
+  scheduleDiasPorSemana: number | null = 5;
+  scheduleDataProva: string = '';
+  today: string = new Date().toISOString().split('T')[0];
 
   searchQuery: string = '';
   categoryFilter: 'todas' | 'basicas' | 'especificas' = 'todas';
@@ -518,15 +721,96 @@ export class DisciplinesSheetComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private apiService: ApiService
-  ) {}
+    private apiService: ApiService,
+    private authService: AuthService,
+    private supabaseService: SupabaseService
+  ) { }
 
   ngOnInit(): void {
+    const savedMode = localStorage.getItem('aprovando_disciplines_view_mode') as 'table' | 'cards';
+    if (savedMode === 'table' || savedMode === 'cards') {
+      this.viewMode = savedMode;
+    }
     this.editalId = this.route.snapshot.paramMap.get('id');
     if (this.editalId) {
       this.loadEditalDetails(this.editalId);
       this.loadCheckedState();
+      this.checkUserSchedule(this.editalId);
     }
+  }
+
+  checkUserSchedule(editalId: string): void {
+    this.authService.currentUser$.subscribe((user: any) => {
+      this.currentUser = user;
+      if (user?.id) {
+        this.apiService.getUserSchedule(user.id, editalId).subscribe({
+          next: (res: any) => {
+            const data = res?.data || res;
+            if (data && (Array.isArray(data) ? data.length > 0 : (data.id || data.horas_por_dia))) {
+              this.hasSchedule = true;
+              const sched = Array.isArray(data) ? data[0] : data;
+              if (sched?.horas_por_dia) this.scheduleHorasPorDia = sched.horas_por_dia;
+              if (sched?.dias_por_semana) this.scheduleDiasPorSemana = sched.dias_por_semana;
+              if (sched?.data_prova) this.scheduleDataProva = sched.data_prova;
+            }
+          },
+          error: () => {
+            this.hasSchedule = false;
+          }
+        });
+      }
+    });
+  }
+
+  handleCronogramaClick(): void {
+    if (this.hasSchedule) {
+      this.router.navigate(['/sprints', this.editalId]);
+    } else {
+      this.openScheduleModal();
+    }
+  }
+
+  openScheduleModal(): void {
+    if (this.edital?.data_prova && !this.scheduleDataProva) {
+      this.scheduleDataProva = this.edital.data_prova;
+    }
+    this.showScheduleModal = true;
+  }
+
+  closeScheduleModal(): void {
+    if (!this.isSavingSchedule) {
+      this.showScheduleModal = false;
+    }
+  }
+
+  saveScheduleAndOpen(): void {
+    if (!this.currentUser?.id || !this.editalId) return;
+    if (!this.scheduleHorasPorDia || !this.scheduleDiasPorSemana) return;
+
+    this.isSavingSchedule = true;
+    this.apiService.saveUserSchedule({
+      userId: this.currentUser.id,
+      editalId: this.editalId,
+      horas_por_dia: this.scheduleHorasPorDia,
+      dias_por_semana: this.scheduleDiasPorSemana,
+      data_prova: this.scheduleDataProva || undefined,
+    }).subscribe({
+      next: () => {
+        this.isSavingSchedule = false;
+        this.hasSchedule = true;
+        this.showScheduleModal = false;
+        this.router.navigate(['/sprints', this.editalId]);
+      },
+      error: (err: any) => {
+        this.isSavingSchedule = false;
+        console.error('Erro ao salvar cronograma:', err);
+      }
+    });
+  }
+
+  changeViewMode(mode: 'table' | 'cards'): void {
+    this.viewMode = mode;
+    localStorage.setItem('aprovando_disciplines_view_mode', mode);
   }
 
   loadEditalDetails(id: string) {
@@ -534,9 +818,12 @@ export class DisciplinesSheetComponent implements OnInit {
       next: (res: any) => {
         const ed = res?.data || res;
         this.edital = ed;
+        if (ed?.user_schedule || ed?.schedule) {
+          this.hasSchedule = true;
+        }
         let pd = ed?.pareto_data || ed || {};
         if (typeof pd === 'string') {
-          try { pd = JSON.parse(pd); } catch (e) {}
+          try { pd = JSON.parse(pd); } catch (e) { }
         }
         this.paretoData = pd;
         // Auto expand all disciplines initially
@@ -616,7 +903,7 @@ export class DisciplinesSheetComponent implements OnInit {
   get allDisciplines(): any[] {
     let pd = this.paretoData || this.edital?.pareto_data || this.edital || {};
     if (typeof pd === 'string') {
-      try { pd = JSON.parse(pd); } catch (e) {}
+      try { pd = JSON.parse(pd); } catch (e) { }
     }
 
     let basicas: any[] = [];
@@ -632,7 +919,7 @@ export class DisciplinesSheetComponent implements OnInit {
           if (!item) continue;
           const discName = item.disciplina || item.nome || item.name || 'Disciplina';
           const rawTopicos = Array.isArray(item.topicos) ? item.topicos : (Array.isArray(item.topics) ? item.topics : (Array.isArray(item.camada_2_topicos) ? item.camada_2_topicos : []));
-          
+
           const topicosList = rawTopicos.map((t: any) => {
             const topName = typeof t === 'string' ? t : (t.nome || t.name || String(discName));
             const rawSubs = Array.isArray(t.subtopicos) ? t.subtopicos : (Array.isArray(t.assuntos) ? t.assuntos : (Array.isArray(t.camada_3_subtopicos) ? t.camada_3_subtopicos : []));
@@ -828,59 +1115,137 @@ export class DisciplinesSheetComponent implements OnInit {
     return `${discName}::${topicName}::${subName}`;
   }
 
+  getTopicKey(discName: string, topicName: string): string {
+    return `${discName}::${topicName}::__TOPIC__`;
+  }
+
   isChecked(key: string): boolean {
     return !!this.checkedItems[key];
   }
 
   toggleCheck(key: string) {
-    this.checkedItems[key] = !this.checkedItems[key];
-    this.saveCheckedState();
+    const newState = !this.checkedItems[key];
+    this.checkedItems[key] = newState;
+    this.saveCheckedState([{ topicId: key, completed: newState }]);
+  }
+
+  isTopicChecked(discName: string, topic: any): boolean {
+    const topicKey = this.getTopicKey(discName, topic.nome);
+    if (this.checkedItems[topicKey]) return true;
+
+    const subs = topic.camada_3_subtopicos || [];
+    if (subs.length > 0) {
+      return subs.every((s: any) => this.isChecked(this.getItemKey(discName, topic.nome, s.nome)));
+    }
+    return false;
+  }
+
+  toggleTopicCheck(discName: string, topic: any, event?: Event) {
+    const isChecked = event ? (event.target as HTMLInputElement).checked : !this.isTopicChecked(discName, topic);
+    const topicKey = this.getTopicKey(discName, topic.nome);
+    this.checkedItems[topicKey] = isChecked;
+
+    const itemsToSync: { topicId: string; completed: boolean }[] = [
+      { topicId: topicKey, completed: isChecked }
+    ];
+
+    const subs = topic.camada_3_subtopicos || [];
+    subs.forEach((s: any) => {
+      const subKey = this.getItemKey(discName, topic.nome, s.nome);
+      this.checkedItems[subKey] = isChecked;
+      itemsToSync.push({ topicId: subKey, completed: isChecked });
+    });
+
+    this.saveCheckedState(itemsToSync);
+  }
+
+  toggleSubtopicCheck(discName: string, topic: any, subName: string) {
+    const subKey = this.getItemKey(discName, topic.nome, subName);
+    const newState = !this.isChecked(subKey);
+    this.checkedItems[subKey] = newState;
+
+    const topicKey = this.getTopicKey(discName, topic.nome);
+    const subs = topic.camada_3_subtopicos || [];
+    const isTopicFullyChecked = subs.length > 0 && subs.every((s: any) => this.isChecked(this.getItemKey(discName, topic.nome, s.nome)));
+    this.checkedItems[topicKey] = isTopicFullyChecked;
+
+    const itemsToSync: { topicId: string; completed: boolean }[] = [
+      { topicId: subKey, completed: newState },
+      { topicId: topicKey, completed: isTopicFullyChecked }
+    ];
+
+    this.saveCheckedState(itemsToSync);
   }
 
   isTopicFullyChecked(discName: string, topic: any): boolean {
-    const subs = topic.camada_3_subtopicos || [];
-    if (subs.length === 0) {
-      return this.isChecked(this.getItemKey(discName, topic.nome, topic.nome));
-    }
-    return subs.every((s: any) => this.isChecked(this.getItemKey(discName, topic.nome, s.nome)));
+    return this.isTopicChecked(discName, topic);
   }
 
   toggleTopicAll(discName: string, topic: any, event: Event) {
-    const isChecked = (event.target as HTMLInputElement).checked;
-    const subs = topic.camada_3_subtopicos || [];
-
-    if (subs.length === 0) {
-      this.checkedItems[this.getItemKey(discName, topic.nome, topic.nome)] = isChecked;
-    } else {
-      subs.forEach((s: any) => {
-        this.checkedItems[this.getItemKey(discName, topic.nome, s.nome)] = isChecked;
-      });
-    }
-    this.saveCheckedState();
+    this.toggleTopicCheck(discName, topic, event);
   }
 
   getDisciplineTotalCheckableCount(disc: any): number {
-    let count = 0;
+    let total = 0;
     (disc.camada_2_topicos || []).forEach((t: any) => {
-      const subs = t.camada_3_subtopicos || [];
-      count += subs.length > 0 ? subs.length : 1;
+      total += this.getTopicTotalCount(t);
     });
-    return count;
+    return total;
   }
 
   getDisciplineCompletedCount(disc: any): number {
     let count = 0;
     (disc.camada_2_topicos || []).forEach((t: any) => {
-      const subs = t.camada_3_subtopicos || [];
-      if (subs.length === 0) {
-        if (this.isChecked(this.getItemKey(disc.nome, t.nome, t.nome))) count++;
-      } else {
-        subs.forEach((s: any) => {
-          if (this.isChecked(this.getItemKey(disc.nome, t.nome, s.nome))) count++;
-        });
-      }
+      count += this.getTopicCompletedCount(disc.nome, t);
     });
     return count;
+  }
+
+  getDificuldadeBadgeClass(dificuldade: string): string {
+    const d = String(dificuldade || '').toLowerCase().trim();
+    if (d.includes('fácil') || d.includes('facil') || d.includes('baix')) {
+      return 'bg-[#00845a]/20 text-[#00845a] dark:bg-[#4edea3]/25 dark:text-[#4edea3] font-bold border border-[#00845a]/30';
+    }
+    if (d.includes('difícil') || d.includes('dificil') || d.includes('alt') || d.includes('complex')) {
+      return 'bg-[#ba1a1a]/20 text-[#ba1a1a] dark:bg-[#ffb4ab]/25 dark:text-[#ffb4ab] font-bold border border-[#ba1a1a]/30';
+    }
+    // Médio / Intermediário (Sky Blue / Cyan)
+    return 'bg-[#0288d1]/20 text-[#0288d1] dark:bg-[#81d4fa]/25 dark:text-[#81d4fa] font-bold border border-[#0288d1]/30';
+  }
+
+  getTopicBadgeClass(temperatura: string | undefined): string {
+    const val = String(temperatura || '').toUpperCase().trim();
+    if (val === 'QUENTE' || val === 'PRIORITÁRIA' || val === 'ALTO') {
+      return 'bg-[#ba1a1a]/15 text-[#ba1a1a] dark:bg-[#ffb4ab]/20 dark:text-[#ffb4ab]';
+    }
+    if (val === 'MORNO' || val === 'COMPLEMENTAR' || val === 'MÉDIO') {
+      return 'bg-[#e65100]/15 text-[#e65100] dark:bg-[#ffb74d]/20 dark:text-[#ffb74d]';
+    }
+    if (val === 'ESSENCIAL' || val === 'BÁSICA') {
+      return 'bg-[#6058cc]/15 text-[#6058cc] dark:bg-[#a59eff]/25 dark:text-[#c1c1ff]';
+    }
+    // FRIO or default/GERAL
+    return 'bg-[#0288d1]/15 text-[#0288d1] dark:bg-[#81d4fa]/20 dark:text-[#81d4fa]';
+  }
+
+  getTopicCompletedCount(discName: string, topic: any): number {
+    const subs = topic.camada_3_subtopicos || [];
+    if (subs.length === 0) {
+      return this.isTopicChecked(discName, topic) ? 1 : 0;
+    }
+    return subs.filter((s: any) => this.isChecked(this.getItemKey(discName, topic.nome, s.nome))).length;
+  }
+
+  getTopicTotalCount(topic: any): number {
+    const subs = topic.camada_3_subtopicos || [];
+    return subs.length > 0 ? subs.length : 1;
+  }
+
+  getTopicProgressPercentage(discName: string, topic: any): number {
+    const total = this.getTopicTotalCount(topic);
+    if (total === 0) return 0;
+    const completed = this.getTopicCompletedCount(discName, topic);
+    return Math.round((completed / total) * 100);
   }
 
   getDisciplineProgressPercentage(disc: any): number {
@@ -915,7 +1280,7 @@ export class DisciplinesSheetComponent implements OnInit {
     return `edital_checklist_${this.editalId || 'default'}`;
   }
 
-  loadCheckedState() {
+  async loadCheckedState() {
     try {
       const stored = localStorage.getItem(this.getStorageKey());
       if (stored) {
@@ -924,20 +1289,51 @@ export class DisciplinesSheetComponent implements OnInit {
     } catch (e) {
       console.error('Erro ao ler checklist do localStorage:', e);
     }
+
+    if (this.editalId) {
+      try {
+        const remoteMap = await this.supabaseService.getUserEditalChecklist(this.editalId);
+        if (remoteMap && Object.keys(remoteMap).length > 0) {
+          this.checkedItems = { ...this.checkedItems, ...remoteMap };
+          localStorage.setItem(this.getStorageKey(), JSON.stringify(this.checkedItems));
+        }
+      } catch (e) {
+        console.error('Erro ao sincronizar checklist do Supabase:', e);
+      }
+    }
   }
 
-  saveCheckedState() {
+  saveCheckedState(itemsToSync?: { topicId: string; completed: boolean }[]) {
     try {
       localStorage.setItem(this.getStorageKey(), JSON.stringify(this.checkedItems));
     } catch (e) {
       console.error('Erro ao salvar checklist no localStorage:', e);
+    }
+
+    if (this.editalId) {
+      if (itemsToSync && itemsToSync.length > 0) {
+        this.supabaseService.saveUserTopicProgressBatch(this.editalId, itemsToSync);
+      } else {
+        const batch = Object.keys(this.checkedItems).map(k => ({
+          topicId: k,
+          completed: !!this.checkedItems[k]
+        }));
+        if (batch.length > 0) {
+          this.supabaseService.saveUserTopicProgressBatch(this.editalId, batch);
+        }
+      }
     }
   }
 
   resetChecklist() {
     if (confirm('Tem certeza que deseja resetar todo o progresso do checklist deste edital?')) {
       this.checkedItems = {};
-      this.saveCheckedState();
+      try {
+        localStorage.removeItem(this.getStorageKey());
+      } catch (e) {}
+      if (this.editalId) {
+        this.supabaseService.resetUserEditalProgress(this.editalId);
+      }
     }
   }
 }

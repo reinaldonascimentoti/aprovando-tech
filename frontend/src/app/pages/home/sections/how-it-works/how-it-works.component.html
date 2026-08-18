@@ -1,0 +1,65 @@
+<section class="how-it-works" id="como-funciona" aria-labelledby="hiw-title">
+  <div class="hiw__container">
+    <div class="section-header">
+      <span class="section-badge">Como funciona</span>
+      <h2 id="hiw-title" class="section-title">
+        Do edital ao plano de estudos em
+        <span class="gradient-text">minutos</span>
+      </h2>
+      <p class="section-sub">
+        Sete etapas automáticas que transformam qualquer edital em um plano inteligente de aprovação.
+      </p>
+    </div>
+
+    <!-- Desktop & Tablet: horizontal timeline flow -->
+    <div class="timeline" aria-label="Fluxo estratégico de estudos">
+      @for (step of steps; track step.title; let i = $index; let last = $last) {
+        <div class="step-card" [class.step-card--first]="i === 0">
+          <div class="step-header">
+            <div class="step-number" [style.background]="step.color">
+              {{ i + 1 }}
+            </div>
+            <div class="step-icon-wrap" [style.background]="step.gradient" [style.box-shadow]="'0 6px 20px ' + step.color + '45'">
+              <span class="material-symbols-outlined" aria-hidden="true">{{ step.icon }}</span>
+            </div>
+            @if (!last) {
+              <div class="step-connector" aria-hidden="true">
+                <div class="connector-line"></div>
+                <span class="material-symbols-outlined connector-arrow">chevron_right</span>
+              </div>
+            }
+          </div>
+          <div class="step-content">
+            <span class="step-badge" [style.color]="step.color" [style.background]="step.color + '15'">
+              {{ step.badge }}
+            </span>
+            <h3 class="step-title">{{ step.title }}</h3>
+            <p class="step-sub">{{ step.subtitle }}</p>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Mobile: vertical steps -->
+    <div class="timeline-vertical" aria-label="Fluxo estratégico de estudos (mobile)">
+      @for (step of steps; track step.title; let i = $index; let last = $last) {
+        <div class="v-step">
+          <div class="v-step__left">
+            <div class="v-step__number" [style.background]="step.color">{{ i + 1 }}</div>
+            <div class="v-step__icon" [style.background]="step.gradient" [style.box-shadow]="'0 6px 20px ' + step.color + '45'">
+              <span class="material-symbols-outlined" aria-hidden="true">{{ step.icon }}</span>
+            </div>
+            @if (!last) { <div class="v-step__line" aria-hidden="true"></div> }
+          </div>
+          <div class="v-step__body">
+            <span class="step-badge" [style.color]="step.color" [style.background]="step.color + '15'">
+              {{ step.badge }}
+            </span>
+            <h3 class="step-title">{{ step.title }}</h3>
+            <p class="step-sub">{{ step.subtitle }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</section>

@@ -1,0 +1,91 @@
+<section class="hero" aria-label="Seção principal">
+  <div class="hero__container">
+    <!-- Top Grid: Content Column (Left) & Unified 3D Scene (Right) -->
+    <div class="hero__top-grid">
+      <!-- Left: Content Column -->
+      <div class="hero__content">
+        <!-- Brand pill / Logo badge -->
+        <div class="hero__brand-badge">
+          <div class="brand-icon">
+            <img src="assets/logo.png" alt="Aprovando Tech Logo" class="brand-img" width="32" height="32" />
+          </div>
+          <span class="brand-text">{{ copy.brandBadge }}</span>
+        </div>
+
+        <!-- Main Headline -->
+        <h1 class="hero__headline">
+          <span class="headline-part">{{ copy.headlineLine1 }}</span>
+          <span class="headline-part">{{ copy.headlineLine2 }}</span>
+          <span class="headline-highlight">{{ copy.headlineHighlight }}</span>
+        </h1>
+
+        <!-- Subheadline -->
+        <h2 class="hero__subheadline">{{ copy.subheadline }}</h2>
+
+        <!-- Description -->
+        <p class="hero__description">{{ copy.description }}</p>
+      </div>
+
+      <!-- Right: Unified 3D Scene (Mascot & Video Scene with Dip-to-Background Loop) -->
+      <div class="hero__visual">
+        <div class="hero__scene-wrapper">
+          <div class="scene-ambient-glow" aria-hidden="true"></div>
+          <video #singleVideo class="hero__scene-video" [class.faded]="isFading" autoplay muted playsinline preload="auto"
+            aria-label="Demonstração Aprovando Tech" (timeupdate)="onTimeUpdate()" (ended)="onVideoEnded()">
+            <source src="assets/hero_video.mp4" type="video/mp4" />
+            Seu navegador não suporta reprodução de vídeos.
+          </video>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Centralized Action Section: 100% Full Width with Aurora -->
+  <div class="hero__action-section">
+    <!-- Background: SoftAurora WebGL effect inside Action Section -->
+    <div class="hero__action-aurora" aria-hidden="true">
+      <app-soft-aurora [speed]="0.50" [scale]="0.50" [brightness]="1.2" color1="#0f1a29" color2="#38bdf8"
+        [noiseFrequency]="2.50" [noiseAmplitude]="2.00" [bandHeight]="0.62" [bandSpread]="0.80" [octaveDecay]="0.30"
+        [layerOffset]="1.0" [colorSpeed]="1.0" [enableMouseInteraction]="true" [mouseInfluence]="0.25">
+      </app-soft-aurora>
+    </div>
+
+    <div class="hero__action-container">
+      <!-- Search Bar -->
+      <div class="hero__search" role="search">
+        <span class="material-symbols-outlined search-icon" aria-hidden="true">search</span>
+        <input type="search" class="search-input" [placeholder]="copy.searchPlaceholder"
+          aria-label="Buscar edital ou concurso" id="hero-search" />
+        <button class="search-btn" type="button" id="btn-hero-search">Buscar</button>
+      </div>
+
+      <!-- Action Buttons (CTAs) -->
+      <div class="hero__ctas">
+        <a routerLink="/login" class="btn-primary-cta" id="btn-hero-primary">
+          <span class="material-symbols-outlined cta-icon" aria-hidden="true">rocket_launch</span>
+          {{ copy.ctaPrimary }}
+        </a>
+        <button class="btn-ghost-cta" type="button" id="btn-hero-secondary" (click)="scrollToHowItWorks()">
+          <span class="material-symbols-outlined cta-play-icon" aria-hidden="true">play_circle</span>
+          {{ copy.ctaSecondary }}
+        </button>
+      </div>
+
+      <!-- Trust Badges -->
+      <div class="hero__trust">
+        <span class="trust-item">
+          <span class="material-symbols-outlined check-icon filled" aria-hidden="true">check_circle</span>
+          Grátis para começar
+        </span>
+        <span class="trust-item">
+          <span class="material-symbols-outlined check-icon filled" aria-hidden="true">check_circle</span>
+          Sem cartão de crédito
+        </span>
+        <span class="trust-item">
+          <span class="material-symbols-outlined check-icon filled" aria-hidden="true">check_circle</span>
+          Resultado em minutos
+        </span>
+      </div>
+    </div>
+  </div>
+</section>

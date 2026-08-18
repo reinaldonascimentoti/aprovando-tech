@@ -26,6 +26,11 @@ export class ApiService {
     return headers;
   }
 
+  /** Retorna um EventSource apontando para a base API URL (usado para SSE/Logs em Tempo Real) */
+  getEventSource(endpoint: string): EventSource {
+    return new EventSource(`${this.baseUrl}${endpoint}`);
+  }
+
   /** Constrói headers para FormData (sem Content-Type manual) */
   private getFormHeaders(): HttpHeaders {
     const token = this.supabaseService.accessToken;
@@ -144,6 +149,7 @@ export class ApiService {
   updateEditalContext(
     id: string,
     userContext: {
+      title?: string;
       cargo: string;
       concurso?: string;
       dataProva?: string;
@@ -154,6 +160,7 @@ export class ApiService {
     return this.http.patch(
       `${this.baseUrl}/editais/${id}/context`,
       {
+        title: userContext.title,
         cargo: userContext.cargo,
         concurso: userContext.concurso,
         dataProva: userContext.dataProva,
@@ -204,8 +211,17 @@ export class ApiService {
   }
 
   // ----------------------------------------------------------------
-  // QUESTIONS
+  // QUESTIONS & STATS
   // ----------------------------------------------------------------
+
+  getPublicStats(): Observable<{ editaisCount: number; questoesCount: number; candidatosCount: number }> {
+    return this.http.get<{ editaisCount: number; questoesCount: number; candidatosCount: number }>(
+      `${this.baseUrl}/questions/stats`,
+      { headers: this.getHeaders() }
+    ).pipe(
+      catchError(() => of({ editaisCount: 0, questoesCount: 0, candidatosCount: 0 }))
+    );
+  }
 
   getQuestions(releasedOnly = false): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/questions?releasedOnly=${releasedOnly}`, {
@@ -225,6 +241,24 @@ export class ApiService {
     });
   }
 
+  importQuestionsJson(questionsJson: any): Observable<any> {
+    return this.http.post(`${this.baseUrl}/questions/import`, questionsJson, {
+      headers: this.getHeaders()
+    });
+  }
+
+  updateQuestion(id: string, questionData: any): Observable<any> {
+    return this.http.put(`${this.baseUrl}/questions/${id}`, questionData, {
+      headers: this.getHeaders()
+    });
+  }
+
+  deleteQuestion(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/questions/${id}`, {
+      headers: this.getHeaders()
+    });
+  }
+
   // ----------------------------------------------------------------
   // USERS (Admin)
   // ----------------------------------------------------------------
@@ -237,6 +271,50 @@ export class ApiService {
 
   updateUserRole(id: string, role: string): Observable<any> {
     return this.http.patch(`${this.baseUrl}/users/${id}/role`, { role }, {
+      headers: this.getHeaders()
+    });
+  }
+
+  // ----------------------------------------------------------------
+  // EDITAIS RECENTES GLOBAIS
+  // ----------------------------------------------------------------
+
+  /**
+   * Retorna os 4 últimos editais completed que o user ainda não adicionou.
+   * userId é necessário para filtrar os já adicionados.
+   */
+  getRecentPublicEditais(userId?: string, limit = 4): Observable<any[]> {
+    const params = userId
+      ? `?limit=${limit}&userId=${userId}`
+      : `?limit=${limit}`;
+    return this.http.get<any[]>(`${this.baseUrl}/public/editais/recent${params}`, {
+      headers: this.getHeaders()
+    }).pipe(catchError(() => of([])));
+  }
+
+  // ----------------------------------------------------------------
+  // USER SCHEDULES (Cronograma por user + edital)
+  // ----------------------------------------------------------------
+
+  /** Busca o cronograma de um user para um edital (ou todos se editalId omitido) */
+  getUserSchedule(userId: string, editalId?: string): Observable<any> {
+    const params = editalId
+      ? `?userId=${userId}&editalId=${editalId}`
+      : `?userId=${userId}`;
+    return this.http.get<any>(`${this.baseUrl}/user-schedules${params}`, {
+      headers: this.getHeaders()
+    }).pipe(catchError(() => of({ data: null })));
+  }
+
+  /** Cria ou atualiza o cronograma do user para um edital */
+  saveUserSchedule(payload: {
+    userId: string;
+    editalId: string;
+    horas_por_dia: number;
+    dias_por_semana: number;
+    data_prova?: string;
+  }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/user-schedules`, payload, {
       headers: this.getHeaders()
     });
   }

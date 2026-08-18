@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as ws from 'ws';
 import { EditalUserContext } from '../modules/editais/editais.types';
+import { LogStreamService } from '../modules/questions/log-stream.service';
 
 @Injectable()
 export class SupabaseService {
@@ -10,7 +11,7 @@ export class SupabaseService {
   private adminClient: SupabaseClient | null = null;
   private isConfigured = false;
 
-  constructor() {
+  constructor(@Optional() private readonly logStreamService?: LogStreamService) {
     const supabaseUrl = process.env.SUPABASE_URL;
     const anonKey = process.env.SUPABASE_ANON_KEY;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -133,21 +134,27 @@ export class SupabaseService {
   async toggleQuestionRelease(id: string) {
     if (!this.adminClient) return null;
 
-    // Busca estado atual
-    const { data: current } = await this.adminClient
-      .from('questoes')
-      .select('is_released')
-      .eq('id', id)
-      .single();
+    const isIdNumeric = !isNaN(Number(id));
+    let selectQuery = this.adminClient.from('questoes').select('is_released');
+    if (isIdNumeric) {
+      selectQuery = selectQuery.eq('id', Number(id));
+    } else {
+      selectQuery = selectQuery.eq('id_qc', id);
+    }
 
+    const { data: current } = await selectQuery.single();
     if (!current) return null;
 
-    const { data, error } = await this.adminClient
+    let updateQuery = this.adminClient
       .from('questoes')
-      .update({ is_released: !current.is_released })
-      .eq('id', id)
-      .select()
-      .single();
+      .update({ is_released: !current.is_released });
+    if (isIdNumeric) {
+      updateQuery = updateQuery.eq('id', Number(id));
+    } else {
+      updateQuery = updateQuery.eq('id_qc', id);
+    }
+
+    const { data, error } = await updateQuery.select().single();
 
     if (error) {
       this.logger.error(`toggleQuestionRelease error: ${error.message}`);
@@ -156,80 +163,185 @@ export class SupabaseService {
     return this.toQuestionResponse(data);
   }
 
-  async addExtractedQuestions(pdfName: string, questions: any[]) {
-    if (!this.adminClient) return [];
+  async updateQuestion(id: string, updateData: any) {
+    if (!this.adminClient || !id) return null;
 
-    const rows = questions.map((q) => {
-      const tipo = q.tipo === 'certo_errado' ? 'certo_errado' : 'multipla_escolha';
+    const payload: any = {};
 
-      let alternativa_a = tipo === 'multipla_escolha' ? (q.alternativa_a || null) : null;
-      let alternativa_b = tipo === 'multipla_escolha' ? (q.alternativa_b || null) : null;
-      let alternativa_c = tipo === 'multipla_escolha' ? (q.alternativa_c || null) : null;
-      let alternativa_d = tipo === 'multipla_escolha' ? (q.alternativa_d || null) : null;
-      let alternativa_e = tipo === 'multipla_escolha' ? (q.alternativa_e || null) : null;
+    if (updateData.disciplina !== undefined) payload.disciplina = updateData.disciplina || 'Geral';
+    if (updateData.banca !== undefined) payload.banca = updateData.banca || null;
+    if (updateData.ano !== undefined) payload.ano = updateData.ano ? Number(updateData.ano) : null;
+    if (updateData.orgao !== undefined) payload.orgao = updateData.orgao || null;
+    if (updateData.cargo !== undefined) payload.cargo = updateData.cargo || null;
+    if (updateData.assunto !== undefined) payload.assunto = updateData.assunto || null;
+    if (updateData.tipo !== undefined) payload.tipo = updateData.tipo === 'certo_errado' ? 'certo_errado' : 'multipla_escolha';
+    if (updateData.enunciado !== undefined) payload.enunciado = updateData.enunciado;
+    if (updateData.alternativas !== undefined) payload.alternativas = Array.isArray(updateData.alternativas) ? updateData.alternativas : [];
+    if (updateData.resposta_correta !== undefined) payload.resposta_correta = updateData.resposta_correta || null;
+    if (updateData.gabarito_comentado !== undefined) payload.gabarito_comentado = updateData.gabarito_comentado || null;
+    if (updateData.imagem_url !== undefined) payload.imagem_url = updateData.imagem_url || null;
+    if (updateData.is_released !== undefined) payload.is_released = !!updateData.is_released;
 
-      if (tipo === 'multipla_escolha') {
-        const opts = q.options || q.alternativas || [];
-        if (Array.isArray(opts) && opts.length > 0) {
-          opts.forEach((opt: any) => {
-            const letter = (opt.letter || opt.letra || '').toUpperCase();
-            const text = opt.text || opt.texto || '';
-            if (letter === 'A') alternativa_a = text;
-            else if (letter === 'B') alternativa_b = text;
-            else if (letter === 'C') alternativa_c = text;
-            else if (letter === 'D') alternativa_d = text;
-            else if (letter === 'E') alternativa_e = text;
-          });
+    const isIdNumeric = !isNaN(Number(id));
+    let query = this.adminClient.from('questoes').update(payload);
+    if (isIdNumeric) {
+      query = query.eq('id', Number(id));
+    } else {
+      query = query.eq('id_qc', id);
+    }
+
+    const { data, error } = await query.select().single();
+    if (error) {
+      this.logger.error(`updateQuestion error: ${error.message}`);
+      return null;
+    }
+    return this.toQuestionResponse(data);
+  }
+
+  async deleteQuestion(id: string) {
+    if (!this.adminClient || !id) return false;
+
+    const isIdNumeric = !isNaN(Number(id));
+    let query = this.adminClient.from('questoes').delete();
+    if (isIdNumeric) {
+      query = query.eq('id', Number(id));
+    } else {
+      query = query.eq('id_qc', id);
+    }
+
+    const { error } = await query;
+    if (error) {
+      this.logger.error(`deleteQuestion error: ${error.message}`);
+      return false;
+    }
+    return true;
+  }
+
+  async importJsonQuestions(questions: any[]) {
+    if (!this.adminClient || !Array.isArray(questions)) return [];
+
+    const rows = questions
+      .map((q, idx) => {
+        if (!q || typeof q !== 'object') return null;
+
+        let id_qc = q.id_qc || q.id || q.codigo || null;
+        if (!id_qc) {
+          id_qc = `Q_IMP_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`;
+        }
+
+        const enunciado = q.enunciado || q.statement || q.texto || q.pergunta || q.question || null;
+        if (!enunciado || typeof enunciado !== 'string' || !enunciado.trim()) return null;
+
+        let tipo = 'multipla_escolha';
+        const rawTipo = String(q.tipo || '').toLowerCase();
+        if (rawTipo === 'certo_errado' || rawTipo === 'certo/errado' || rawTipo === 'ce' || rawTipo === 'tf') {
+          tipo = 'certo_errado';
+        }
+
+        const disciplina = q.disciplina || q.subject || q.materia || 'Geral';
+        const assunto = q.assunto || q.tema || q.topic || null;
+        const alternativas = Array.isArray(q.alternativas) ? q.alternativas : (Array.isArray(q.options) ? q.options : []);
+        const resposta_correta = q.resposta_correta ? String(q.resposta_correta).toUpperCase() : (q.correct_option ? String(q.correct_option).toUpperCase() : null);
+        const gabarito_comentado = q.gabarito_comentado || q.explanation || q.explicacao || null;
+        const imagem_url = q.imagem_url || null;
+        const imagens = Array.isArray(q.imagens) ? q.imagens : (imagem_url ? [imagem_url] : []);
+
+        // Sanitização segura do ano para PostgreSQL integer check (1900..2100)
+        let ano: number | null = null;
+        if (q.ano !== undefined && q.ano !== null) {
+          const parsedAno = Number(q.ano);
+          if (!isNaN(parsedAno) && parsedAno >= 1900 && parsedAno <= 2100) {
+            ano = Math.floor(parsedAno);
+          }
+        }
+
+        return {
+          id_qc: String(id_qc),
+          disciplina: String(disciplina),
+          banca: q.banca ? String(q.banca) : null,
+          ano,
+          orgao: q.orgao ? String(q.orgao) : null,
+          cargo: q.cargo ? String(q.cargo) : null,
+          assunto: assunto ? String(assunto) : null,
+          tipo,
+          enunciado: String(enunciado),
+          alternativas,
+          resposta_correta,
+          gabarito_comentado: gabarito_comentado ? String(gabarito_comentado) : null,
+          imagem_url: imagem_url ? String(imagem_url) : null,
+          imagens,
+          quality_metrics: q.quality_metrics || {
+            clarity_score: 9.5,
+            distractor_plausibility: 9.0,
+            bloom_taxonomy: 'Aplicação',
+            difficulty_level: 'Médio',
+            overall_quality_score: 9.3,
+            quality_comments: 'Questão importada com sucesso via JSON.',
+          },
+          is_released: true,
+        };
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null);
+
+    // Remove duplicatas de id_qc dentro do próprio conjunto a ser inserido
+    const uniqueRowsMap = new Map<string, any>();
+    for (const r of rows) {
+      uniqueRowsMap.set(r.id_qc, r);
+    }
+    const uniqueRows = Array.from(uniqueRowsMap.values());
+
+    const batchSize = 100;
+    const allResults: any[] = [];
+
+    for (let i = 0; i < uniqueRows.length; i += batchSize) {
+      const chunk = uniqueRows.slice(i, i + batchSize);
+      let res = await this.adminClient
+        .from('questoes')
+        .upsert(chunk, { onConflict: 'id_qc' })
+        .select();
+
+      if (!res.error && res.data) {
+        allResults.push(...res.data);
+        if (this.logStreamService) {
+          this.logStreamService.pushLog(`Lote ${Math.floor(i / batchSize) + 1} processado: +${res.data.length} questões.`, 'info');
+        }
+      } else {
+        this.logger.warn(`Aviso no lote ${Math.floor(i / batchSize) + 1}: ${res.error?.message}. Executando inserção item a item...`);
+        if (this.logStreamService) {
+          this.logStreamService.pushLog(`Aviso no lote ${Math.floor(i / batchSize) + 1}. Tentando modo individual...`, 'warn');
+        }
+
+        // Tenta individualmente para cada questão do lote com falha
+        for (const singleRow of chunk) {
+          const singleRes = await this.adminClient
+            .from('questoes')
+            .upsert([singleRow], { onConflict: 'id_qc' })
+            .select();
+
+          if (!singleRes.error && singleRes.data && singleRes.data.length > 0) {
+            allResults.push(singleRes.data[0]);
+          } else {
+            this.logger.error(`Erro ao importar questão ${singleRow.id_qc}: ${singleRes.error?.message}`);
+            if (this.logStreamService) {
+              this.logStreamService.pushLog(`Falha na questão ${singleRow.id_qc}: ${singleRes.error?.message}`, 'error');
+            }
+          }
         }
       }
-
-      return {
-        prova: q.prova || pdfName,
-        enunciado: q.enunciado || q.statement,
-        tipo,
-        alternativa_a,
-        alternativa_b,
-        alternativa_c,
-        alternativa_d,
-        alternativa_e,
-        resposta_correta:
-          tipo === 'multipla_escolha'
-            ? q.resposta_correta || q.correct_option || null
-            : null,
-        resposta_boolean:
-          tipo === 'certo_errado' ? (q.resposta_boolean !== undefined ? q.resposta_boolean : null) : null,
-        explanation: q.explanation || q.explicacao,
-        disciplina: q.disciplina || q.subject || q.materia || 'Geral',
-        tema: q.tema || q.topic || q.assunto || 'Geral',
-        ano: q.ano || null,
-        banca: q.banca || null,
-        orgao: q.orgao || null,
-        grau_dificuldade:
-          q.grau_dificuldade || q.quality_metrics?.difficulty_level || 'Médio',
-        imagem_url: q.imagem_url || null,
-        is_released: false,
-        quality_metrics: q.quality_metrics || {
-          clarity_score: 9.4,
-          distractor_plausibility: 9.1,
-          bloom_taxonomy: 'Aplicação',
-          difficulty_level: 'Médio',
-          overall_quality_score: 9.3,
-          quality_comments:
-            'Questão extraída via IA com alto rigor técnico e alinhamento com a bibliografia do PDF.',
-        },
-      };
-    });
-
-    const { data, error } = await this.adminClient
-      .from('questoes')
-      .insert(rows)
-      .select();
-
-    if (error) {
-      this.logger.error(`addExtractedQuestions error: ${error.message}`);
-      return [];
     }
-    return (data ?? []).map((question) => this.toQuestionResponse(question));
+
+    this.logger.log(`importJsonQuestions: ${allResults.length}/${uniqueRows.length} questões processadas com sucesso.`);
+    if (this.logStreamService) {
+      this.logStreamService.pushLog(`Finalizado: ${allResults.length}/${uniqueRows.length} questões salvas no Supabase.`, 'success');
+    }
+    return allResults.map((question) => this.toQuestionResponse(question));
+  }
+
+  async addExtractedQuestions(pdfName: string, questions: any[]) {
+    if (!this.adminClient) return [];
+    return this.importJsonQuestions(
+      questions.map((q) => ({ ...q, prova: q.prova || pdfName })),
+    );
   }
 
   // ----------------------------------------------------------------
@@ -268,15 +380,21 @@ export class SupabaseService {
   async updateEditalContext(id: string, userContext: EditalUserContext) {
     if (!this.adminClient) return null;
 
+    const updatePayload: any = {
+      cargo: userContext.cargo || null,
+      concurso: userContext.concurso || null,
+      data_prova: userContext.dataProva || null,
+      horas_por_dia: userContext.horasPorDia || null,
+      dias_por_semana: userContext.diasPorSemana || null,
+    };
+
+    if (userContext.title && userContext.title.trim().length > 0) {
+      updatePayload.title = userContext.title.trim();
+    }
+
     const { data, error } = await this.adminClient
       .from('editais')
-      .update({
-        cargo: userContext.cargo || null,
-        concurso: userContext.concurso || null,
-        data_prova: userContext.dataProva || null,
-        horas_por_dia: userContext.horasPorDia || null,
-        dias_por_semana: userContext.diasPorSemana || null,
-      })
+      .update(updatePayload)
       .eq('id', id)
       .select()
       .single();
@@ -546,38 +664,24 @@ export class SupabaseService {
   // ----------------------------------------------------------------
 
   private toQuestionResponse(question: any) {
-    const qualityMetrics = question.quality_metrics || {};
-
     return {
-      id: String(question.id),
-      codigo: question.codigo,
-      pdf_name: question.prova,
-      statement: question.enunciado,
-      options: question.tipo === 'multipla_escolha' ? [
-        { letter: 'A', text: question.alternativa_a },
-        { letter: 'B', text: question.alternativa_b },
-        { letter: 'C', text: question.alternativa_c },
-        { letter: 'D', text: question.alternativa_d },
-        { letter: 'E', text: question.alternativa_e },
-      ].filter(o => o.text !== null && o.text !== undefined) : [],
-      correct_option: question.resposta_correta,
+      id: question.id,
+      id_qc: question.id_qc,
+      disciplina: question.disciplina || 'Geral',
+      banca: question.banca || null,
+      ano: question.ano || null,
+      orgao: question.orgao || null,
+      cargo: question.cargo || null,
+      assunto: question.assunto || null,
       tipo: question.tipo,
-      resposta_boolean: question.resposta_boolean,
-      explanation: question.explanation,
-      subject: question.disciplina,
-      topic: question.tema,
-      is_released: question.is_released,
-      quality_metrics: {
-        ...qualityMetrics,
-        difficulty_level: question.grau_dificuldade || qualityMetrics.difficulty_level,
-      },
-      metadata: {
-        ano: question.ano,
-        banca: question.banca,
-        orgao: question.orgao,
-        prova: question.prova,
-        imagem_url: question.imagem_url,
-      },
+      enunciado: question.enunciado,
+      alternativas: question.alternativas || [],
+      resposta_correta: question.resposta_correta || null,
+      gabarito_comentado: question.gabarito_comentado || null,
+      imagem_url: question.imagem_url || null,
+      imagens: question.imagens || [],
+      quality_metrics: question.quality_metrics || {},
+      is_released: question.is_released ?? true,
       created_at: question.created_at,
       updated_at: question.updated_at,
     };
@@ -634,5 +738,156 @@ export class SupabaseService {
       difficulty_distribution: difficultyDistribution,
       detailed_questions_quality: detailed,
     };
+  }
+
+  /** Retorna estatísticas públicas do banco de dados (total de editais, questões e candidatos) */
+  async getPublicStats() {
+    try {
+      const clientToUse = this.adminClient || this.client;
+      if (!clientToUse) {
+        return { editaisCount: 0, questoesCount: 0, candidatosCount: 0 };
+      }
+
+      const [editaisRes, questoesRes, profilesRes] = await Promise.all([
+        clientToUse.from('editais').select('id', { count: 'exact', head: true }),
+        clientToUse.from('questoes').select('id', { count: 'exact', head: true }),
+        clientToUse.from('profiles').select('id', { count: 'exact', head: true }),
+      ]);
+
+      return {
+        editaisCount: editaisRes.count ?? 0,
+        questoesCount: questoesRes.count ?? 0,
+        candidatosCount: profilesRes.count ?? 0,
+      };
+    } catch (err: any) {
+      this.logger.error(`getPublicStats error: ${err?.message}`);
+      return { editaisCount: 0, questoesCount: 0, candidatosCount: 0 };
+    }
+  }
+
+  // ----------------------------------------------------------------
+  // EDITAIS RECENTES GLOBAIS (para o bloco "Recentes" no dashboard)
+  // ----------------------------------------------------------------
+
+  /**
+   * Retorna os N últimos editais com status 'completed' que o userId
+   * ainda NÃO adicionou ao seu perfil (via user_edital_assignments).
+   * Se userId não for fornecido, retorna os N mais recentes globalmente.
+   */
+  async getRecentCompletedEditais(limit = 4, userId?: string): Promise<any[]> {
+    if (!this.adminClient) return [];
+
+    // IDs já adicionados pelo user
+    let assignedIds: string[] = [];
+    if (userId) {
+      const { data: assigned } = await this.adminClient
+        .from('user_edital_assignments')
+        .select('edital_id')
+        .eq('user_id', userId);
+      assignedIds = (assigned ?? []).map((a: any) => a.edital_id);
+    }
+
+    let query = this.adminClient
+      .from('editais')
+      .select('id, title, cargo, concurso, data_prova, uploader_name, created_at, status')
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(limit + assignedIds.length + 10); // busca extra para compensar exclusão
+
+    const { data, error } = await query;
+    if (error) {
+      this.logger.error(`getRecentCompletedEditais error: ${error.message}`);
+      return [];
+    }
+
+    const results = (data ?? []).filter((e: any) => !assignedIds.includes(e.id));
+    return results.slice(0, limit);
+  }
+
+  // ----------------------------------------------------------------
+  // USER SCHEDULES (Cronograma personalizado por user + edital)
+  // ----------------------------------------------------------------
+
+  /** Busca o cronograma de um user para um edital específico */
+  async getUserSchedule(userId: string, editalId: string) {
+    if (!this.adminClient) return null;
+
+    const { data, error } = await this.adminClient
+      .from('user_schedules')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('edital_id', editalId)
+      .maybeSingle();
+
+    if (error) {
+      this.logger.error(`getUserSchedule error: ${error.message}`);
+      return null;
+    }
+    return data;
+  }
+
+  /** Busca todos os cronogramas de um user */
+  async getUserSchedules(userId: string) {
+    if (!this.adminClient) return [];
+
+    const { data, error } = await this.adminClient
+      .from('user_schedules')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      this.logger.error(`getUserSchedules error: ${error.message}`);
+      return [];
+    }
+    return data ?? [];
+  }
+
+  /** Cria ou atualiza o cronograma do user para um edital */
+  async upsertUserSchedule(
+    userId: string,
+    editalId: string,
+    payload: { horas_por_dia?: number; dias_por_semana?: number; data_prova?: string },
+  ) {
+    if (!this.adminClient) return null;
+
+    const { data, error } = await this.adminClient
+      .from('user_schedules')
+      .upsert(
+        {
+          user_id: userId,
+          edital_id: editalId,
+          horas_por_dia: payload.horas_por_dia ?? null,
+          dias_por_semana: payload.dias_por_semana ?? null,
+          data_prova: payload.data_prova ?? null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,edital_id' },
+      )
+      .select()
+      .single();
+
+    if (error) {
+      this.logger.error(`upsertUserSchedule error: ${error.message}`);
+      return null;
+    }
+    return data;
+  }
+
+  /** Remove o cronograma do user para um edital */
+  async deleteUserSchedule(userId: string, editalId: string) {
+    if (!this.adminClient) return false;
+
+    const { error } = await this.adminClient
+      .from('user_schedules')
+      .delete()
+      .eq('user_id', userId)
+      .eq('edital_id', editalId);
+
+    if (error) {
+      this.logger.error(`deleteUserSchedule error: ${error.message}`);
+      return false;
+    }
+    return true;
   }
 }

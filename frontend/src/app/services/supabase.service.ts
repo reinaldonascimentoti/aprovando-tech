@@ -81,7 +81,141 @@ export class SupabaseService implements OnDestroy {
     }
   }
 
+  // ----------------------------------------------------------------
+  // USER TOPIC PROGRESS (Checklist Sync)
+  // ----------------------------------------------------------------
+
+  /** Carrega todo o progresso do checklist de um edital para o usuário atual */
+  async getUserEditalChecklist(editalId: string): Promise<Record<string, boolean>> {
+    const user = this.currentUser;
+    if (!user || !editalId) return {};
+    try {
+      const { data, error } = await this.supabase
+        .from('user_topic_progress')
+        .select('topic_id, completed')
+        .eq('user_id', user.id)
+        .eq('edital_id', editalId);
+
+      if (error) {
+        console.error('Erro ao carregar checklist do Supabase:', error);
+        return {};
+      }
+
+      const map: Record<string, boolean> = {};
+      (data || []).forEach(row => {
+        map[row.topic_id] = !!row.completed;
+      });
+      return map;
+    } catch (e) {
+      console.error('Exceção ao buscar checklist do Supabase:', e);
+      return {};
+    }
+  }
+
+  /** Salva/Atualiza o estado de um tópico/subtópico do checklist */
+  async saveUserTopicProgress(editalId: string, topicId: string, completed: boolean): Promise<void> {
+    const user = this.currentUser;
+    if (!user || !editalId || !topicId) return;
+    try {
+      await this.supabase
+        .from('user_topic_progress')
+        .upsert(
+          {
+            user_id: user.id,
+            edital_id: editalId,
+            topic_id: topicId,
+            completed: completed,
+            updated_at: new Date().toISOString()
+          },
+          { onConflict: 'user_id,edital_id,topic_id' }
+        );
+    } catch (e) {
+      console.error('Erro ao salvar progresso do checklist no Supabase:', e);
+    }
+  }
+
+  /** Salva múltiplos tópicos/subtópicos de uma só vez no Supabase */
+  async saveUserTopicProgressBatch(editalId: string, items: { topicId: string; completed: boolean }[]): Promise<void> {
+    const user = this.currentUser;
+    if (!user || !editalId || items.length === 0) return;
+    try {
+      const records = items.map(item => ({
+        user_id: user.id,
+        edital_id: editalId,
+        topic_id: item.topicId,
+        completed: item.completed,
+        updated_at: new Date().toISOString()
+      }));
+
+      await this.supabase
+        .from('user_topic_progress')
+        .upsert(records, { onConflict: 'user_id,edital_id,topic_id' });
+    } catch (e) {
+      console.error('Erro ao salvar lote de progresso no Supabase:', e);
+    }
+  }
+
+  /** Reseta todo o progresso de checklist de um edital no Supabase */
+  async resetUserEditalProgress(editalId: string): Promise<void> {
+    const user = this.currentUser;
+    if (!user || !editalId) return;
+    try {
+      await this.supabase
+        .from('user_topic_progress')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('edital_id', editalId);
+    } catch (e) {
+      console.error('Erro ao resetar progresso no Supabase:', e);
+    }
+  }
+
+  /** Busca contagem pública de editais, questões e candidatos */
+  async getPublicStats(): Promise<{ editaisCount: number; questoesCount: number; candidatosCount: number }> {
+    try {
+      const [editaisRes, questoesRes, profilesRes] = await Promise.all([
+        this.supabase.from('editais').select('id', { count: 'exact', head: true }),
+        this.supabase.from('questoes').select('id', { count: 'exact', head: true }),
+        this.supabase.from('profiles').select('id', { count: 'exact', head: true }),
+      ]);
+
+      return {
+        editaisCount: editaisRes.count ?? 0,
+        questoesCount: questoesRes.count ?? 0,
+        candidatosCount: profilesRes.count ?? 0,
+      };
+    } catch (err) {
+      console.error('Erro ao buscar estatísticas do Supabase:', err);
+      return { editaisCount: 0, questoesCount: 0, candidatosCount: 0 };
+    }
+  }
+
+  /** Verifica se o e-mail do usuário atual está confirmado */
+  isEmailConfirmed(): boolean {
+    const user = this.currentUser;
+    return !!user?.email_confirmed_at;
+  }
+
+  /** Reenvia o e-mail de confirmação de cadastro */
+  async resendConfirmationEmail(email: string): Promise<void> {
+    const { error } = await this.supabase.auth.resend({
+      type: 'signup',
+      email,
+    });
+    if (error) throw error;
+  }
+
+  /** Envia e-mail de redefinição de senha */
+  async sendPasswordReset(email: string): Promise<void> {
+    const redirectTo = `${window.location.origin}/login`;
+    const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
+    if (error) throw error;
+  }
+
   ngOnDestroy() {
     this.supabase.auth.onAuthStateChange(() => {});
   }
 }
+

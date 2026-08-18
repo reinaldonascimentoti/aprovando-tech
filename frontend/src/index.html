@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="light">
+<html lang="pt-BR" class="dark" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <title>Aprovando Tech - IA & Pareto 80/20</title>
@@ -13,8 +13,28 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <!-- Tailwind CSS CDN for utility grid layout -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    (function() {
+      try {
+        var stored = localStorage.getItem('aprovando-theme');
+        var isDark = stored ? stored === 'dark' : true;
+        if (isDark) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.classList.add('dark');
+          document.documentElement.classList.remove('light');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'light');
+          document.documentElement.classList.add('light');
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
 </head>
-<body class="bg-[#f7f9fc] text-[#191c1e]">
+<body class="bg-[var(--background)] text-[var(--on-surface)] transition-colors duration-300">
   <app-root></app-root>
 </body>
 </html>

@@ -1,0 +1,22 @@
+<section class="cta-final" id="planos" aria-labelledby="cta-title">
+  <div class="cta__bg-deco" aria-hidden="true">
+    <div class="deco-orb deco-orb--1"></div>
+    <div class="deco-orb deco-orb--2"></div>
+    <div class="deco-grid"></div>
+  </div>
+  <div class="cta__container">
+    <div class="cta__icon" aria-hidden="true">
+      <span class="material-symbols-outlined filled">rocket_launch</span>
+    </div>
+    <h2 id="cta-title" class="cta__headline">
+      {{ copy.headline }}
+      <span class="cta__highlight">{{ copy.headlineHighlight }}</span>
+    </h2>
+    <p class="cta__sub">{{ copy.subheadline }}</p>
+    <a routerLink="/login" class="cta__btn" id="btn-cta-final">
+      <span class="material-symbols-outlined" aria-hidden="true">upload_file</span>
+      {{ copy.cta }}
+    </a>
+    <p class="cta__note">{{ copy.ctaNote }}</p>
+  </div>
+</section>

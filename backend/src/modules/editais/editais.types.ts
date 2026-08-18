@@ -4,6 +4,8 @@
  * e pelo Supabase para persistência.
  */
 export interface EditalUserContext {
+  /** Título principal / Nome do edital para análise */
+  title?: string | null;
   /** Cargo específico alvo da análise (obrigatório) */
   cargo: string;
   /** Nome do concurso (ex: SEFAZ-RS 2026) */

@@ -1,0 +1,136 @@
+<section class="recent-editais" id="editais-recentes" aria-labelledby="recent-editais-title">
+  <div class="recent-editais__container">
+    
+    <!-- Section Header -->
+    <div class="recent-editais__header">
+      <div class="header-badge">
+        <span class="material-symbols-outlined header-badge-icon" aria-hidden="true">auto_awesome</span>
+        <span>Inteligência em Tempo Real</span>
+      </div>
+      <h2 id="recent-editais-title" class="header-title">
+        Últimos editais analisados com <span class="gradient-text">IA & Pareto 80/20</span>
+      </h2>
+      <p class="header-subtitle">
+        Editais mapeados e desconstruídos com tópicos de maior incidência, padrão de banca e régua de corte estratégica.
+      </p>
+    </div>
+
+    <!-- Category Filters -->
+    <div class="recent-editais__filters" role="tablist" aria-label="Filtrar por área de concurso">
+      @for (cat of categories; track cat.id) {
+        <button 
+          type="button" 
+          role="tab"
+          [attr.aria-selected]="selectedCategory === cat.id"
+          class="filter-pill"
+          [class.active]="selectedCategory === cat.id"
+          (click)="setCategory(cat.id)">
+          {{ cat.label }}
+        </button>
+      }
+    </div>
+
+    <!-- Editais Grid -->
+    <div class="recent-editais__grid">
+      @for (edital of filteredEditais; track (edital.id || edital.cargo)) {
+        <article class="edital-card" [attr.aria-label]="getEditalOrgao(edital) + ' - ' + getEditalCargo(edital)">
+          
+          <!-- Top Row: Orgao Badge (Left) & Pareto Badge (Right) -->
+          <div class="edital-card__header-row">
+            <div class="orgao-badge">
+              <span>{{ getEditalOrgao(edital) }}</span>
+            </div>
+
+            <div class="pareto-badge">
+              <span class="material-symbols-outlined pareto-badge-icon" aria-hidden="true">donut_large</span>
+              <span>{{ edital.tag || 'Pareto 80/20 Calculado' }}</span>
+            </div>
+          </div>
+
+          <!-- Second Row: Banca Logo & Year -->
+          <div class="edital-card__banca-row">
+            @if (getEditalBancaLogo(edital)) {
+              <span class="banca-logo-badge">
+                <img [src]="getEditalBancaLogo(edital)" [alt]="getEditalBancaName(edital)" class="banca-logo-img" />
+              </span>
+            } @else {
+              <span class="material-symbols-outlined icon-sub" aria-hidden="true">domain</span>
+            }
+            <span class="banca-name-year">{{ getEditalBancaName(edital) }} • {{ getEditalAno(edital) }}</span>
+          </div>
+
+          <!-- Third Row: Cargo Title -->
+          <h3 class="edital-card__cargo" [title]="getEditalCargo(edital)">{{ getEditalCargo(edital) }}</h3>
+
+          <!-- Fourth Row: IA Metrics Inset Box -->
+          <div class="edital-card__metrics-box">
+            <div class="metric-item">
+              <span class="metric-label">TÓPICOS IA</span>
+              <span class="metric-value">{{ getEditalTopicosCount(edital) }}</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">QUESTÕES</span>
+              <span class="metric-value">{{ getEditalQuestoesCount(edital) }}</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">PRECISÃO IA</span>
+              <span class="metric-value metric-value--accuracy">{{ getEditalScoreIA(edital) }}</span>
+            </div>
+          </div>
+
+          <!-- Fifth Row: Pareto 80/20 Progress Bar -->
+          <div class="edital-card__pareto-section">
+            <div class="pareto-headline">
+              <div class="pareto-title">
+                <span class="material-symbols-outlined pareto-bolt-icon" aria-hidden="true">bolt</span>
+                <span>Pareto 80/20:</span>
+              </div>
+              <div class="pareto-coverage">
+                <span>20% cobre </span>
+                <strong class="pareto-highlight">{{ getEditalParetoPercent(edital) }}%</strong>
+                <span> da prova</span>
+              </div>
+            </div>
+            <div class="pareto-track">
+              <div class="pareto-fill" [style.width.%]="getEditalParetoPercent(edital)"></div>
+            </div>
+          </div>
+
+          <!-- Sixth Row: Footer Action & Timestamp -->
+          <div class="edital-card__footer">
+            <div class="analise-time">
+              <span class="material-symbols-outlined time-icon" aria-hidden="true">schedule</span>
+              <span>Analisado {{ getEditalDateText(edital) }}</span>
+            </div>
+
+            <a [routerLink]="edital.id ? ['/disciplinas', edital.id] : '/login'" class="btn-card-action">
+              <span>Ver Análise</span>
+              <span class="material-symbols-outlined action-icon" aria-hidden="true">arrow_forward</span>
+            </a>
+          </div>
+
+        </article>
+      }
+    </div>
+
+    <!-- Bottom Action Banner -->
+    <div class="recent-editais__banner">
+      <div class="banner-content">
+        <div class="banner-icon-box">
+          <span class="material-symbols-outlined banner-icon" aria-hidden="true">upload_file</span>
+        </div>
+        <div class="banner-text">
+          <h4 class="banner-title">Não encontrou o edital do seu concurso?</h4>
+          <p class="banner-desc">
+            Faça upload do PDF oficial e nossa Inteligência Artificial gera a análise completa com Pareto 80/20 em menos de 2 minutos.
+          </p>
+        </div>
+      </div>
+      <a routerLink="/login" class="banner-cta">
+        <span class="material-symbols-outlined" aria-hidden="true">rocket_launch</span>
+        <span>Analisar Meu Edital Agora</span>
+      </a>
+    </div>
+
+  </div>
+</section>

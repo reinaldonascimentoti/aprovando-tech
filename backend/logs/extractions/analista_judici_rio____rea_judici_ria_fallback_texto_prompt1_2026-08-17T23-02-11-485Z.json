@@ -1,0 +1,416 @@
+{
+  "edital": "TRT 22 - PI",
+  "cargo": "Analista Judiciário – Área Judiciária",
+  "conteudo_programatico": {
+    "conhecimentos_gerais": [
+      {
+        "disciplina": "Língua Portuguesa",
+        "topicos": [
+          {
+            "nome": "Compreensão e Interpretação de Textos",
+            "subtopicos": [
+              "Compreensão de textos",
+              "Interpretação de textos",
+              "Tipologia textual",
+              "Ortografia oficial",
+              "Acentuação gráfica"
+            ]
+          },
+          {
+            "nome": "Gramática e Sintaxe",
+            "subtopicos": [
+              "Emprego das classes de palavras",
+              "Sintaxe da oração e do período",
+              "Pontuação",
+              "Concordância verbal e nominal",
+              "Regência verbal e nominal",
+              "Sinal indicativo de crase",
+              "Colocação pronominal"
+            ]
+          },
+          {
+            "nome": "Redação e Coesão Textual",
+            "subtopicos": [
+              "Redação oficial",
+              "Coesão textual",
+              "Coerência textual",
+              "Reescrita de frases"
+            ]
+          }
+        ]
+      },
+      {
+        "disciplina": "Matemática e Raciocínio Lógico-Matemático",
+        "topicos": [
+          {
+            "nome": "Raciocínio Lógico",
+            "subtopicos": [
+              "Estruturas lógicas",
+              "Lógica de argumentação",
+              "Diagramas lógicos",
+              "Proposições e conectivos",
+              "Tabelas-verdade"
+            ]
+          },
+          {
+            "nome": "Raciocínio Matemático e Quantitativo",
+            "subtopicos": [
+              "Raciocínio sequencial",
+              "Orientação espacial e temporal",
+              "Resolução de problemas estruturados"
+            ]
+          }
+        ]
+      },
+      {
+        "disciplina": "Legislação e Direitos das Pessoas com Deficiência",
+        "topicos": [
+          {
+            "nome": "Estatuto da Pessoa com Deficiência",
+            "subtopicos": [
+              "Lei nº 13.146/2015",
+              "Direitos fundamentais da pessoa com deficiência",
+              "Acessibilidade",
+              "Atendimento prioritário"
+            ]
+          },
+          {
+            "nome": "Normas de Acessibilidade no Judiciário",
+            "subtopicos": [
+              "Resolução CNJ nº 230/2016",
+              "Inclusão e acessibilidade no Poder Judiciário"
+            ]
+          }
+        ]
+      },
+      {
+        "disciplina": "Regimento Interno e Ética",
+        "topicos": [
+          {
+            "nome": "Regimento Interno do TRT 22ª Região",
+            "subtopicos": [
+              "Organização do Tribunal",
+              "Órgãos do Tribunal",
+              "Competências do Tribunal"
+            ]
+          },
+          {
+            "nome": "Ética no Serviço Público",
+            "subtopicos": [
+              "Código de Ética do TRT 22ª Região",
+              "Decreto nº 1.171/1994"
+            ]
+          }
+        ]
+      }
+    ],
+    "conhecimentos_especificos": [
+      {
+        "disciplina": "Direito do Trabalho",
+        "topicos": [
+          {
+            "nome": "Princípios e Fontes do Direito do Trabalho",
+            "subtopicos": [
+              "Princípios do Direito do Trabalho",
+              "Fontes formais e materiais",
+              "Interpretação e aplicação das normas trabalhistas"
+            ]
+          },
+          {
+            "nome": "Relação de Trabalho e Relação de Emprego",
+            "subtopicos": [
+              "Caracterização do empregado e empregador",
+              "Grupo econômico",
+              "Sucessão de empregadores",
+              "Terceirização"
+            ]
+          },
+          {
+            "nome": "Contrato Individual de Trabalho",
+            "subtopicos": [
+              "Conceito e classificação",
+              "Alteração contratual",
+              "Suspensão e interrupção",
+              "Rescisão do contrato",
+              "Aviso prévio",
+              "Estabilidade e garantias provisórias de emprego"
+            ]
+          },
+          {
+            "nome": "Remuneração e Salário",
+            "subtopicos": [
+              "Composição da remuneração",
+              "Equiparação salarial",
+              "Proteção ao salário",
+              "FGTS"
+            ]
+          },
+          {
+            "nome": "Duração do Trabalho e Descanso",
+            "subtopicos": [
+              "Jornada de trabalho",
+              "Horas extraordinárias",
+              "Trabalho noturno",
+              "Repouso semanal remunerado",
+              "Férias anuais remuneradas"
+            ]
+          },
+          {
+            "nome": "Direito Coletivo do Trabalho",
+            "subtopicos": [
+              "Organização sindical",
+              "Acordo coletivo de trabalho",
+              "Convenção coletiva de trabalho",
+              "Direito de greve"
+            ]
+          },
+          {
+            "nome": "Segurança e Saúde no Trabalho",
+            "subtopicos": [
+              "Insalubridade",
+              "Periculosidade",
+              "Normas regulamentadoras de medicina e segurança do trabalho"
+            ]
+          }
+        ]
+      },
+      {
+        "disciplina": "Direito Processual do Trabalho",
+        "topicos": [
+          {
+            "nome": "Justiça do Trabalho",
+            "subtopicos": [
+              "Organização e competência",
+              "Varas do Trabalho",
+              "Tribunais Regionais do Trabalho",
+              "Tribunal Superior do Trabalho"
+            ]
+          },
+          {
+            "nome": "Atos, Termos e Prazos Processuais",
+            "subtopicos": [
+              "Prazos processuais trabalhistas",
+              "Comunicação dos atos processuais",
+              "Nulidades no processo do trabalho"
+            ]
+          },
+          {
+            "nome": "Processo Individual do Trabalho",
+            "subtopicos": [
+              "Petição inicial",
+              "Audiência trabalhista",
+              "Resposta do réu",
+              "Provas no processo do trabalho",
+              "Sentença e coisa julgada"
+            ]
+          },
+          {
+            "nome": "Recursos no Processo do Trabalho",
+            "subtopicos": [
+              "Teoria geral dos recursos trabalhistas",
+              "Recurso ordinário",
+              "Recurso de revista",
+              "Agravo de instrumento",
+              "Agravo de petição",
+              "Embargos no TST"
+            ]
+          },
+          {
+            "nome": "Execução Trabalhista",
+            "subtopicos": [
+              "Execução provisória e definitiva",
+              "Embargos à execução",
+              "Impugnação aos cálculos",
+              "Expropriação de bens"
+            ]
+          },
+          {
+            "nome": "Procedimentos Especiais e Tutelas",
+            "subtopicos": [
+              "Procedimento sumaríssimo",
+              "Ação rescisória trabalhista",
+              "Mandado de segurança",
+              "Tutelas provisórias de urgência e evidência"
+            ]
+          }
+        ]
+      },
+      {
+        "disciplina": "Direito Constitucional",
+        "topicos": [
+          {
+            "nome": "Teoria da Constituição e Direitos Fundamentais",
+            "subtopicos": [
+              "Princípios fundamentais",
+              "Direitos e deveres individuais e coletivos",
+              "Direitos sociais",
+              "Remédios constitucionais"
+            ]
+          },
+          {
+            "nome": "Organização do Estado",
+            "subtopicos": [
+              "Organização político-administrativa",
+              "União, Estados, Distrito Federal e Municípios",
+              "Administração Pública na Constituição"
+            ]
+          },
+          {
+            "nome": "Poder Judiciário",
+            "subtopicos": [
+              "Estrutura e órgãos do Poder Judiciário",
+              "Supremo Tribunal Federal",
+              "Superior Tribunal de Justiça",
+              "Tribunais Regionais do Trabalho e Juízes do Trabalho",
+              "Conselho Nacional de Justiça"
+            ]
+          },
+          {
+            "nome": "Funções Essenciais à Justiça",
+            "subtopicos": [
+              "Ministério Público",
+              "Advocacia Pública",
+              "Defensoria Pública",
+              "Advocacia"
+            ]
+          }
+        ]
+      },
+      {
+        "disciplina": "Direito Administrativo",
+        "topicos": [
+          {
+            "nome": "Princípios e Organização Administrativa",
+            "subtopicos": [
+              "Princípios expressos e implícitos da Administração Pública",
+              "Administração direta e indireta",
+              "Autarquias, fundações, empresas públicas e sociedades de economia mista"
+            ]
+          },
+          {
+            "nome": "Atos Administrativos",
+            "subtopicos": [
+              "Conceito e atributos",
+              "Elementos e requisitos de validade",
+              "Anulação, revogação e cassação"
+            ]
+          },
+          {
+            "nome": "Agentes Públicos",
+            "subtopicos": [
+              "Lei nº 8.112/1990",
+              "Deveres e proibições",
+              "Responsabilidade funcional",
+              "Regime disciplinar e processo administrativo disciplinar"
+            ]
+          },
+          {
+            "nome": "Licitações e Contratos Administrativos",
+            "subtopicos": [
+              "Lei nº 14.133/2021",
+              "Modalidades de licitação",
+              "Contratação direta",
+              "Contratos administrativos"
+            ]
+          },
+          {
+            "nome": "Processo Administrativo e Improbidade",
+            "subtopicos": [
+              "Lei nº 9.784/1999",
+              "Lei de Improbidade Administrativa (Lei nº 8.429/1992)"
+            ]
+          },
+          {
+            "nome": "Responsabilidade Civil do Estado",
+            "subtopicos": [
+              "Responsabilidade objetiva do Estado",
+              "Excludentes e atenuantes",
+              "Direito de regressão"
+            ]
+          }
+        ]
+      },
+      {
+        "disciplina": "Direito Civil",
+        "topicos": [
+          {
+            "nome": "Parte Geral do Direito Civil",
+            "subtopicos": [
+              "Pessoas naturais",
+              "Pessoas jurídicas",
+              "Bens",
+              "Fatos, atos e negócios jurídicos",
+              "Prescrição e decadência"
+            ]
+          },
+          {
+            "nome": "Obrigações e Contratos",
+            "subtopicos": [
+              "Teoria geral das obrigações",
+              "Teoria geral dos contratos",
+              "Responsabilidade civil extracontratual e contratual"
+            ]
+          },
+          {
+            "nome": "Direito das Coisas",
+            "subtopicos": [
+              "Posse",
+              "Propriedade"
+            ]
+          }
+        ]
+      },
+      {
+        "disciplina": "Direito Processual Civil",
+        "topicos": [
+          {
+            "nome": "Normas Processuais e Jurisdição",
+            "subtopicos": [
+              "Princípios fundamentais do processo civil",
+              "Jurisdição e ação",
+              "Competência"
+            ]
+          },
+          {
+            "nome": "Sujeitos do Processo",
+            "subtopicos": [
+              "Partes e procuradores",
+              "Litisconsórcio",
+              "Intervenção de terceiros",
+              "Juiz e auxiliares da justiça"
+            ]
+          },
+          {
+            "nome": "Atos Processuais e Tutelas",
+            "subtopicos": [
+              "Atos e prazos processuais",
+              "Nulidades processuais",
+              "Tutela provisória de urgência e evidência"
+            ]
+          },
+          {
+            "nome": "Procedimento Comum",
+            "subtopicos": [
+              "Petição inicial",
+              "Improcedência liminar do pedido",
+              "Contestação e reconvenção",
+              "Provas",
+              "Sentença e coisa julgada"
+            ]
+          },
+          {
+            "nome": "Recursos e Execução",
+            "subtopicos": [
+              "Teoria geral dos recursos",
+              "Apelação",
+              "Agravo de instrumento",
+              "Embargos de declaração",
+              "Cumprimento de sentença",
+              "Processo de execução"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

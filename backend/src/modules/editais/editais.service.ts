@@ -133,6 +133,14 @@ export class EditaisService {
     }));
   }
 
+  /**
+   * Retorna os N últimos editais com status 'completed' que o userId
+   * ainda NÃO adicionou ao seu perfil.
+   */
+  async getRecentCompletedEditais(limit = 4, userId?: string) {
+    return this.supabaseService.getRecentCompletedEditais(limit, userId);
+  }
+
   async getEditalPareto(id: string) {
     const edital = await this.supabaseService.getEditalById(id);
     if (!edital) {

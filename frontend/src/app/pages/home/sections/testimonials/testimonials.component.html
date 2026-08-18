@@ -1,0 +1,39 @@
+<section class="testimonials" id="depoimentos" aria-labelledby="test-title">
+  <div class="test__container">
+    <div class="section-header">
+      <span class="section-badge">Depoimentos</span>
+      <h2 id="test-title" class="section-title">
+        Candidatos que <span class="gradient-text">aprovaram</span>
+      </h2>
+      <p class="section-sub">
+        Resultados de quem já usou a Aprovando Tech para transformar seus estudos.
+      </p>
+    </div>
+
+    <div class="test__grid">
+      @for (t of testimonials; track t.name) {
+        <article class="test-card" [attr.aria-label]="'Depoimento de ' + t.name">
+          <!-- Quote icon -->
+          <div class="test-quote" aria-hidden="true">"</div>
+          <!-- Quote text -->
+          <blockquote class="test-text">{{ t.quote }}</blockquote>
+          <!-- Author -->
+          <footer class="test-author">
+            <div class="test-avatar" [style.background]="t.color + '22'">
+              <span [style.color]="t.color" class="avatar-initials">{{ t.initials }}</span>
+            </div>
+            <div class="author-info">
+              <span class="author-name">{{ t.name }}</span>
+              <span class="author-role">{{ t.role }} — {{ t.concurso }}</span>
+            </div>
+            <div class="star-rating" aria-label="5 estrelas">
+              @for (s of [1,2,3,4,5]; track s) {
+                <span class="material-symbols-outlined filled star" aria-hidden="true">star</span>
+              }
+            </div>
+          </footer>
+        </article>
+      }
+    </div>
+  </div>
+</section>

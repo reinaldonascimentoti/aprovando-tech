@@ -2,6 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 
 :root {
+  color-scheme: light;
   --primary: #433fe5;
   --primary-container: #5d5cff;
   --secondary: #6b38d4;
@@ -14,13 +15,45 @@
   --surface-container: #eceef1;
   --surface-container-high: #e6e8eb;
   --surface-container-highest: #e0e3e6;
-  --on-surface: #191c1e;
-  --on-surface-variant: #464556;
-  --outline: #767587;
-  --outline-variant: #c7c4d8;
+  --on-surface: #0f172a;
+  --on-surface-variant: #334155;
+  --outline: #64748b;
+  --outline-variant: #cbd5e1;
   --surface-tint: #4643e9;
   --error: #ba1a1a;
   --error-container: #ffdad6;
+  --neo-shadow-dark: #d1d9e6;
+  --neo-shadow-light: #ffffff;
+  --card-bg: #ffffff;
+}
+
+:root[data-theme="dark"],
+.dark-theme,
+[data-theme="dark"],
+.dark {
+  color-scheme: dark;
+  --primary: #818cf8;
+  --primary-container: #4338ca;
+  --secondary: #c084fc;
+  --secondary-container: #6b21a8;
+  --tertiary: #34d399;
+  --tertiary-container: #065f46;
+  --background: #0b0f19;
+  --surface: #111625;
+  --surface-container-low: #161c2e;
+  --surface-container: #1c2338;
+  --surface-container-high: #242c44;
+  --surface-container-highest: #2e3753;
+  --on-surface: #f8fafc;
+  --on-surface-variant: #cbd5e1;
+  --outline: #64748b;
+  --outline-variant: rgba(255, 255, 255, 0.08);
+  --surface-tint: #818cf8;
+  --error: #f87171;
+  --error-container: #7f1d1d;
+  --neo-shadow-dark: #05070d;
+  --neo-shadow-light: #182035;
+  --card-bg: #141927;
 }
 
 * {
@@ -35,31 +68,53 @@ body {
   color: var(--on-surface);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.35s ease, color 0.35s ease;
 }
 
-/* Neomorphic Raised */
+/* Modern Raised Cards */
 .neo-raised {
-  background: #f7f9fc;
-  box-shadow: 8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff;
+  background: var(--surface);
+  border: 1px solid var(--outline-variant);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-/* Neomorphic Raised Subdued */
+/* Modern Raised Subdued */
 .neo-raised-sm {
-  background: #f7f9fc;
-  box-shadow: 4px 4px 10px #d1d9e6, -4px -4px 10px #ffffff;
+  background: var(--surface);
+  border: 1px solid var(--outline-variant);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
-/* Neomorphic Pressed (Sunken) */
+/* Modern Pressed (Sunken) */
 .neo-pressed {
-  background: #f7f9fc;
-  box-shadow: inset 6px 6px 12px #d1d9e6, inset -6px -6px 12px #ffffff;
+  background: var(--surface-container-low);
+  border: 1px solid var(--outline-variant);
+}
+
+/* Modern Input */
+.neo-input {
+  background: var(--surface-container-low);
+  border: 1.5px solid var(--outline-variant);
+  color: var(--on-surface);
+  transition: all 0.25s ease;
+}
+
+.neo-input::placeholder {
+  color: var(--outline);
+  opacity: 0.75;
+}
+
+.neo-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(67, 63, 229, 0.15);
+  outline: none;
 }
 
 /* Mesh Gradient Button */
 .btn-mesh {
   background: linear-gradient(135deg, #433fe5 0%, #6b38d4 50%, #8455ef 100%);
   color: #ffffff;
-  box-shadow: 4px 4px 10px rgba(107, 56, 212, 0.3), -4px -4px 10px rgba(255, 255, 255, 0.8);
+  box-shadow: 4px 4px 10px rgba(107, 56, 212, 0.3), -4px -4px 10px rgba(255, 255, 255, 0.08);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
   cursor: pointer;
@@ -78,12 +133,12 @@ body {
   transform: scale(0.97);
 }
 
-/* Secondary Neomorphic Button */
+/* Secondary Modern Button */
 .btn-neo {
-  background: #f7f9fc;
-  box-shadow: 6px 6px 12px #d1d9e6, -6px -6px 12px #ffffff;
+  background: var(--surface);
+  border: 1px solid var(--outline-variant);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   color: var(--primary);
-  border: none;
   cursor: pointer;
   transition: all 0.2s ease;
   display: inline-flex;
@@ -93,7 +148,8 @@ body {
 }
 
 .btn-neo:hover {
-  box-shadow: 2px 2px 5px #d1d9e6, -2px -2px 5px #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  border-color: var(--primary);
 }
 
 /* Active Glow */
@@ -115,3 +171,19 @@ body {
 .transition-all {
   transition: all 0.3s ease;
 }
+
+.badge-primary { background-color: color-mix(in srgb, var(--primary) 15%, transparent); color: var(--primary); }
+.badge-secondary { background-color: color-mix(in srgb, var(--secondary) 15%, transparent); color: var(--secondary); }
+.badge-residual { background-color: color-mix(in srgb, var(--outline-variant) 30%, transparent); color: var(--on-surface-variant); }
+.badge-quente { background-color: color-mix(in srgb, var(--error) 15%, transparent); color: var(--error); }
+.text-primary-dynamic { color: var(--primary); }
+.border-primary-dynamic { border-color: var(--primary) !important; }
+
+.border-error-dynamic { border-color: var(--error) !important; }
+
+.badge-morno { background-color: color-mix(in srgb, #ff9800 15%, transparent); color: #ff9800; }
+.badge-frio { background-color: color-mix(in srgb, #2196f3 15%, transparent); color: #2196f3; }
+.badge-success { background-color: color-mix(in srgb, var(--tertiary) 15%, transparent); color: var(--tertiary); }
+.badge-neutral { background-color: color-mix(in srgb, var(--on-surface-variant) 15%, transparent); color: var(--on-surface-variant); }
+.bg-surface-elevated { background-color: var(--surface-container-high); }
+.bg-surface-dim { background-color: var(--surface-container-low); }

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <!-- Substitua os paths abaixo pelos gerados pelo seu script Python -->
+  
+  <!-- Azul (#124EA2) -->
+  <path d="M 50,50 L 150,50 L 150,150 L 50,150 Z" fill="#124EA2" fill-rule="evenodd" />
+  
+  <!-- Laranja (#F7991E) -->
+  <path d="M 200,50 L 300,50 L 300,150 L 200,150 Z" fill="#F7991E" fill-rule="evenodd" />
+  
+  <!-- Bege (#F6CF9E) -->
+  <path d="M 350,50 L 450,50 L 450,150 L 350,150 Z" fill="#F6CF9E" fill-rule="evenodd" />
+  
+  <!-- Adicione aqui os paths reais do seu logo -->
+</svg>

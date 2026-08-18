@@ -1,0 +1,10 @@
+npm-debug.log
+logs
+.git
+.gitignore
+scratch
+test-pdfs
+*.md
+.DS_Store
+.env.local
+.env.*.local

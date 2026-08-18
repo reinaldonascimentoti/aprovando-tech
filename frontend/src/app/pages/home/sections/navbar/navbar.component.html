@@ -1,0 +1,46 @@
+<header class="navbar" [class.scrolled]="scrolled()">
+  <div class="navbar__inner">
+    <!-- Logo -->
+    <a class="navbar__logo" href="#" aria-label="Aprovando Tech - Página inicial">
+      <div class="logo-icon">
+        <img src="assets/logo.png" alt="Logo Aprovando Tech" class="logo-img" width="40" height="40" />
+      </div>
+      <span class="logo-text">APROVANDO<strong>TECH</strong></span>
+    </a>
+
+    <!-- Desktop Nav -->
+    <nav class="navbar__links" aria-label="Navegação principal">
+      @for (link of navLinks; track link.anchor) {
+        <button class="nav-link" (click)="scrollTo(link.anchor)" type="button">{{ link.label }}</button>
+      }
+    </nav>
+
+    <!-- Actions -->
+    <div class="navbar__actions">
+      <a routerLink="/login" class="btn-outline" id="btn-entrar">Entrar</a>
+      <a routerLink="/login" class="btn-mesh btn-cta" id="btn-comecar">
+        <span class="material-symbols-outlined" aria-hidden="true">rocket_launch</span>
+        Começar agora
+      </a>
+    </div>
+
+    <!-- Mobile menu toggle -->
+    <button class="mobile-toggle" (click)="toggleMobileMenu()" type="button"
+            [attr.aria-expanded]="mobileMenuOpen()" aria-controls="mobile-menu" aria-label="Abrir menu">
+      <span class="material-symbols-outlined" aria-hidden="true">{{ mobileMenuOpen() ? 'close' : 'menu' }}</span>
+    </button>
+  </div>
+
+  <!-- Mobile Menu -->
+  @if (mobileMenuOpen()) {
+    <nav class="mobile-menu" id="mobile-menu" aria-label="Navegação mobile">
+      @for (link of navLinks; track link.anchor) {
+        <button class="mobile-link" (click)="scrollTo(link.anchor)" type="button">{{ link.label }}</button>
+      }
+      <div class="mobile-actions">
+        <a routerLink="/login" class="btn-outline w-full">Entrar</a>
+        <a routerLink="/login" class="btn-mesh w-full">Começar agora</a>
+      </div>
+    </nav>
+  }
+</header>

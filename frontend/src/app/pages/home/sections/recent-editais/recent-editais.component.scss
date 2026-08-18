@@ -1,0 +1,614 @@
+:host {
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+.recent-editais {
+  position: relative;
+  padding: 84px 0 72px;
+  background: var(--background);
+  overflow: hidden;
+  transition: background 0.35s ease;
+
+  &__container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  // Section Header
+  &__header {
+    text-align: center;
+    max-width: 760px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: rgba(124, 58, 237, 0.12);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      color: #a78bfa;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      backdrop-filter: blur(8px);
+
+      .header-badge-icon {
+        font-size: 16px;
+        color: #c084fc;
+      }
+    }
+
+    .header-title {
+      font-size: clamp(2rem, 3.2vw, 2.75rem);
+      font-weight: 800;
+      color: var(--on-surface);
+      line-height: 1.18;
+      letter-spacing: -0.025em;
+
+      .gradient-text {
+        background: linear-gradient(135deg, #a855f7 0%, #6366f1 50%, #38bdf8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+    }
+
+    .header-subtitle {
+      font-size: 1.05rem;
+      color: var(--on-surface-variant);
+      line-height: 1.6;
+      opacity: 0.88;
+      margin: 0;
+    }
+  }
+
+  // Category Filter Pills
+  &__filters {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+
+    .filter-pill {
+      padding: 8px 18px;
+      border-radius: 9999px;
+      border: 1px solid var(--outline-variant);
+      background: var(--surface);
+      color: var(--on-surface-variant);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      outline: none;
+
+      &:hover {
+        background: var(--surface-container-high);
+        border-color: rgba(124, 58, 237, 0.35);
+        color: var(--on-surface);
+        transform: translateY(-1px);
+      }
+
+      &.active {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(124, 58, 237, 0.25));
+        border-color: #8b5cf6;
+        color: #ffffff;
+        box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
+      }
+    }
+  }
+
+  // Grid
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+
+    @media (max-width: 1024px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: 640px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // Bottom Banner
+  &__banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 24px 32px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(30, 27, 75, 0.85), rgba(49, 46, 129, 0.75));
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+
+    @media (max-width: 860px) {
+      flex-direction: column;
+      text-align: center;
+      align-items: center;
+    }
+
+    .banner-content {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+
+      @media (max-width: 860px) {
+        flex-direction: column;
+      }
+
+      .banner-icon-box {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #7c3aed, #4f46e5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
+
+        .banner-icon {
+          font-size: 26px;
+          color: #ffffff;
+        }
+      }
+
+      .banner-text {
+        .banner-title {
+          font-size: 1.15rem;
+          font-weight: 700;
+          color: #ffffff;
+          margin-bottom: 4px;
+        }
+
+        .banner-desc {
+          font-size: 0.92rem;
+          color: rgba(255, 255, 255, 0.82);
+          margin: 0;
+          max-width: 580px;
+          line-height: 1.5;
+        }
+      }
+    }
+
+    .banner-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+      background: linear-gradient(135deg, #5b50f6 0%, #7c3aed 50%, #6d28d9 100%);
+      text-decoration: none;
+      white-space: nowrap;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 4px 18px rgba(109, 40, 217, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(124, 58, 237, 0.65);
+        color: #ffffff;
+      }
+    }
+  }
+}
+
+// Edital Card (Light Mode Base + Dark Mode Adaptive)
+// Edital Card (Light Mode Base + Dark Mode Adaptive)
+.edital-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px;
+  background: #f8fafd;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.8), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 16px 36px rgba(99, 102, 241, 0.12), 0 2px 12px rgba(99, 102, 241, 0.06);
+
+    &::before {
+      opacity: 1;
+    }
+  }
+
+  // Top Header Row (Orgao on Left, Pareto Status on Right)
+  &__header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+
+    .orgao-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 14px;
+      border-radius: 10px;
+      background: #ede9fe;
+      border: 1.5px solid #8b5cf6;
+      color: #5b21b6;
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: -0.01em;
+      box-shadow: 0 2px 6px rgba(139, 92, 246, 0.15);
+      transition: all 0.2s ease;
+    }
+
+    .pareto-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: #f5f3ff;
+      border: 1px solid #c4b5fd;
+      color: #7c3aed;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+
+      .pareto-badge-icon {
+        font-size: 15px;
+        color: #8b5cf6;
+      }
+    }
+  }
+
+  // Second Row: Banca Logo & Year
+  &__banca-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+
+    .banca-logo-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 20px;
+      width: 36px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 2px 4px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+      .banca-logo-img {
+        max-height: 100%;
+        max-width: 100%;
+        object-fit: contain;
+      }
+    }
+
+    .icon-sub {
+      font-size: 16px;
+      color: #64748b;
+    }
+
+    .banca-name-year {
+      color: var(--on-surface-variant, #475569);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+  }
+
+  // Cargo Title
+  &__cargo {
+    font-size: 1.08rem;
+    font-weight: 800;
+    color: var(--on-surface, #0f172a);
+    line-height: 1.38;
+    margin: 4px 0 2px;
+    min-height: 48px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  // Inset Metrics Box (3 Columns)
+  &__metrics-box {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    padding: 14px 12px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    text-align: center;
+    margin: 4px 0;
+
+    .metric-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+
+      .metric-label {
+        font-size: 10.5px;
+        font-weight: 700;
+        color: #4f46e5;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .metric-value {
+        font-size: 18px;
+        font-weight: 900;
+        color: var(--on-surface, #0f172a);
+
+        &--accuracy {
+          color: #059669;
+        }
+      }
+    }
+  }
+
+  // Pareto Visual Section
+  &__pareto-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+
+    .pareto-headline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12.5px;
+
+      .pareto-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-weight: 700;
+        color: #3730a3;
+
+        .pareto-bolt-icon {
+          font-size: 16px;
+          color: #d97706;
+        }
+      }
+
+      .pareto-coverage {
+        color: var(--on-surface-variant, #475569);
+        font-size: 12px;
+        font-weight: 600;
+
+        .pareto-highlight {
+          color: #4f46e5;
+          font-weight: 800;
+        }
+      }
+    }
+
+    .pareto-track {
+      width: 100%;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 9999px;
+      overflow: hidden;
+
+      .pareto-fill {
+        height: 100%;
+        border-radius: 9999px;
+        background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #0ea5e9 100%);
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+    }
+  }
+
+  // Card Footer
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 14px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    margin-top: 2px;
+
+    .analise-time {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--on-surface-variant, #64748b);
+
+      .time-icon {
+        font-size: 16px;
+        color: #94a3b8;
+      }
+    }
+
+    .btn-card-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #4f46e5;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+
+      .action-icon {
+        font-size: 17px;
+        transition: transform 0.2s ease;
+      }
+
+      &:hover {
+        color: #6d28d9;
+
+        .action-icon {
+          transform: translateX(3px);
+        }
+      }
+    }
+  }
+}
+
+// Dark Mode Overrides with :host-context
+:host-context([data-theme="dark"]),
+:host-context(.dark) {
+  .edital-card {
+    background: #141927;
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+
+    &:hover {
+      border-color: rgba(124, 58, 237, 0.45);
+      box-shadow: 0 20px 45px rgba(124, 58, 237, 0.16), 0 0 24px rgba(124, 58, 237, 0.1);
+    }
+
+    .orgao-badge {
+      background: rgba(124, 58, 237, 0.22);
+      border-color: #7c3aed;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+    }
+
+    .pareto-badge {
+      background: rgba(124, 58, 237, 0.14);
+      border-color: rgba(168, 85, 247, 0.4);
+      color: #c084fc;
+
+      .pareto-badge-icon {
+        color: #a855f7;
+      }
+    }
+
+    &__banca-row {
+      .banca-logo-badge {
+        background: #ffffff;
+        border: none;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+      }
+
+      .icon-sub {
+        color: #64748b;
+      }
+
+      .banca-name-year {
+        color: #94a3b8;
+      }
+    }
+
+    &__cargo {
+      color: #f8fafc;
+    }
+
+    &__metrics-box {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(255, 255, 255, 0.08);
+
+      .metric-item {
+        .metric-label {
+          color: #818cf8;
+        }
+
+        .metric-value {
+          color: #f8fafc;
+
+          &--accuracy {
+            color: #00e599;
+          }
+        }
+      }
+    }
+
+    &__pareto-section {
+      .pareto-headline {
+        .pareto-title {
+          color: #c7d2fe;
+
+          .pareto-bolt-icon {
+            color: #f59e0b;
+          }
+        }
+
+        .pareto-coverage {
+          color: #94a3b8;
+
+          .pareto-highlight {
+            color: #60a5fa;
+          }
+        }
+      }
+
+      .pareto-track {
+        background: #1c2237;
+
+        .pareto-fill {
+          background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #38bdf8 100%);
+        }
+      }
+    }
+
+    &__footer {
+      border-top-color: rgba(255, 255, 255, 0.06);
+
+      .analise-time {
+        color: #94a3b8;
+
+        .time-icon {
+          color: #64748b;
+        }
+      }
+
+      .btn-card-action {
+        color: #818cf8;
+
+        &:hover {
+          color: #a78bfa;
+        }
+      }
+    }
+  }
+}

@@ -1,20 +1,28 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
+import { ThemeService } from '../../services/theme.service';
+import { getBancaLogo, getBancasFromText, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
 
 @Component({
   selector: 'app-pareto-analysis',
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="min-h-screen bg-[#f7f9fc] p-4 md:p-8 max-w-7xl mx-auto">
+    <div class="min-h-screen bg-[var(--background)] p-4 md:p-8 max-w-7xl mx-auto">
       <!-- Back Navigation Header -->
-      <div class="flex items-center justify-between mb-6">
-        <button (click)="goBack()" class="btn-neo px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2">
-          <span class="material-symbols-outlined !text-[18px]">arrow_back</span>
-          <span>Voltar ao Painel</span>
-        </button>
+      <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+          <button (click)="goBack()" class="btn-neo px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2">
+            <span class="material-symbols-outlined !text-[18px]">arrow_back</span>
+            <span>Voltar ao Painel</span>
+          </button>
+          <button (click)="themeService.toggle()" class="btn-neo px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 text-[var(--on-surface)] transition-all cursor-pointer" [title]="themeService.isDark() ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'">
+            <span class="material-symbols-outlined !text-[16px] text-[var(--primary)]">{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</span>
+            <span>{{ themeService.isDark() ? 'Claro' : 'Escuro' }}</span>
+          </button>
+        </div>
         <span class="bg-[#e9ddff] text-[#5516be] text-xs font-extrabold px-3 py-1 rounded-full">
           Pareto 3 Camadas (Macro → Meso → Micro)
         </span>
@@ -24,7 +32,7 @@ import { ApiService } from '../../services/api.service';
       <div class="neo-raised rounded-3xl p-6 md:p-8 mb-8 space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex-1 min-w-0">
-            <h1 class="text-2xl md:text-3xl font-black text-[#191c1e] mb-2">{{ edital?.title || 'Análise de Edital' }}</h1>
+            <h1 class="text-2xl md:text-3xl font-black text-[var(--on-surface)] mb-2">{{ edital?.title || 'Análise de Edital' }}</h1>
             <!-- Concurso Info Badges -->
             <div class="flex flex-wrap gap-2 mb-2" *ngIf="concursoInfo">
               <span *ngIf="concursoInfo.concurso" class="inline-flex items-center gap-1 bg-[#e1dfff] text-[#2b20d2] text-[11px] font-extrabold px-3 py-1 rounded-full">
@@ -39,12 +47,15 @@ import { ApiService } from '../../services/api.service';
                 <span class="material-symbols-outlined !text-[13px]">event</span>
                 Prova: {{ concursoInfo.data_prova }}
               </span>
-              <span *ngIf="concursoInfo.banca" class="inline-flex items-center gap-1 bg-[#fff3e0] text-[#e65100] text-[11px] font-extrabold px-3 py-1 rounded-full">
-                <span class="material-symbols-outlined !text-[13px]">shield</span>
+              <span *ngIf="concursoInfo.banca" class="inline-flex items-center gap-1.5 bg-[#fff3e0] dark:bg-amber-950/40 text-[#e65100] dark:text-amber-400 border border-amber-500/20 text-[11px] font-extrabold px-3 py-1 rounded-full shadow-xs">
+                <span *ngIf="getBanca(concursoInfo.banca)" class="h-4 w-7 flex items-center justify-center bg-white rounded px-0.5 shadow-xs">
+                  <img [src]="getBanca(concursoInfo.banca)?.logo" [alt]="concursoInfo.banca" class="max-h-full max-w-full object-contain" />
+                </span>
+                <span *ngIf="!getBanca(concursoInfo.banca)" class="material-symbols-outlined !text-[13px]">shield</span>
                 {{ concursoInfo.banca }}
               </span>
             </div>
-            <p class="text-xs text-[#464556]">Análise Pareto 80/20 em 3 camadas: Disciplinas → Tópicos → Subtópicos com custo-benefício.</p>
+            <p class="text-xs text-[var(--on-surface)]">Análise Pareto 80/20 em 3 camadas: Disciplinas → Tópicos → Subtópicos com custo-benefício.</p>
           </div>
           <div class="flex items-center gap-2 flex-wrap md:flex-nowrap">
             <a [routerLink]="['/disciplinas', editalId]" class="py-3 px-5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 bg-[#e9ddff] text-[#5516be] hover:bg-[#ddd0ff] transition-all whitespace-nowrap shadow-sm">
@@ -59,37 +70,37 @@ import { ApiService } from '../../services/api.service';
         </div>
 
         <div class="p-4 rounded-2xl bg-[#eefff2] border border-[#6ffbbe] text-xs text-[#005236] flex items-start gap-3">
-          <span class="material-symbols-outlined text-[#00845a] !text-[20px] shrink-0">lightbulb</span>
-          <p>{{ paretoData?.relevance_summary || '82% dos pontos da prova concentram-se no núcleo vital de matérias abaixo.' }}</p>
+          <span class="material-symbols-outlined text-[#00845a] !text-[20px] shrink-0 mt-0.5">lightbulb</span>
+          <div class="flex-1 summary-content" [innerHTML]="formattedRelevanceSummary"></div>
         </div>
       </div>
 
       <!-- Pareto 3-Layer Key Metrics Cards -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         <div class="neo-raised rounded-2xl p-5 flex flex-col justify-center items-center text-center">
-          <span class="text-[11px] font-bold text-[#464556] mb-1">Disciplinas</span>
-          <span class="text-3xl font-black text-[#6b38d4]">{{ paretoData?.total_subjects || 0 }}</span>
-          <span class="text-[10px] text-[#767587] mt-0.5">Analisadas</span>
+          <span class="text-[11px] font-bold text-[var(--on-surface)] mb-1">Disciplinas</span>
+          <span class="text-3xl font-black text-primary-dynamic">{{ paretoData?.total_subjects || 0 }}</span>
+          <span class="text-[10px] text-[var(--on-surface-variant)] mt-0.5">Analisadas</span>
         </div>
         <div class="neo-raised rounded-2xl p-5 flex flex-col justify-center items-center text-center">
-          <span class="text-[11px] font-bold text-[#464556] mb-1">Prioritárias (20%)</span>
-          <span class="text-3xl font-black text-[#433fe5]">{{ paretoData?.high_priority_subjects || 0 }}</span>
-          <span class="text-[10px] text-[#767587] mt-0.5">Foco Pareto</span>
+          <span class="text-[11px] font-bold text-[var(--on-surface)] mb-1">Prioritárias (20%)</span>
+          <span class="text-3xl font-black text-primary-dynamic">{{ paretoData?.high_priority_subjects || 0 }}</span>
+          <span class="text-[10px] text-[var(--on-surface-variant)] mt-0.5">Foco Pareto</span>
         </div>
         <div class="neo-raised rounded-2xl p-5 flex flex-col justify-center items-center text-center">
-          <span class="text-[11px] font-bold text-[#464556] mb-1">Cobertura</span>
+          <span class="text-[11px] font-bold text-[var(--on-surface)] mb-1">Cobertura</span>
           <span class="text-3xl font-black text-[#00845a]">{{ paretoData?.coverage_percentage || 0 }}%</span>
-          <span class="text-[10px] text-[#767587] mt-0.5">Dos pontos</span>
+          <span class="text-[10px] text-[var(--on-surface-variant)] mt-0.5">Dos pontos</span>
         </div>
         <div class="neo-raised rounded-2xl p-5 flex flex-col justify-center items-center text-center">
-          <span class="text-[11px] font-bold text-[#464556] mb-1">Tópicos 🔥</span>
+          <span class="text-[11px] font-bold text-[var(--on-surface)] mb-1">Tópicos 🔥</span>
           <span class="text-3xl font-black text-[#ba1a1a]">{{ paretoData?.total_hot_topics || 0 }}</span>
-          <span class="text-[10px] text-[#767587] mt-0.5">Quentes</span>
+          <span class="text-[10px] text-[var(--on-surface-variant)] mt-0.5">Quentes</span>
         </div>
         <div class="neo-raised rounded-2xl p-5 flex flex-col justify-center items-center text-center">
-          <span class="text-[11px] font-bold text-[#464556] mb-1">Subtópicos ⚡</span>
-          <span class="text-3xl font-black text-[#006847]">{{ paretoData?.total_high_cb_subtopics || 0 }}</span>
-          <span class="text-[10px] text-[#767587] mt-0.5">Alto custo-benefício</span>
+          <span class="text-[11px] font-bold text-[var(--on-surface)] mb-1">Subtópicos ⚡</span>
+          <span class="text-3xl font-black text-[var(--tertiary)]">{{ paretoData?.total_high_cb_subtopics || 0 }}</span>
+          <span class="text-[10px] text-[var(--on-surface-variant)] mt-0.5">Alto custo-benefício</span>
         </div>
       </div>
 
@@ -99,14 +110,14 @@ import { ApiService } from '../../services/api.service';
       <!-- CAMADA 1 — MAPA DE PRIORIDADES (Disciplinas)              -->
       <!-- ═══════════════════════════════════════════════════════════ -->
       <div class="neo-raised rounded-3xl p-6 md:p-8 mb-8">
-        <h2 class="text-lg font-bold text-[#191c1e] mb-1 flex items-center gap-2">
-          <span class="material-symbols-outlined text-[#433fe5]">layers</span>
+        <h2 class="text-lg font-bold text-[var(--on-surface)] mb-1 flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary-dynamic">layers</span>
           <span>Mapa de Prioridades — Foco Pareto (Prioritárias)</span>
         </h2>
-        <p class="text-xs text-[#767587] mb-6">Clique em uma disciplina para expandir os tópicos (Camada 2) e subtópicos (Camada 3).</p>
+        <p class="text-xs text-[var(--on-surface-variant)] mb-6">Clique em uma disciplina para expandir os tópicos (Camada 2) e subtópicos (Camada 3).</p>
 
         <!-- Disciplinas Table Header -->
-        <div class="hidden md:grid grid-cols-12 gap-2 px-5 py-2 text-[11px] font-bold text-[#464556] uppercase border-b border-[#c7c4d8]/40 mb-3">
+        <div class="hidden md:grid grid-cols-12 gap-2 px-5 py-2 text-[11px] font-bold text-[var(--on-surface)] uppercase border-b border-[var(--outline-variant)] mb-3">
           <div class="col-span-4">Disciplina</div>
           <div class="col-span-2 text-center">% Questões</div>
           <div class="col-span-2 text-center">Prioridade</div>
@@ -120,44 +131,43 @@ import { ApiService } from '../../services/api.service';
             <!-- Disciplina Row -->
             <div
               (click)="toggleDisciplina(i)"
-              class="neo-pressed rounded-2xl p-4 md:p-5 cursor-pointer transition-all hover:scale-[1.002]"
-              [class.border-l-4]="disc.prioridade === 'PRIORITÁRIA'"
-              [class.border-[#433fe5]]="disc.prioridade === 'PRIORITÁRIA'">
+              class="neo-pressed rounded-2xl p-4 md:p-5 cursor-pointer transition-all hover:scale-[1.002] border-l-4"
+              [style.border-left-color]="getDisciplineColor(i)">
               <div class="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-2 items-center">
                 <div class="col-span-4 flex items-center gap-3">
-                  <span class="material-symbols-outlined !text-[18px] text-[#433fe5] transition-transform duration-200"
+                  <span class="material-symbols-outlined !text-[18px] text-primary-dynamic transition-transform duration-200"
                         [class.rotate-90]="expandedDisciplinas.has(i)">
                     chevron_right
                   </span>
                   <div>
-                    <h3 class="text-sm font-bold text-[#191c1e]">{{ disc.nome }}</h3>
-                    <span class="text-[10px] text-[#767587] md:hidden">{{ disc.percentual_questoes }}% questões • {{ disc.percentual_tempo }}% tempo</span>
+                    <h3 class="text-sm font-bold text-[var(--on-surface)]">{{ disc.nome }}</h3>
+                    <span class="text-[10px] text-[var(--on-surface-variant)] md:hidden">{{ disc.percentual_questoes }}% questões • {{ disc.percentual_tempo }}% tempo</span>
                   </div>
                 </div>
                 <div class="col-span-2 text-center hidden md:block">
-                  <span class="text-sm font-extrabold text-[#191c1e]">{{ disc.percentual_questoes }}%</span>
+                  <span class="text-sm font-extrabold text-[var(--on-surface)]">{{ disc.percentual_questoes }}%</span>
                 </div>
                 <div class="col-span-2 text-center hidden md:block">
                   <span
                     class="text-[11px] font-extrabold px-3 py-1 rounded-full"
                     [ngClass]="{
-                      'bg-[#e1dfff] text-[#2b20d2]': disc.prioridade === 'PRIORITÁRIA',
-                      'bg-[#e9ddff] text-[#5516be]': disc.prioridade === 'COMPLEMENTAR',
-                      'bg-[#eceef1] text-[#767587]': disc.prioridade === 'RESIDUAL'
+                      'badge-primary': disc.prioridade === 'PRIORITÁRIA',
+                      'badge-secondary': disc.prioridade === 'COMPLEMENTAR',
+                      'badge-residual': disc.prioridade === 'RESIDUAL'
                     }">
                     {{ disc.prioridade }}
                   </span>
                 </div>
                 <div class="col-span-2 text-center hidden md:block">
-                  <span class="text-sm font-bold text-[#6b38d4]">{{ disc.percentual_tempo }}%</span>
+                  <span class="text-sm font-bold text-primary-dynamic">{{ disc.percentual_tempo }}%</span>
                 </div>
                 <div class="col-span-2 hidden md:block">
                   <div class="w-full h-2.5 neo-pressed rounded-full overflow-hidden p-0.5">
                     <div
                       class="h-full rounded-full transition-all duration-500 bg-gradient-to-r"
                       [ngClass]="{
-                        'from-[#433fe5] to-[#8455ef]': disc.prioridade === 'PRIORITÁRIA',
-                        'from-[#6b38d4] to-[#d0bcff]': disc.prioridade === 'COMPLEMENTAR',
+                        'from-[var(--primary-container)] to-[var(--primary)]': disc.prioridade === 'PRIORITÁRIA',
+                        'from-[var(--secondary-container)] to-[var(--secondary)]': disc.prioridade === 'COMPLEMENTAR',
                         'from-[#767587] to-[#c7c4d8]': disc.prioridade === 'RESIDUAL'
                       }"
                       [style.width.%]="disc.percentual_questoes">
@@ -169,7 +179,7 @@ import { ApiService } from '../../services/api.service';
 
             <!-- CAMADA 2 — TÓPICOS (Meso) -->
             <div *ngIf="expandedDisciplinas.has(i)" class="ml-4 md:ml-8 mt-2 space-y-2 animate-fadeIn">
-              <div class="hidden md:grid grid-cols-12 gap-2 px-4 py-1.5 text-[10px] font-bold text-[#464556] uppercase">
+              <div class="hidden md:grid grid-cols-12 gap-2 px-4 py-1.5 text-[10px] font-bold text-[var(--on-surface)] uppercase">
                 <div class="col-span-4">Tópico</div>
                 <div class="col-span-2 text-center">Frequência Histórica</div>
                 <div class="col-span-2 text-center">Temperatura</div>
@@ -180,41 +190,41 @@ import { ApiService } from '../../services/api.service';
               <div *ngFor="let topico of disc.camada_2_topicos; let j = index">
                 <div
                   (click)="toggleTopico(i, j); $event.stopPropagation()"
-                  class="neo-raised rounded-xl p-3 md:p-4 cursor-pointer transition-all hover:scale-[1.001]"
+                  class="bg-[var(--surface-container)] border border-[var(--outline-variant)] rounded-xl p-3 md:p-4 cursor-pointer transition-all hover:scale-[1.001]"
                   [class.border-l-3]="topico.temperatura === 'QUENTE'"
                   [class.border-[#ba1a1a]]="topico.temperatura === 'QUENTE'">
                   <div class="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
                     <div class="col-span-4 flex items-center gap-2">
                       <span *ngIf="topico.camada_3_subtopicos?.length"
-                            class="material-symbols-outlined !text-[16px] text-[#6b38d4] transition-transform duration-200"
+                            class="material-symbols-outlined !text-[16px] text-primary-dynamic transition-transform duration-200"
                             [class.rotate-90]="expandedTopicos.has(i + '-' + j)">
                         chevron_right
                       </span>
                       <span *ngIf="!topico.camada_3_subtopicos?.length" class="w-4"></span>
                       <div>
-                        <span class="text-xs font-bold text-[#191c1e]">{{ topico.nome }}</span>
-                        <span class="text-[10px] text-[#767587] block md:hidden">{{ topico.frequencia_historica }} • {{ topico.temperatura }}</span>
+                        <span class="text-xs font-bold text-[var(--on-surface)]">{{ topico.nome }}</span>
+                        <span class="text-[10px] text-[var(--on-surface-variant)] block md:hidden">{{ topico.frequencia_historica }} • {{ topico.temperatura }}</span>
                       </div>
                     </div>
                     <div class="col-span-2 text-center hidden md:block">
-                      <span class="text-[11px] font-semibold text-[#464556]">{{ topico.frequencia_historica }}</span>
+                      <span class="text-[11px] font-semibold text-[var(--on-surface)]">{{ topico.frequencia_historica }}</span>
                     </div>
                     <div class="col-span-2 text-center hidden md:block">
                       <span
                         class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-md"
                         [ngClass]="{
-                          'bg-[#ffdad6] text-[#93000a]': topico.temperatura === 'QUENTE' || topico.temperatura === 'ESSENCIAL',
-                          'bg-[#fff3e0] text-[#e65100]': topico.temperatura === 'MORNO',
-                          'bg-[#e3f2fd] text-[#1565c0]': topico.temperatura === 'FRIO'
+                          'bg-[#ffdad6] text-[#ba1a1a]': topico.temperatura === 'QUENTE' || topico.temperatura === 'ESSENCIAL',
+                          'bg-[#fff3e0] text-[#b73e00]': topico.temperatura === 'MORNO',
+                          'bg-[#e1f5fe] text-[#01579b]': topico.temperatura === 'FRIO'
                         }">
                         {{ topico.temperatura === 'ESSENCIAL' ? '⭐ ESSENCIAL' : topico.temperatura === 'QUENTE' ? '🔥 QUENTE' : topico.temperatura === 'MORNO' ? '🌡️ MORNO' : '❄️ FRIO' }}
                       </span>
                     </div>
                     <div class="col-span-2 text-center hidden md:block">
-                      <span class="text-xs font-bold text-[#433fe5]">#{{ topico.ordem_estudo }}</span>
+                      <span class="text-xs font-bold text-primary-dynamic">#{{ topico.ordem_estudo }}</span>
                     </div>
                     <div class="col-span-2 text-center hidden md:block">
-                      <span class="text-[11px] font-semibold text-[#767587]">{{ topico.camada_3_subtopicos?.length || 0 }} itens</span>
+                      <span class="text-[11px] font-semibold text-[var(--on-surface-variant)]">{{ topico.camada_3_subtopicos?.length || 0 }} itens</span>
                     </div>
                   </div>
                 </div>
@@ -222,7 +232,7 @@ import { ApiService } from '../../services/api.service';
                 <!-- CAMADA 3 — SUBTÓPICOS (Micro) -->
                 <div *ngIf="expandedTopicos.has(i + '-' + j) && topico.camada_3_subtopicos?.length"
                      class="ml-4 md:ml-8 mt-1.5 space-y-1.5 animate-fadeIn">
-                  <div class="hidden md:grid grid-cols-12 gap-2 px-3 py-1 text-[9px] font-bold text-[#464556] uppercase border-b border-[#c7c4d8]/30">
+                  <div class="hidden md:grid grid-cols-12 gap-2 px-3 py-1 text-[9px] font-bold text-[var(--on-surface)] uppercase border-b border-[#c7c4d8]/30">
                     <div class="col-span-4">Subtópico</div>
                     <div class="col-span-2 text-center">Frequência</div>
                     <div class="col-span-2 text-center">Dificuldade</div>
@@ -232,20 +242,20 @@ import { ApiService } from '../../services/api.service';
 
                   <div *ngFor="let sub of topico.camada_3_subtopicos"
                        class="rounded-lg p-3 transition-all"
-                       [ngClass]="sub.incluir ? 'bg-[#eefff2]/60 neo-raised-sm' : 'bg-[#fafafa] opacity-60'">
+                       [ngClass]="sub.incluir ? 'bg-[var(--surface-container-low)] border border-[var(--outline-variant)]' : 'bg-[var(--surface-container-highest)] opacity-50 border border-[var(--outline-variant)]'">
                     <div class="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
                       <div class="col-span-4">
-                        <span class="text-[11px] font-semibold text-[#191c1e]" [class.line-through]="!sub.incluir">{{ sub.nome }}</span>
-                        <p class="text-[10px] text-[#767587] mt-0.5 italic">{{ sub.justificativa }}</p>
+                        <span class="text-[11px] font-semibold text-[var(--on-surface)]" [class.line-through]="!sub.incluir">{{ sub.nome }}</span>
+                        <p class="text-[10px] text-[var(--on-surface-variant)] mt-0.5 italic">{{ sub.justificativa }}</p>
                         <!-- Detalhes de Planejamento (Horas, Revisões, Dependências) -->
                         <div class="flex flex-wrap gap-1.5 mt-1" *ngIf="sub.tempo_estimado_horas || sub.revisoes || sub.dependencias?.length">
-                          <span *ngIf="sub.tempo_estimado_horas" class="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[#f3edf7] text-[#49454f] flex items-center gap-0.5">
+                          <span *ngIf="sub.tempo_estimado_horas" class="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[var(--surface-container-high)] text-[var(--on-surface)] flex items-center gap-0.5">
                             <span class="material-symbols-outlined !text-[11px]">schedule</span> {{ sub.tempo_estimado_horas }}h
                           </span>
-                          <span *ngIf="sub.revisoes" class="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[#e8def8] text-[#1d192b] flex items-center gap-0.5">
+                          <span *ngIf="sub.revisoes" class="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[var(--surface-container-highest)] text-[var(--on-surface)] flex items-center gap-0.5">
                             <span class="material-symbols-outlined !text-[11px]">autorenew</span> {{ sub.revisoes }} rev.
                           </span>
-                          <span *ngIf="sub.dependencias?.length" class="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[#fff8f0] text-[#b45309] flex items-center gap-0.5">
+                          <span *ngIf="sub.dependencias?.length" class="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] flex items-center gap-0.5">
                             <span class="material-symbols-outlined !text-[11px]">link</span> {{ sub.dependencias.join(', ') }}
                           </span>
                         </div>
@@ -253,9 +263,9 @@ import { ApiService } from '../../services/api.service';
                       <div class="col-span-2 text-center hidden md:block">
                         <span class="text-[10px] font-bold px-2 py-0.5 rounded"
                               [ngClass]="{
-                                'bg-[#e1dfff] text-[#2b20d2]': sub.frequencia === 'Alta',
-                                'bg-[#eceef1] text-[#464556]': sub.frequencia === 'Média',
-                                'bg-[#f5f5f5] text-[#767587]': sub.frequencia === 'Baixa'
+                                'badge-primary': sub.frequencia === 'Alta',
+                                'bg-[var(--surface-container-high)] text-[var(--on-surface)]': sub.frequencia === 'Média',
+                                'bg-[var(--surface-container)] text-[var(--on-surface-variant)]': sub.frequencia === 'Baixa'
                               }">
                           {{ sub.frequencia }}
                         </span>
@@ -264,8 +274,8 @@ import { ApiService } from '../../services/api.service';
                         <span class="text-[10px] font-bold px-2 py-0.5 rounded"
                               [ngClass]="{
                                 'bg-[#eefff2] text-[#005236]': sub.dificuldade === 'Fácil',
-                                'bg-[#fff3e0] text-[#e65100]': sub.dificuldade === 'Médio',
-                                'bg-[#ffdad6] text-[#93000a]': sub.dificuldade === 'Difícil'
+                                'bg-[var(--surface-container-highest)] text-[#ff9800]': sub.dificuldade === 'Médio',
+                                'bg-[var(--surface-container-highest)] text-[var(--error)]': sub.dificuldade === 'Difícil'
                               }">
                           {{ sub.dificuldade }}
                         </span>
@@ -273,9 +283,9 @@ import { ApiService } from '../../services/api.service';
                       <div class="col-span-2 text-center hidden md:block">
                         <span class="text-[10px] font-bold px-2 py-0.5 rounded"
                               [ngClass]="{
-                                'bg-[#e1dfff] text-[#2b20d2]': sub.custo_beneficio === 'Alto',
-                                'bg-[#eceef1] text-[#464556]': sub.custo_beneficio === 'Médio',
-                                'bg-[#f5f5f5] text-[#767587]': sub.custo_beneficio === 'Baixo'
+                                'badge-primary': sub.custo_beneficio === 'Alto',
+                                'bg-[var(--surface-container-high)] text-[var(--on-surface)]': sub.custo_beneficio === 'Médio',
+                                'bg-[var(--surface-container)] text-[var(--on-surface-variant)]': sub.custo_beneficio === 'Baixo'
                               }">
                           {{ sub.custo_beneficio }}
                         </span>
@@ -290,9 +300,9 @@ import { ApiService } from '../../services/api.service';
                       </div>
                     </div>
                     <div class="flex flex-wrap gap-1.5 mt-2 md:hidden">
-                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#eceef1] text-[#464556]">Freq: {{ sub.frequencia }}</span>
-                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#eceef1] text-[#464556]">Dif: {{ sub.dificuldade }}</span>
-                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#eceef1] text-[#464556]">CB: {{ sub.custo_beneficio }}</span>
+                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--surface-container-high)] text-[var(--on-surface)]">Freq: {{ sub.frequencia }}</span>
+                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--surface-container-high)] text-[var(--on-surface)]">Dif: {{ sub.dificuldade }}</span>
+                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--surface-container-high)] text-[var(--on-surface)]">CB: {{ sub.custo_beneficio }}</span>
                       <span class="text-[9px] font-bold px-1.5 py-0.5 rounded"
                             [class.bg-[#eefff2]]="sub.incluir" [class.text-[#005236]]="sub.incluir"
                             [class.bg-[#ffdad6]]="!sub.incluir" [class.text-[#93000a]]="!sub.incluir">
@@ -311,19 +321,19 @@ import { ApiService } from '../../services/api.service';
       <!-- RÉGUA DE CORTE                                            -->
       <!-- ═══════════════════════════════════════════════════════════ -->
       <div *ngIf="paretoData?.regua_de_corte?.nao_estudar?.length" class="neo-raised rounded-3xl p-6 md:p-8 mb-8">
-        <h2 class="text-lg font-bold text-[#191c1e] mb-1 flex items-center gap-2">
+        <h2 class="text-lg font-bold text-[var(--on-surface)] mb-1 flex items-center gap-2">
           <span class="material-symbols-outlined text-[#ba1a1a]">content_cut</span>
           <span>Régua de Corte — O que NÃO estudar</span>
         </h2>
-        <p class="text-xs text-[#767587] mb-5">Itens de baixo retorno removidos para maximizar a eficiência do estudo.</p>
+        <p class="text-xs text-[var(--on-surface-variant)] mb-5">Itens de baixo retorno removidos para maximizar a eficiência do estudo.</p>
         <div class="space-y-3">
           <div *ngFor="let corte of paretoData.regua_de_corte.nao_estudar"
                class="neo-pressed rounded-2xl p-4 border-l-4 border-[#ba1a1a]/40">
-            <h4 class="text-sm font-bold text-[#191c1e] flex items-center gap-2 mb-1">
+            <h4 class="text-sm font-bold text-[var(--on-surface)] flex items-center gap-2 mb-1">
               <span class="material-symbols-outlined !text-[16px] text-[#93000a]">block</span>
               {{ corte.item }}
             </h4>
-            <p class="text-xs text-[#464556] mb-2"><strong>Motivo:</strong> {{ corte.motivo }}</p>
+            <p class="text-xs text-[var(--on-surface)] mb-2"><strong>Motivo:</strong> {{ corte.motivo }}</p>
             <div class="bg-[#fff3e0] rounded-lg px-3 py-2 text-[11px] text-[#e65100] flex items-start gap-2">
               <span class="material-symbols-outlined !text-[14px] shrink-0 mt-0.5">swap_horiz</span>
               <span><strong>Trade-off:</strong> {{ corte.trade_off }}</span>
@@ -336,28 +346,44 @@ import { ApiService } from '../../services/api.service';
       <!-- ALERTAS DE BANCA                                          -->
       <!-- ═══════════════════════════════════════════════════════════ -->
       <div *ngIf="paretoData?.alertas_banca" class="neo-raised rounded-3xl p-6 md:p-8 mb-8">
-        <h2 class="text-lg font-bold text-[#191c1e] mb-1 flex items-center gap-2">
-          <span class="material-symbols-outlined text-[#6b38d4]">shield</span>
+        <h2 class="text-lg font-bold text-[var(--on-surface)] mb-1 flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary-dynamic">shield</span>
           <span>Alertas de Banca</span>
         </h2>
-        <p class="text-xs text-[#767587] mb-5">Perfil da banca identificada e ajustes estratégicos recomendados.</p>
+        <p class="text-xs text-[var(--on-surface-variant)] mb-5">Perfil da banca identificada e ajustes estratégicos recomendados.</p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-          <div class="neo-pressed rounded-2xl p-4">
-            <p class="text-[11px] font-bold text-[#464556] mb-1">Banca Identificada</p>
-            <p class="text-base font-extrabold text-[#433fe5]">{{ paretoData.alertas_banca.banca_identificada }}</p>
+          <div class="neo-pressed rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+              <p class="text-[11px] font-bold text-[var(--on-surface)] mb-1">Banca Identificada</p>
+              <p class="text-base font-extrabold text-primary-dynamic mb-3">{{ paretoData.alertas_banca.banca_identificada }}</p>
+            </div>
+
+            <!-- Logos identificados -->
+            <div *ngIf="getBancas(paretoData.alertas_banca.banca_identificada).length > 0" class="flex flex-wrap items-center gap-2.5 mt-2 pt-3 border-t border-[var(--outline-variant)]/30">
+              <div *ngFor="let b of getBancas(paretoData.alertas_banca.banca_identificada)"
+                   class="inline-flex items-center gap-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 px-3 py-2 rounded-xl shadow-sm hover:scale-[1.02] transition-all">
+                <div class="h-8 w-20 flex items-center justify-center bg-white rounded-lg p-1 border border-slate-100 dark:border-slate-700">
+                  <img [src]="b.logo" [alt]="b.name" class="max-h-full max-w-full object-contain" />
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-xs font-black text-slate-800 dark:text-slate-100 leading-tight">{{ b.shortName }}</span>
+                  <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Banca Examinadora</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="neo-pressed rounded-2xl p-4">
-            <p class="text-[11px] font-bold text-[#464556] mb-1">Estilo da Banca</p>
-            <p class="text-xs font-semibold text-[#191c1e]">{{ paretoData.alertas_banca.estilo }}</p>
+          <div class="neo-pressed rounded-2xl p-5">
+            <p class="text-[11px] font-bold text-[var(--on-surface)] mb-1">Estilo da Banca</p>
+            <p class="text-xs font-semibold text-[var(--on-surface)] leading-relaxed">{{ paretoData.alertas_banca.estilo }}</p>
           </div>
         </div>
-        <h3 class="text-sm font-bold text-[#191c1e] mb-3 flex items-center gap-2">
-          <span class="material-symbols-outlined !text-[16px] text-[#6b38d4]">tune</span>
+        <h3 class="text-sm font-bold text-[var(--on-surface)] mb-3 flex items-center gap-2">
+          <span class="material-symbols-outlined !text-[16px] text-primary-dynamic">tune</span>
           Ajustes Recomendados
         </h3>
         <div class="space-y-2">
           <div *ngFor="let ajuste of paretoData.alertas_banca.ajustes_recomendados"
-               class="bg-[#e9ddff]/40 rounded-xl px-4 py-3 text-xs text-[#464556] flex items-start gap-3">
+               class="bg-[#e9ddff]/40 rounded-xl px-4 py-3 text-xs text-[var(--on-surface)] flex items-start gap-3">
             <span class="material-symbols-outlined !text-[16px] text-[#5516be] shrink-0 mt-0.5">arrow_right</span>
             <span>{{ ajuste }}</span>
           </div>
@@ -391,6 +417,7 @@ import { ApiService } from '../../services/api.service';
   `]
 })
 export class ParetoAnalysisComponent implements OnInit {
+  public themeService = inject(ThemeService);
   @Input() editalId = 'ed-1';
   edital: any = null;
   paretoData: any = null;
@@ -399,6 +426,23 @@ export class ParetoAnalysisComponent implements OnInit {
   mapaGeralTab: 'basicas' | 'especificas' = 'basicas';
   expandedMapaGeral = new Set<string>();
   expandedMapaGeralTopicos = new Set<string>();
+
+  // Cores dinâmicas para as disciplinas
+  cardColors = [
+    '#433fe5', // Indigo
+    '#00b4d8', // Cyan
+    '#f72585', // Pink
+    '#7209b7', // Purple
+    '#4cc9f0', // Light Blue
+    '#f8961e', // Orange
+    '#43aa8b', // Teal
+    '#e36414', // Rust
+    '#8a2be2'  // Blue Violet
+  ];
+
+  getDisciplineColor(index: number): string {
+    return this.cardColors[index % this.cardColors.length];
+  }
 
   // Mapa de Prioridades state
   expandedDisciplinas = new Set<number>();
@@ -428,6 +472,64 @@ export class ParetoAnalysisComponent implements OnInit {
       }
       this.paretoData = pd;
     });
+  }
+
+  get formattedRelevanceSummary(): string {
+    const summary = this.paretoData?.relevance_summary;
+    if (!summary) return '<p>82% dos pontos da prova concentram-se no núcleo vital de matérias abaixo.</p>';
+
+    // Se o texto original contém as palavras-chave da análise do BNB, formatamos conforme solicitado
+    if (summary.includes('Analista de Sistemas (Desenvolvimento) do BNB 2027') || summary.includes('Pareto Recursivo')) {
+      return `
+        <div class="space-y-3">
+          <p>
+            Análise realizada via <strong>Análise de Pareto Recursivo</strong> para o cargo de Analista de Sistemas (Desenvolvimento) do BNB 2027.<br>
+            O foco estratégico está concentrado nas disciplinas específicas de T.I. (80% das questões e tempo de estudo);
+          </p>
+          <p class="font-bold">Destacando-se:</p>
+          
+          <div class="space-y-2">
+            <div>
+              <p class="font-bold text-[#00845a] mb-1">Em conhecimentos específicos:</p>
+              <ul class="space-y-1.5 ml-1">
+                <li class="flex items-start gap-2">
+                  <span class="material-symbols-outlined !text-[16px] text-[#00845a] shrink-0 mt-0.5">code</span>
+                  <span>Linguagens e Tecnologias de Programação;</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="material-symbols-outlined !text-[16px] text-[#00845a] shrink-0 mt-0.5">architecture</span>
+                  <span>Arquitetura de Software;</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="material-symbols-outlined !text-[16px] text-[#00845a] shrink-0 mt-0.5">engineering</span>
+                  <span>Engenharia de Software;</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="material-symbols-outlined !text-[16px] text-[#00845a] shrink-0 mt-0.5">database</span>
+                  <span>Bancos de Dados como o núcleo vital do edital.</span>
+                </li>
+              </ul>
+            </div>
+            
+            <div class="pt-1">
+              <p class="font-bold text-[#00845a] mb-1">Em conhecimentos gerais:</p>
+              <ul class="space-y-1.5 ml-1">
+                <li class="flex items-start gap-2">
+                  <span class="material-symbols-outlined !text-[16px] text-[#00845a] shrink-0 mt-0.5">language</span>
+                  <span>Lígua Portuguesa mantém alto peso relativo devido ao perfil de bancas bancárias (ex.: Cesgranrio).</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="material-symbols-outlined !text-[16px] text-[#ba1a1a] shrink-0 mt-0.5">content_cut</span>
+                  <span>Subtópicos de baixíssimo custo-benefício ou legados foram mapeados na régua de corte para estudo diferido/superficial.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    return `<p>${summary}</p>`;
   }
 
   get concursoInfo(): any {
@@ -609,5 +711,13 @@ export class ParetoAnalysisComponent implements OnInit {
 
   goBack() {
     window.history.back();
+  }
+
+  getBanca(text: string | null | undefined): BancaInfo | null {
+    return getBancaInfo(text);
+  }
+
+  getBancas(text: string | null | undefined): BancaInfo[] {
+    return getBancasFromText(text);
   }
 }

@@ -108,11 +108,11 @@ interface LLMProvider {
 }
 
 class GeminiProvider implements LLMProvider {
-  name = 'Google Gemini (gemini-1.5-flash / gemini-flash-latest / gemini-2.0-flash)';
+  name = 'Google Gemini (gemini-3.6-flash / gemini-3.5-flash / gemini-3.5-flash-lite)';
   private models: { name: string; model: GenerativeModel; jsonModel: GenerativeModel }[];
 
   constructor(genAI: GoogleGenerativeAI, private logger: Logger) {
-    const candidates = ['gemini-1.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash', 'gemini-pro-latest'];
+    const candidates = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
     this.models = candidates.map(name => ({
       name,
       model: genAI.getGenerativeModel({
@@ -321,12 +321,12 @@ export class LangChainOpenAIService {
     const activeProviders: LLMProvider[] = [];
 
     // --- Prioridade 1: Google Gemini Flash ---
-    const googleKey = process.env.GOOGLE_AI_API_KEY;
+    const googleKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
     if (googleKey && googleKey.length > 10) {
       try {
         const genAI = new GoogleGenerativeAI(googleKey);
         activeProviders.push(new GeminiProvider(genAI, this.logger));
-        this.logger.log('✅ Provedor Gemini preparado como Prioridade 1');
+        this.logger.log('✅ Provedor Gemini preparado como Prioridade 1 (gemini-3.6-flash / gemini-3.5-flash)');
       } catch (err) {
         this.logger.warn(`Falha ao preparar Gemini: ${err.message}`);
       }
@@ -686,9 +686,15 @@ Retorne a resposta EXCLUSIVAMENTE em formato JSON (Array de objetos), onde cada 
       this.logger.log(`[Gemini File API] 2. Analisando o edital e extraindo os dados com schema estrito para o cargo: "${params.cargo}"...`);
 
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
-        systemInstruction: `Você é um especialista em análise de editais de concursos públicos brasileiros.
+      const candidates = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+      let result: any = null;
+      let lastFileError: any = null;
+
+      for (const modelName of candidates) {
+        try {
+          const model = genAI.getGenerativeModel({
+            model: modelName,
+            systemInstruction: `Você é um especialista em análise de editais de concursos públicos brasileiros.
 
 Sua missão é acessar um edital, identificar o cargo solicitado, localizar todo o conteúdo programático e convertê-lo em uma estrutura JSON organizada e didática.
 
@@ -765,27 +771,41 @@ Etapa 4 — Consolidar: O JSON final deve conter conhecimentos_gerais e conhecim
 
 ## Validação Final
 Valide antes de responder: O edital foi percorrido completamente. Os Conhecimentos Gerais foram procurados em todo o documento. O cargo foi localizado corretamente. Todos os tópicos foram contemplados. Itens extensos foram reorganizados didaticamente. Tecnologias e listas foram transformadas em subtópicos. Não existem assuntos inventados. O JSON é válido.`
-      });
+          });
 
-      const result = await model.generateContent({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { fileData: { fileUri: uploadResult.file.uri, mimeType: 'application/pdf' } },
-              { text: `Edital Concurso: "${params.editalTitle}"
+          result = await model.generateContent({
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  { fileData: { fileUri: uploadResult.file.uri, mimeType: 'application/pdf' } },
+                  { text: `Edital Concurso: "${params.editalTitle}"
 Cargo solicitado: "${params.cargo}"
 
 Analise o edital PDF anexo, especifique o cargo "${params.cargo}" e extraia o conteúdo programático seguindo estritamente as regras de extração.` }
-            ]
+                ]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.1,
+              responseMimeType: 'application/json',
+              responseSchema: schemaConteudoProgramatico as any,
+            },
+          });
+
+          if (result) {
+            this.logger.log(`[Gemini File API] Modelo [${modelName}] respondeu com sucesso!`);
+            break;
           }
-        ],
-        generationConfig: {
-          temperature: 0.1,
-          responseMimeType: 'application/json',
-          responseSchema: schemaConteudoProgramatico as any,
-        },
-      });
+        } catch (mErr: any) {
+          lastFileError = mErr;
+          this.logger.warn(`[Gemini File API] Modelo [${modelName}] falhou (${mErr.message}). Tentando próximo modelo Gemini...`);
+        }
+      }
+
+      if (!result && lastFileError) {
+        throw lastFileError;
+      }
 
       this.logger.log('[Gemini File API] 3. Extração concluída com sucesso!');
       const jsonOutput = result.response.text();

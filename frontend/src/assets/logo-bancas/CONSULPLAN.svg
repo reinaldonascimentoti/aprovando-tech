@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 160" width="100%" height="100%">
+  <defs>
+    <!-- Máscara de recorte para criar o efeito de entrelaçamento perfeito das mãos -->
+    <clipPath id="right-half">
+      <rect x="90" y="0" width="100" height="160" />
+    </clipPath>
+    <style>
+      .green-text {
+        font-family: 'Montserrat', 'Arial Black', 'Segoe UI Black', Arial, sans-serif;
+        font-weight: 900;
+        font-size: 72px;
+        fill: #3a5c34;
+      }
+      .grey-text {
+        font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+        font-weight: 400;
+        font-size: 54px;
+        fill: #7b7b7b;
+      }
+      .hand-path {
+        fill: #ffffff;
+        stroke-width: 7;
+        stroke-linejoin: round;
+      }
+      .green-stroke { 
+        stroke: #3a5c34; 
+      }
+      .grey-stroke { 
+        stroke: #7b7b7b; 
+      }
+    </style>
+  </defs>
+
+  <!-- Grupo do Ícone (Mãos Entrelaçadas) -->
+  <g transform="translate(10, 15) scale(1.15)">
+    <!-- Camada Inferior: Mão Cinza (Invertida em 180º matematicamente) -->
+    <path class="hand-path grey-stroke"
+          d="M 165 60 L 162 90 Q 145 102, 120 88 C 105 80, 95 65, 110 58 C 120 55, 125 70, 112 75 L 45 90 C 30 95, 25 70, 45 65 L 110 45 Q 145 35, 165 60 Z" />
+
+    <!-- Camada Intermediária: Mão Verde -->
+    <path class="hand-path green-stroke"
+          d="M 15 90 L 18 60 Q 35 48, 60 62 C 75 70, 85 85, 70 92 C 60 95, 55 80, 68 75 L 135 60 C 150 55, 155 80, 135 85 L 70 105 Q 35 115, 15 90 Z" />
+
+    <!-- Camada Superior: Metade direita da Mão Cinza (Cria a sobreposição do polegar cinza) -->
+    <path class="hand-path grey-stroke" clip-path="url(#right-half)"
+          d="M 165 60 L 162 90 Q 145 102, 120 88 C 105 80, 95 65, 110 58 C 120 55, 125 70, 112 75 L 45 90 C 30 95, 25 70, 45 65 L 110 45 Q 145 35, 165 60 Z" />
+  </g>
+
+  <!-- Grupo da Tipografia -->
+  <!-- Utiliza textLength e lengthAdjust para justificar matematicamente a largura entre as duas palavras -->
+  <text x="230" y="76" class="green-text" textLength="540" lengthAdjust="spacing">INSTITUTO</text>
+  <text x="230" y="136" class="grey-text" textLength="540" lengthAdjust="spacing">CONSULPLAN</text>
+</svg>
