@@ -30,9 +30,10 @@
       <div class="hero__visual">
         <div class="hero__scene-wrapper">
           <div class="scene-ambient-glow" aria-hidden="true"></div>
-          <video #singleVideo class="hero__scene-video" [class.faded]="isFading" autoplay muted playsinline preload="auto"
-            aria-label="Demonstração Aprovando Tech" (timeupdate)="onTimeUpdate()" (ended)="onVideoEnded()">
-            <source src="assets/hero_video.mp4" type="video/mp4" />
+          <video #singleVideo class="hero__scene-video" [class.faded]="isFading" autoplay muted playsinline
+            preload="auto" aria-label="Demonstração Aprovando Tech" (timeupdate)="onTimeUpdate()"
+            (ended)="onVideoEnded()">
+            <source src="assets/hero2.mp4" type="video/mp4" />
             Seu navegador não suporta reprodução de vídeos.
           </video>
         </div>
@@ -44,9 +45,9 @@
   <div class="hero__action-section">
     <!-- Background: SoftAurora WebGL effect inside Action Section -->
     <div class="hero__action-aurora" aria-hidden="true">
-      <app-soft-aurora [speed]="0.50" [scale]="0.50" [brightness]="1.2" color1="#0f1a29" color2="#38bdf8"
-        [noiseFrequency]="2.50" [noiseAmplitude]="2.00" [bandHeight]="0.62" [bandSpread]="0.80" [octaveDecay]="0.30"
-        [layerOffset]="1.0" [colorSpeed]="1.0" [enableMouseInteraction]="true" [mouseInfluence]="0.25">
+      <app-soft-aurora [speed]="0.50" [scale]="0.10" [brightness]="0.90" color1="#ffffff" color2="#b300ff"
+        [noiseFrequency]="5.00" [noiseAmplitude]="8.00" [bandHeight]="0.70" [bandSpread]="1.30" [octaveDecay]="0.20"
+        [layerOffset]="1.900" [colorSpeed]="1.00" [enableMouseInteraction]="true" [mouseInfluence]="0.20">
       </app-soft-aurora>
     </div>
 

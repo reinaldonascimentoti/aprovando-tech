@@ -17,6 +17,7 @@ export class HeroComponent implements AfterViewInit, OnDestroy {
   @ViewChild('singleVideo') singleVideo!: ElementRef<HTMLVideoElement>;
   isFading = false;
   private isRestarting = false;
+  private readonly FADE_TIME = 0.2; // 0.2s before video ends to dip smoothly
 
   ngAfterViewInit(): void {
     const vid = this.singleVideo?.nativeElement;
@@ -31,8 +32,7 @@ export class HeroComponent implements AfterViewInit, OnDestroy {
 
     const remaining = vid.duration - vid.currentTime;
 
-    // Ultra-fast micro-dissolve 0.12s before end
-    if (remaining <= 0.12 && !this.isFading) {
+    if (remaining <= this.FADE_TIME && !this.isFading) {
       this.isFading = true;
     }
   }

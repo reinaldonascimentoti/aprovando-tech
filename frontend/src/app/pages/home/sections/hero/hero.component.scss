@@ -10,9 +10,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 28px;
-  padding: 100px 0 0;
+  justify-content: space-between;
+  gap: 56px;
+  padding: 110px 0 0;
   overflow: hidden;
   background: #0f1a29;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -24,14 +24,17 @@
     margin: 0 auto;
     padding: 0 32px;
     display: flex;
+    flex: 1;
     flex-direction: column;
-    gap: 24px;
+    justify-content: center;
+    align-items: center;
+    gap: 32px;
     position: relative;
     z-index: 2;
 
     @media (max-width: 1024px) {
       padding: 0 24px;
-      gap: 20px;
+      gap: 24px;
     }
   }
 
@@ -39,13 +42,15 @@
   &__top-grid {
     display: grid;
     grid-template-columns: 1.15fr 0.85fr;
-    gap: 32px;
+    gap: 48px;
     align-items: center;
+    justify-items: center;
     width: 100%;
+    margin: auto 0;
 
     @media (max-width: 1024px) {
       grid-template-columns: 1fr;
-      gap: 32px;
+      gap: 36px;
     }
   }
 
@@ -53,15 +58,10 @@
   &__content {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
+    align-items: center;
+    text-align: center;
     gap: 20px;
     z-index: 2;
-
-    @media (max-width: 1024px) {
-      align-items: center;
-      text-align: center;
-    }
   }
 
   // Brand Badge Top Left
@@ -160,15 +160,15 @@
   &__action-section {
     position: relative;
     width: 100%;
-    padding: 32px 24px 36px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 38px 24px 42px;
+    border: none;
     background: rgba(15, 26, 41, 0.85);
     backdrop-filter: blur(16px);
     overflow: hidden;
     z-index: 2;
 
     @media (max-width: 768px) {
-      padding: 24px 16px 28px;
+      padding: 26px 16px 30px;
     }
   }
 
@@ -319,16 +319,20 @@
     position: relative;
     width: 100%;
     max-width: 540px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-items: center;
 
     @media (max-width: 600px) {
       max-width: 360px;
     }
 
     .scene-ambient-glow {
-      display: none;
+      position: absolute;
+      inset: 5%;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, rgba(15, 26, 41, 0) 70%);
+      filter: blur(40px);
+      z-index: 0;
+      pointer-events: none;
     }
 
     .hero__scene-video,
@@ -340,10 +344,27 @@
       z-index: 1;
       border: none;
       display: block;
-      -webkit-mask-image: radial-gradient(ellipse 82% 78% at 50% 50%, #000000 28%, rgba(0, 0, 0, 0.82) 45%, rgba(0, 0, 0, 0.45) 62%, rgba(0, 0, 0, 0.12) 76%, transparent 90%);
-      mask-image: radial-gradient(ellipse 82% 78% at 50% 50%, #000000 28%, rgba(0, 0, 0, 0.82) 45%, rgba(0, 0, 0, 0.45) 62%, rgba(0, 0, 0, 0.12) 76%, transparent 90%);
-      transition: opacity 0.10s ease-out;
       opacity: 1;
+      transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: opacity;
+      -webkit-mask-image: radial-gradient(
+        ellipse 70% 65% at 50% 50%,
+        #000000 50%,
+        rgba(0, 0, 0, 0.85) 55%,
+        rgba(0, 0, 0, 0.55) 65%,
+        rgba(0, 0, 0, 0.25) 75%,
+        rgba(0, 0, 0, 0.06) 88%,
+        transparent 100%
+      );
+      mask-image: radial-gradient(
+        ellipse 70% 65% at 50% 50%,
+        #000000 50%,
+        rgba(0, 0, 0, 0.85) 55%,
+        rgba(0, 0, 0, 0.55) 65%,
+        rgba(0, 0, 0, 0.25) 75%,
+        rgba(0, 0, 0, 0.06) 88%,
+        transparent 100%
+      );
 
       &.faded {
         opacity: 0;
@@ -356,21 +377,24 @@
 .btn-primary-cta {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
-  padding: 14px 28px;
-  border-radius: 9999px;
-  font-size: 15px;
+  padding: 13px 28px;
+  border-radius: 14px;
+  font-size: 15.5px;
   font-weight: 700;
   color: #ffffff;
-  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #5b45f6 0%, #7c3aed 52%, #8b5cf6 100%);
   text-decoration: none;
-  box-shadow: 0 8px 24px rgba(8, 39, 75, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.28);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  cursor: pointer;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(37, 99, 235, 0.65), 0 0 20px rgba(56, 189, 248, 0.5);
+    background: linear-gradient(135deg, #6b55ff 0%, #8b5cf6 52%, #9d6eff 100%);
+    box-shadow: 0 8px 28px rgba(124, 58, 237, 0.65), 0 0 16px rgba(139, 92, 246, 0.4);
     color: #ffffff;
   }
 
@@ -380,29 +404,36 @@
 
   .cta-icon {
     font-size: 20px;
+    color: #ffffff;
   }
 }
 
 .btn-ghost-cta {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 14px 24px;
+  padding: 13px 26px;
   border-radius: 9999px;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(12px);
-  color: var(--on-surface);
+  color: #ffffff;
   font-size: 15px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
     background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(56, 189, 248, 0.45);
-    transform: translateY(-1px);
+    border-color: rgba(56, 189, 248, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  &:active {
+    transform: scale(0.98);
   }
 
   .cta-play-icon {
