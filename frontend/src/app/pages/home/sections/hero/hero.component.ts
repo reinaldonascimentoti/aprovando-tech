@@ -17,12 +17,48 @@ export class HeroComponent implements AfterViewInit, OnDestroy {
   @ViewChild('singleVideo') singleVideo!: ElementRef<HTMLVideoElement>;
   isFading = false;
   private isRestarting = false;
-  private readonly FADE_TIME = 0.2; // 0.2s before video ends to dip smoothly
+  private readonly FADE_TIME = 0.25;
+  private fadeTimeout: any;
 
   ngAfterViewInit(): void {
+    this.initAndPlayVideo();
+  }
+
+  private initAndPlayVideo(): void {
     const vid = this.singleVideo?.nativeElement;
-    if (vid) {
-      vid.play().catch(() => {});
+    if (!vid) return;
+
+    // Configurações críticas para garantir autoplay sem bloqueio do navegador
+    vid.muted = true;
+    vid.defaultMuted = true;
+    vid.playsInline = true;
+    vid.autoplay = true;
+
+    const startPlay = () => {
+      vid.muted = true;
+      const playPromise = vid.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // Fallback: tenta novamente ao primeiro clique/toque do usuário na página
+          const resumeOnInteraction = () => {
+            vid.muted = true;
+            vid.play().catch(() => {});
+            window.removeEventListener('click', resumeOnInteraction);
+            window.removeEventListener('touchstart', resumeOnInteraction);
+          };
+          window.addEventListener('click', resumeOnInteraction, { once: true });
+          window.addEventListener('touchstart', resumeOnInteraction, { once: true });
+        });
+      }
+    };
+
+    if (vid.readyState >= 2) {
+      startPlay();
+    } else {
+      vid.addEventListener('loadeddata', startPlay, { once: true });
+      vid.addEventListener('canplay', startPlay, { once: true });
+      // Força carregamento caso esteja pendente
+      vid.load();
     }
   }
 
@@ -34,6 +70,13 @@ export class HeroComponent implements AfterViewInit, OnDestroy {
 
     if (remaining <= this.FADE_TIME && !this.isFading) {
       this.isFading = true;
+      clearTimeout(this.fadeTimeout);
+      // Timeout de segurança para nunca travar invisível
+      this.fadeTimeout = setTimeout(() => {
+        if (this.isFading) {
+          this.isFading = false;
+        }
+      }, 800);
     }
   }
 
@@ -57,6 +100,7 @@ export class HeroComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.fadeTimeout);
     this.singleVideo?.nativeElement?.pause();
   }
 

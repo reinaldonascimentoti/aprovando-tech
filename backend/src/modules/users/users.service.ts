@@ -12,4 +12,8 @@ export class UsersService {
   async updateUserRole(id: string, role: string) {
     return this.supabaseService.updateUserRole(id, role);
   }
+
+  async deleteUser(id: string) {
+    return this.supabaseService.deleteUser(id);
+  }
 }

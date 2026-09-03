@@ -120,7 +120,7 @@ import { ThemeService } from '../../services/theme.service';
         <!-- ===== LOGIN / REGISTER FORM ===== -->
         <form *ngIf="!emailPending" (ngSubmit)="handleAuth()" class="w-full space-y-5">
           <div class="space-y-1.5" *ngIf="isRegister">
-            <label class="text-xs font-semibold text-[var(--on-surface-variant)] ml-2">Nome Completo</label>
+            <label class="text-xs font-bold text-[var(--on-surface)] ml-2">Nome Completo</label>
             <div class="relative group">
               <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[var(--outline)] group-focus-within:text-[var(--primary)] transition-colors">person</span>
               <input 
@@ -128,12 +128,12 @@ import { ThemeService } from '../../services/theme.service';
                 name="fullName"
                 type="text" 
                 placeholder="Seu Nome Completo"
-                class="neo-input w-full h-14 pl-12 pr-4 rounded-2xl text-base">
+                class="neo-input w-full h-14 pl-12 pr-4 rounded-2xl text-base text-[var(--on-surface)] bg-[var(--surface-container-low)]">
             </div>
           </div>
 
           <div class="space-y-1.5">
-            <label class="text-xs font-semibold text-[var(--on-surface-variant)] ml-2">E-mail Institucional</label>
+            <label class="text-xs font-bold text-[var(--on-surface)] ml-2">{{ isRegister ? 'E-mail' : 'E-mail Institucional' }}</label>
             <div class="relative group">
               <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[var(--outline)] group-focus-within:text-[var(--primary)] transition-colors">mail</span>
               <input 
@@ -141,15 +141,15 @@ import { ThemeService } from '../../services/theme.service';
                 name="email"
                 type="email" 
                 required
-                placeholder="seu.email@exemplo.com"
-                class="neo-input w-full h-14 pl-12 pr-4 rounded-2xl text-base">
+                [placeholder]="isRegister ? 'seu@email.com' : 'seu.email@exemplo.com'"
+                class="neo-input w-full h-14 pl-12 pr-4 rounded-2xl text-base text-[var(--on-surface)] bg-[var(--surface-container-low)]">
             </div>
           </div>
 
           <div class="space-y-1.5">
             <div class="flex justify-between items-center px-2">
-              <label class="text-xs font-semibold text-[var(--on-surface-variant)]">Senha</label>
-              <a href="#" (click)="forgotPassword($event)" class="text-xs font-semibold text-[var(--primary)] hover:underline">Esqueceu?</a>
+              <label class="text-xs font-bold text-[var(--on-surface)]">Senha</label>
+              <a *ngIf="!isRegister" href="#" (click)="forgotPassword($event)" class="text-xs font-semibold text-[var(--primary)] hover:underline">Esqueceu?</a>
             </div>
             <div class="relative group">
               <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[var(--outline)] group-focus-within:text-[var(--primary)] transition-colors">lock</span>
@@ -159,7 +159,7 @@ import { ThemeService } from '../../services/theme.service';
                 [type]="showPassword ? 'text' : 'password'"
                 required
                 placeholder="••••••••••••"
-                class="neo-input w-full h-14 pl-12 pr-4 rounded-2xl text-base">
+                class="neo-input w-full h-14 pl-12 pr-12 rounded-2xl text-base text-[var(--on-surface)] bg-[var(--surface-container-low)]">
               <button 
                 type="button" 
                 (click)="showPassword = !showPassword"

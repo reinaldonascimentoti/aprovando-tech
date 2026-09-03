@@ -59,31 +59,31 @@ export interface CheckedItemState {
             <!-- Botão Cronograma (leva para /sprints se feito ou abre gerador se não) -->
             <button
                (click)="handleCronogramaClick()"
-               class="btn-neo px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 text-[var(--on-surface)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-all cursor-pointer shadow-xs"
+               class="btn-neo px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 text-[var(--on-surface)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-all cursor-pointer shadow-xs"
                [title]="hasSchedule ? 'Abrir Cronograma de Estudos' : 'Configurar e Gerar Cronograma de Estudos'">
               <span class="material-symbols-outlined !text-[16px] text-[var(--primary)]">
                 {{ hasSchedule ? 'calendar_month' : 'calendar_add_on' }}
               </span>
-              <span>{{ hasSchedule ? 'Cronograma' : 'Gerar Cronograma' }}</span>
+              <span class="whitespace-nowrap">{{ hasSchedule ? 'Ver Cronograma' : 'Gerar Cronograma' }}</span>
             </button>
 
             <!-- Botão Ver Pareto (se já analisado) -->
             <a *ngIf="paretoData?.pareto_analisado"
                [routerLink]="['/pareto', editalId]"
-               class="btn-mesh px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md hover:scale-105 transition-all cursor-pointer"
+               class="btn-mesh px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 shadow-md hover:scale-105 transition-all cursor-pointer"
                title="Ver Relatório Pareto 80/20">
               <span class="material-symbols-outlined !text-[16px]">donut_large</span>
-              <span>Ver Pareto</span>
+              <span class="whitespace-nowrap">Ver Pareto</span>
             </a>
 
             <!-- Botão Executar Análise de Pareto (se ainda não analisado) -->
             <button *ngIf="!paretoData?.pareto_analisado"
                     (click)="runParetoAnalysis()"
                     [disabled]="isAnalyzingPareto"
-                    class="bg-gradient-to-r from-[#433fe5] to-[#6b38d4] text-white px-3.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                    class="bg-gradient-to-r from-[#433fe5] to-[#6b38d4] text-white px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                     title="Executar Análise de Pareto com IA">
               <span class="material-symbols-outlined !text-[16px]" [class.animate-spin]="isAnalyzingPareto">donut_large</span>
-              <span>{{ isAnalyzingPareto ? 'Analisando...' : 'Análise de Pareto' }}</span>
+              <span class="whitespace-nowrap">{{ isAnalyzingPareto ? 'Analisando...' : 'Análise de Pareto' }}</span>
             </button>
           </div>
         </div>
@@ -817,15 +817,14 @@ export class DisciplinesSheetComponent implements OnInit {
     this.apiService.getEditalDetails(id).subscribe({
       next: (res: any) => {
         const ed = res?.data || res;
-        this.edital = ed;
-        if (ed?.user_schedule || ed?.schedule) {
-          this.hasSchedule = true;
-        }
         let pd = ed?.pareto_data || ed || {};
         if (typeof pd === 'string') {
           try { pd = JSON.parse(pd); } catch (e) { }
         }
         this.paretoData = pd;
+        if (ed?.user_schedule || ed?.schedule || (pd?.cronograma_estudos?.semanas && pd.cronograma_estudos.semanas.length > 0) || (pd?.sprints && pd.sprints.length > 0)) {
+          this.hasSchedule = true;
+        }
         // Auto expand all disciplines initially
         this.expandAll();
       },

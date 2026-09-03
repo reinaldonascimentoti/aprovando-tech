@@ -261,7 +261,7 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
                         <div class="neo-pressed rounded-xl p-1 flex-1">
                           <select 
                             [(ngModel)]="sendEditalSelectedUserId" 
-                            class="w-full bg-transparent border-none outline-none text-sm px-3 py-2 text-[var(--on-surface)] dark:bg-[#202433] cursor-pointer">
+                            class="w-full border-none outline-none text-sm px-3 py-2 text-[var(--on-surface)] cursor-pointer bg-transparent">
                             <option value="" disabled>Escolha um usuário...</option>
                             <option *ngFor="let u of nonAdminUsers" [value]="u.id">
                               {{ u.full_name }} ({{ u.email }})
@@ -525,6 +525,16 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
             <span class="material-symbols-outlined">manage_accounts</span>
             <span>Usuários e Permissões</span>
           </button>
+
+          <button 
+            (click)="activeTab = 'stats'"
+            [class.border-b-2]="activeTab === 'stats'"
+            [class.border-[var(--primary)]]="activeTab === 'stats'"
+            [class.text-[var(--primary)]]="activeTab === 'stats'"
+            class="pb-3 text-sm font-bold text-[var(--on-surface-variant)] hover:text-[var(--on-surface)] transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer">
+            <span class="material-symbols-outlined">bar_chart</span>
+            <span>Estatísticas de Estudo</span>
+          </button>
         </div>
 
         <!-- Questions Tab Content -->
@@ -633,7 +643,7 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
                   <select 
                     [(ngModel)]="selectedDisciplina" 
                     (ngModelChange)="onFilterChange()"
-                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] dark:bg-[#202433] cursor-pointer font-medium">
+                    class="border-none outline-none text-xs w-full text-[var(--on-surface)] cursor-pointer font-medium bg-transparent">
                     <option value="">Todas as Disciplinas</option>
                     <option *ngFor="let disc of availableDisciplinas" [value]="disc">{{ disc }}</option>
                   </select>
@@ -650,7 +660,7 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
                   <select 
                     [(ngModel)]="selectedBanca" 
                     (ngModelChange)="onFilterChange()"
-                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] dark:bg-[#202433] cursor-pointer font-medium">
+                    class="border-none outline-none text-xs w-full text-[var(--on-surface)] cursor-pointer font-medium bg-transparent">
                     <option value="">Todas as Bancas</option>
                     <option *ngFor="let banca of availableBancas" [value]="banca">{{ banca }}</option>
                   </select>
@@ -667,7 +677,7 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
                   <select 
                     [(ngModel)]="selectedAno" 
                     (ngModelChange)="onFilterChange()"
-                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] dark:bg-[#202433] cursor-pointer font-medium">
+                    class="border-none outline-none text-xs w-full text-[var(--on-surface)] cursor-pointer font-medium bg-transparent">
                     <option value="">Todos os Anos</option>
                     <option *ngFor="let ano of availableAnos" [value]="ano">{{ ano }}</option>
                   </select>
@@ -684,7 +694,7 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
                   <select 
                     [(ngModel)]="selectedOrgao" 
                     (ngModelChange)="onFilterChange()"
-                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] dark:bg-[#202433] cursor-pointer font-medium">
+                    class="border-none outline-none text-xs w-full text-[var(--on-surface)] cursor-pointer font-medium bg-transparent">
                     <option value="">Todos os Órgãos</option>
                     <option *ngFor="let orgao of availableOrgaos" [value]="orgao">{{ orgao }}</option>
                   </select>
@@ -748,7 +758,7 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
           </div>
 
           <!-- Listagem das Questões -->
-          <div class="space-y-6">
+          <div class="flex flex-col gap-4 sm:gap-5">
             <app-question-card 
               *ngFor="let q of paginatedQuestions; let i = index" 
               [question]="q" 
@@ -788,7 +798,7 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
                 <div class="neo-pressed rounded-xl p-1 bg-[var(--surface-container)]">
                   <select 
                     [(ngModel)]="selectedQualityEditalId"
-                    class="bg-transparent border-none outline-none text-xs font-semibold px-3 py-1.5 text-[var(--on-surface)] dark:bg-[#202433] cursor-pointer">
+                    class="border-none outline-none text-xs font-semibold px-3 py-1.5 text-[var(--on-surface)] cursor-pointer bg-transparent">
                     <option *ngFor="let ed of editaisAnalisados" [value]="ed.id">
                       {{ ed.title }} ({{ ed.cargo || 'Geral' }})
                     </option>
@@ -929,8 +939,251 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
 
         </div>
 
+        <!-- Stats Tab Content (Admin Only) -->
+        <div *ngIf="activeTab === 'stats'" class="space-y-8">
+
+          <!-- Header -->
+          <div class="flex items-center gap-3 pb-2 border-b border-[var(--outline-variant)]/40">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#433fe5] to-[#6b38d4] flex items-center justify-center">
+              <span class="material-symbols-outlined text-white !text-[22px]">bar_chart</span>
+            </div>
+            <div>
+              <h3 class="text-base font-extrabold text-[var(--on-surface)]">Estatísticas de Estudo</h3>
+              <p class="text-xs text-[var(--outline)]">Visão analítica do banco de questões — distribuição por banca e tendência histórica por ano.</p>
+            </div>
+            <span class="ml-auto bg-[var(--primary)]/15 text-[var(--primary)] text-xs font-extrabold px-3 py-1 rounded-full flex items-center gap-1">
+              <span class="material-symbols-outlined !text-[14px]">lock</span>
+              Somente Admin
+            </span>
+          </div>
+
+          <!-- ============================================================= -->
+          <!-- CARD 1: Distribuição de Questões por Banca                    -->
+          <!-- ============================================================= -->
+          <div class="neo-raised rounded-3xl p-6 space-y-5">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+              <div class="flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-[var(--primary)] !text-[24px]">account_balance</span>
+                <div>
+                  <h4 class="text-sm font-extrabold text-[var(--on-surface)]">Distribuição por Banca</h4>
+                  <p class="text-[11px] text-[var(--outline)]">Questões no banco por organizador/banca examinadora</p>
+                </div>
+              </div>
+              <span class="bg-[#e1dfff] dark:bg-[#2b20d2]/30 text-[#2b20d2] dark:text-[#c1c1ff] text-xs font-extrabold px-3 py-1 rounded-full">
+                {{ statsBancas.length }} Bancas
+              </span>
+            </div>
+
+            <div *ngIf="statsBancas.length === 0" class="neo-pressed rounded-2xl p-8 text-center">
+              <span class="material-symbols-outlined text-[var(--outline)] !text-[36px]">bar_chart</span>
+              <p class="text-sm font-bold text-[var(--on-surface)] mt-2">Nenhuma questão com banca definida ainda</p>
+            </div>
+
+            <div class="space-y-3">
+              <div *ngFor="let item of statsBancas; let i = index" class="group">
+                <div class="flex items-center justify-between mb-1.5">
+                  <div class="flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black text-white"
+                      [style.background]="bancaColors[i % bancaColors.length]">{{ i + 1 }}</span>
+                    <span class="text-xs font-bold text-[var(--on-surface)]">{{ item.banca }}</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-extrabold text-[var(--primary)]">{{ item.count }}</span>
+                    <span class="text-[10px] text-[var(--outline)] font-medium">{{ item.percentage }}%</span>
+                  </div>
+                </div>
+                <div class="w-full bg-[var(--surface-container-high)] rounded-full h-3 overflow-hidden">
+                  <div
+                    class="h-3 rounded-full transition-all duration-700 ease-out"
+                    [style.width]="item.percentage + '%'"
+                    [style.background]="bancaColors[i % bancaColors.length]">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Totalizador -->
+            <div class="neo-pressed rounded-2xl p-4 flex items-center justify-between bg-[var(--surface-container-low)]/60">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-[var(--primary)] !text-[20px]">summarize</span>
+                <span class="text-xs font-bold text-[var(--on-surface)]">Total de Questões no Banco</span>
+              </div>
+              <span class="text-xl font-black text-[var(--primary)]">{{ questions.length }}</span>
+            </div>
+          </div>
+
+          <!-- ============================================================= -->
+          <!-- CARD 2: Questões por Ano — Tendência Histórica                -->
+          <!-- ============================================================= -->
+          <div class="neo-raised rounded-3xl p-6 space-y-5">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+              <div class="flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-[var(--secondary)] !text-[24px]">timeline</span>
+                <div>
+                  <h4 class="text-sm font-extrabold text-[var(--on-surface)]">Questões por Ano — Tendência Histórica</h4>
+                  <p class="text-[11px] text-[var(--outline)]">Evolução do volume de questões extraídas ao longo dos anos por disciplina</p>
+                </div>
+              </div>
+
+              <!-- Seletor de Disciplina e Contagem de Anos -->
+              <div class="flex items-center gap-2 flex-wrap">
+                <!-- Dropdown de Disciplina -->
+                <div class="neo-pressed rounded-xl px-3 py-1.5 flex items-center gap-1.5 bg-[var(--surface-container-high)]/70 border border-[var(--outline-variant)]">
+                  <span class="material-symbols-outlined text-[var(--primary)] !text-[16px]">school</span>
+                  <select
+                    [(ngModel)]="statsAnoSelectedDisciplina"
+                    class="bg-transparent text-xs font-extrabold text-[var(--on-surface)] outline-none border-none pr-1 cursor-pointer max-w-[210px] truncate">
+                    <option value="Todas" class="bg-[var(--card-bg)] text-[var(--on-surface)]">Todas as Disciplinas ({{ questions.length }})</option>
+                    <option *ngFor="let disc of availableDisciplinas" [value]="disc" class="bg-[var(--card-bg)] text-[var(--on-surface)]">
+                      {{ disc }} ({{ getDisciplinaTotalCount(disc) }})
+                    </option>
+                  </select>
+                </div>
+
+                <span class="bg-[#e9ddff] dark:bg-[#5516be]/30 text-[#5516be] dark:text-[#d0bcff] text-xs font-extrabold px-3 py-1 rounded-full">
+                  {{ statsAnos.length }} Anos
+                </span>
+              </div>
+            </div>
+
+            <!-- Chips de Disciplinas para Troca Rápida -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+              <button
+                type="button"
+                (click)="statsAnoSelectedDisciplina = 'Todas'"
+                [ngClass]="statsAnoSelectedDisciplina === 'Todas' ? 'bg-[var(--primary)] text-white shadow-sm font-black' : 'bg-[var(--surface-container)] text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-high)] font-semibold'"
+                class="px-2.5 py-1 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 text-[11px] flex items-center gap-1">
+                <span>Todas</span>
+                <span class="opacity-80 text-[10px]">({{ questions.length }})</span>
+              </button>
+              <button
+                *ngFor="let disc of availableDisciplinas.slice(0, 6)"
+                type="button"
+                (click)="statsAnoSelectedDisciplina = disc"
+                [ngClass]="statsAnoSelectedDisciplina === disc ? 'bg-[var(--primary)] text-white shadow-sm font-black' : 'bg-[var(--surface-container)] text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-high)] font-semibold'"
+                class="px-2.5 py-1 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 text-[11px] flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full shrink-0" [style.background]="getDisciplineColor(disc)"></span>
+                <span>{{ disc }}</span>
+                <span class="opacity-80 text-[10px]">({{ getDisciplinaTotalCount(disc) }})</span>
+              </button>
+            </div>
+
+            <div *ngIf="statsAnos.length === 0" class="neo-pressed rounded-2xl p-8 text-center">
+              <span class="material-symbols-outlined text-[var(--outline)] !text-[36px]">timeline</span>
+              <p class="text-sm font-bold text-[var(--on-surface)] mt-2">Nenhuma questão encontrada para a disciplina selecionada</p>
+            </div>
+
+            <!-- Gráfico de Barras Vertical por Ano -->
+            <div *ngIf="statsAnos.length > 0" class="space-y-4">
+              <!-- Barras visuais com cores dinâmicas -->
+              <div class="flex items-end gap-2 h-52 px-2 pt-6">
+                <div
+                  *ngFor="let item of statsAnos"
+                  class="flex-1 flex flex-col items-center gap-1.5 group cursor-default min-w-0"
+                  [title]="item.ano + ': ' + item.count + ' questões' + (statsAnoSelectedDisciplina !== 'Todas' ? ' em ' + statsAnoSelectedDisciplina : '')"
+                >
+                  <!-- Tooltip value -->
+                  <div class="text-[10px] font-black opacity-80 group-hover:opacity-100 transition-opacity flex flex-col items-center">
+                    <span [style.color]="statsAnoSelectedDisciplina !== 'Todas' ? getDisciplineColor(statsAnoSelectedDisciplina) : 'var(--secondary)'">
+                      {{ item.count }}
+                    </span>
+                  </div>
+                  <!-- Bar -->
+                  <div
+                    class="w-full rounded-t-lg transition-all duration-700 ease-out hover:brightness-110"
+                    [style.background]="statsAnoSelectedDisciplina !== 'Todas' 
+                      ? 'linear-gradient(180deg, ' + getDisciplineColor(statsAnoSelectedDisciplina) + ' 0%, ' + getDisciplineColor(statsAnoSelectedDisciplina) + 'cc 100%)' 
+                      : 'linear-gradient(180deg, #8455ef 0%, #5516be 100%)'"
+                    [style.height]="(item.count / statsMaxAnoCount * 100) + '%'"
+                    [style.min-height]="'6px'"
+                  ></div>
+                  <!-- Year label -->
+                  <span class="text-[10px] font-extrabold text-[var(--on-surface-variant)] truncate w-full text-center">{{ item.ano }}</span>
+                </div>
+              </div>
+
+              <!-- Tabela de dados analítica por Ano e Disciplinas -->
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse min-w-[500px]">
+                  <thead>
+                    <tr class="bg-[var(--surface-container)] text-[var(--on-surface-variant)] text-[11px] font-black uppercase tracking-wider border-b border-[var(--outline-variant)]">
+                      <th class="py-2.5 px-4">Ano</th>
+                      <th class="py-2.5 px-4">Questões</th>
+                      <th class="py-2.5 px-4">% do Total</th>
+                      <th class="py-2.5 px-4">
+                        {{ statsAnoSelectedDisciplina === 'Todas' ? 'Disciplinas em Destaque no Ano' : 'Distribuição da Disciplina' }}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-[var(--outline-variant)]/40">
+                    <tr *ngFor="let item of statsAnos" class="hover:bg-[var(--surface-container-high)] transition-colors">
+                      <td class="py-2.5 px-4 font-extrabold text-[var(--on-surface)]">{{ item.ano }}</td>
+                      <td class="py-2.5 px-4">
+                        <span class="font-black text-xs" [style.color]="statsAnoSelectedDisciplina !== 'Todas' ? getDisciplineColor(statsAnoSelectedDisciplina) : 'var(--secondary)'">
+                          {{ item.count }}
+                        </span>
+                      </td>
+                      <td class="py-2.5 px-4 text-[var(--on-surface-variant)] font-semibold">{{ item.percentage }}%</td>
+                      <td class="py-2.5 px-4">
+                        <!-- Se filtro 'Todas': Exibe badges das disciplinas cobradas no ano -->
+                        <div *ngIf="statsAnoSelectedDisciplina === 'Todas'" class="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            *ngFor="let disc of item.topDisciplinas"
+                            class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-[var(--surface-container-high)] text-[var(--on-surface)]"
+                            [title]="disc.name + ': ' + disc.count + ' questões'">
+                            <span class="w-2 h-2 rounded-full shrink-0" [style.background]="disc.color"></span>
+                            <span class="truncate max-w-[130px]">{{ disc.name }}</span>
+                            <strong class="text-[var(--primary)] font-extrabold ml-0.5">{{ disc.count }}</strong>
+                          </span>
+                        </div>
+
+                        <!-- Se disciplina única: Exibe barra de proporção -->
+                        <div *ngIf="statsAnoSelectedDisciplina !== 'Todas'" class="w-full max-w-[200px] bg-[var(--surface-container-high)] rounded-full h-2.5 overflow-hidden">
+                          <div
+                            class="h-2.5 rounded-full transition-all duration-700 ease-out"
+                            [style.background]="getDisciplineColor(statsAnoSelectedDisciplina)"
+                            [style.width]="item.percentage + '%'">
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Insights automáticos -->
+            <div *ngIf="statsAnos.length > 0" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="neo-pressed rounded-2xl p-4 text-center bg-[var(--surface-container-low)]/60">
+                <p class="text-[11px] font-bold text-[var(--outline)] mb-1">Ano Mais Ativo</p>
+                <h5 class="text-lg font-black text-[var(--secondary)]">{{ statsTopAno?.ano || '—' }}</h5>
+                <p class="text-[10px] text-[var(--outline)]">{{ statsTopAno?.count }} questões {{ statsAnoSelectedDisciplina !== 'Todas' ? 'na disciplina' : '' }}</p>
+              </div>
+              <div class="neo-pressed rounded-2xl p-4 text-center bg-[var(--surface-container-low)]/60">
+                <p class="text-[11px] font-bold text-[var(--outline)] mb-1">Período Coberto</p>
+                <h5 class="text-base font-black text-[var(--on-surface)]">{{ statsAnos[0]?.ano }} – {{ statsAnos[statsAnos.length - 1]?.ano }}</h5>
+                <p class="text-[10px] text-[var(--outline)]">{{ statsAnos.length }} anos registrados</p>
+              </div>
+              <div class="neo-pressed rounded-2xl p-4 text-center bg-[var(--surface-container-low)]/60">
+                <p class="text-[11px] font-bold text-[var(--outline)] mb-1">Média por Ano</p>
+                <h5 class="text-lg font-black text-[var(--primary)]">{{ statsAvgPerYear }}</h5>
+                <p class="text-[10px] text-[var(--outline)]">questões/ano ({{ statsFilteredQuestionsForAno.length }} total)</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
         <!-- Users Management Tab Content -->
-        <div *ngIf="activeTab === 'users'" class="overflow-x-auto">
+        <div *ngIf="activeTab === 'users'" class="overflow-x-auto space-y-4">
+          <!-- Toast de Usuários -->
+          <div *ngIf="showUserToast"
+               class="rounded-xl p-3 text-xs font-bold flex items-center gap-2 animate-fadeIn"
+               [ngClass]="userToastType === 'success' ? 'bg-[#eefff2] dark:bg-[#003824] text-[#005236] dark:text-[#6ffbbe]' : 'bg-[#ffdad6] dark:bg-[#ba1a1a]/30 text-[#93000a] dark:text-[#ffb4ab]'">
+            <span class="material-symbols-outlined !text-[16px]">{{ userToastType === 'success' ? 'check_circle' : 'error' }}</span>
+            <span>{{ userToastMsg }}</span>
+          </div>
+
           <table class="w-full text-left text-xs">
             <thead>
               <tr class="border-b border-[var(--outline-variant)] text-[var(--on-surface-variant)] uppercase">
@@ -944,9 +1197,9 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
               <tr *ngFor="let u of users" class="border-b border-[var(--outline-variant)]/40 hover:bg-[var(--surface-container-high)] transition-colors">
                 <td class="py-3.5 px-4 font-bold text-[var(--on-surface)] flex items-center gap-2">
                   <div class="w-8 h-8 rounded-full neo-raised flex items-center justify-center text-[var(--primary)] font-bold">
-                    {{ u.full_name.charAt(0) }}
+                    {{ u.full_name?.charAt(0) || u.email?.charAt(0) || 'U' }}
                   </div>
-                  <span>{{ u.full_name }}</span>
+                  <span>{{ u.full_name || 'Sem nome' }}</span>
                 </td>
                 <td class="py-3.5 px-4 text-[var(--on-surface-variant)]">{{ u.email }}</td>
                 <td class="py-3.5 px-4">
@@ -959,11 +1212,23 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
                   </span>
                 </td>
                 <td class="py-3.5 px-4 text-right">
-                  <button 
-                    (click)="toggleUserRole(u)" 
-                    class="btn-neo px-3 py-1.5 rounded-xl text-xs cursor-pointer">
-                    {{ u.role === 'admin' ? 'Reverter para Aluno' : 'Promover a Admin' }}
-                  </button>
+                  <div class="flex items-center justify-end gap-2">
+                    <button 
+                      (click)="toggleUserRole(u)" 
+                      class="btn-neo px-3 py-1.5 rounded-xl text-xs cursor-pointer">
+                      {{ u.role === 'admin' ? 'Reverter para Aluno' : 'Promover a Admin' }}
+                    </button>
+                    <button 
+                      (click)="openDeleteUserModal(u)" 
+                      title="Excluir Usuário"
+                      [disabled]="u.id === user?.id"
+                      [class.opacity-30]="u.id === user?.id"
+                      [class.cursor-not-allowed]="u.id === user?.id"
+                      class="p-1.5 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer flex items-center justify-center"
+                      *ngIf="u.id !== user?.id">
+                      <span class="material-symbols-outlined !text-[18px]">delete</span>
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -1134,7 +1399,7 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
             <span class="material-symbols-outlined text-[#433fe5] dark:text-[#818cf8] !text-[24px]">edit_note</span>
             <div>
               <h3 class="text-base font-extrabold text-[#191c1e] dark:text-white">Editar Questão</h3>
-              <p class="text-xs text-[#64748b] dark:text-[#94a3b8]">ID: <span class="font-mono font-bold">{{ editQuestionForm.id_qc || editQuestionForm.id }}</span></p>
+              <p class="text-xs text-[#64748b] dark:text-[#94a3b8]">ID: <span class="font-mono font-bold">{{ editQuestionForm.id ? 'Q' + editQuestionForm.id : editQuestionForm.id_qc }}</span></p>
             </div>
           </div>
           <button (click)="closeEditQuestionModal()" class="text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-white transition-colors cursor-pointer">
@@ -1177,14 +1442,14 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
             <div>
               <label class="block font-bold text-[#475569] dark:text-[#cbd5e1] mb-1">Tipo de Questão</label>
-              <select [(ngModel)]="editQuestionForm.tipo" (change)="onEditQuestionTipoChange()" class="w-full neo-pressed rounded-xl p-2.5 bg-white dark:bg-[#111318] border border-[#cbd5e1] dark:border-[#4a5568] outline-none font-medium">
+              <select [(ngModel)]="editQuestionForm.tipo" (change)="onEditQuestionTipoChange()" class="w-full neo-pressed rounded-xl p-2.5 bg-[var(--surface-container-low)] border border-[var(--outline-variant)] outline-none font-medium text-[var(--on-surface)]">
                 <option value="multipla_escolha">Múltipla Escolha</option>
                 <option value="certo_errado">Certo / Errado</option>
               </select>
             </div>
             <div>
               <label class="block font-bold text-[#475569] dark:text-[#cbd5e1] mb-1">Status de Liberação</label>
-              <select [(ngModel)]="editQuestionForm.is_released" class="w-full neo-pressed rounded-xl p-2.5 bg-white dark:bg-[#111318] border border-[#cbd5e1] dark:border-[#4a5568] outline-none font-medium">
+              <select [(ngModel)]="editQuestionForm.is_released" class="w-full neo-pressed rounded-xl p-2.5 bg-[var(--surface-container-low)] border border-[var(--outline-variant)] outline-none font-medium text-[var(--on-surface)]">
                 <option [ngValue]="true">Liberada (Visível aos Alunos)</option>
                 <option [ngValue]="false">Rascunho (Oculta dos Alunos)</option>
               </select>
@@ -1220,7 +1485,7 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
           <!-- Resposta Correta (Gabarito) -->
           <div class="pt-2">
             <label class="block font-bold text-[#475569] dark:text-[#cbd5e1] mb-1">Gabarito (Resposta Correta) *</label>
-            <select [(ngModel)]="editQuestionForm.resposta_correta" class="w-full neo-pressed rounded-xl p-2.5 bg-white dark:bg-[#111318] border border-[#cbd5e1] dark:border-[#4a5568] outline-none font-bold text-[#16a34a]">
+            <select [(ngModel)]="editQuestionForm.resposta_correta" class="w-full neo-pressed rounded-xl p-2.5 bg-[var(--surface-container-low)] border border-[var(--outline-variant)] outline-none font-bold text-[var(--tertiary)]">
               <option *ngFor="let opt of editQuestionAlternativas" [value]="opt.letra">
                 Alternativa {{ opt.letra }} {{ opt.texto ? '- ' + (opt.texto | slice:0:30) + '...' : '' }}
               </option>
@@ -1259,7 +1524,7 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
         <div class="space-y-2">
           <h3 class="text-lg font-black text-[#0f172a] dark:text-white">Excluir Questão?</h3>
           <p class="text-xs md:text-sm text-[#64748b] dark:text-[#cbd5e1] leading-relaxed">
-            Você tem certeza que deseja excluir a questão <strong class="text-red-600 dark:text-red-400">{{ questionToDelete?.id_qc || questionToDelete?.id }}</strong>? 
+            Você tem certeza que deseja excluir a questão <strong class="text-red-600 dark:text-red-400">{{ questionToDelete?.id ? 'Q' + questionToDelete.id : questionToDelete?.id_qc }}</strong>? 
             Esta ação é irreversível e removerá a questão do banco de dados.
           </p>
         </div>
@@ -1271,6 +1536,36 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
           <button type="button" (click)="executeDeleteQuestion()" [disabled]="isDeletingQuestion" class="flex-1 py-2.5 rounded-xl font-extrabold text-xs md:text-sm text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors shadow-md flex items-center justify-center gap-1.5 cursor-pointer">
             <span class="material-symbols-outlined !text-[18px]" *ngIf="isDeletingQuestion">hourglass_top</span>
             <span>{{ isDeletingQuestion ? 'Excluindo...' : 'Excluir Definitivamente' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Confirmação de Exclusão de Usuário (Admin) -->
+    <div *ngIf="showDeleteUserModal"
+         class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+      <div class="neo-raised bg-white dark:bg-[#1e232a] text-[#191c1e] dark:text-[#f7f9fc] rounded-3xl max-w-md w-full overflow-hidden shadow-2xl p-6 space-y-5 text-center">
+        <div class="w-14 h-14 bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto">
+          <span class="material-symbols-outlined !text-[32px]">person_remove</span>
+        </div>
+
+        <div class="space-y-2">
+          <h3 class="text-lg font-black text-[#0f172a] dark:text-white">Excluir Usuário?</h3>
+          <p class="text-xs md:text-sm text-[#64748b] dark:text-[#cbd5e1] leading-relaxed">
+            Você tem certeza que deseja excluir o usuário <strong class="text-red-600 dark:text-red-400">{{ userToDelete?.full_name || userToDelete?.email }}</strong> (<span class="font-medium">{{ userToDelete?.email }}</span>)?
+          </p>
+          <p class="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20 text-left">
+            ⚠️ <strong>Atenção:</strong> Esta ação removerá o usuário permanentemente do Supabase Auth e liberará o e-mail para novos cadastros.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-center gap-3 pt-2">
+          <button type="button" (click)="closeDeleteUserModal()" class="flex-1 py-2.5 rounded-xl font-bold text-xs md:text-sm text-[#64748b] dark:text-[#cbd5e1] bg-[#f1f5f9] dark:bg-[#2d3748] hover:bg-[#e2e8f0] dark:hover:bg-[#3a475c] transition-colors cursor-pointer">
+            Cancelar
+          </button>
+          <button type="button" (click)="executeDeleteUser()" [disabled]="isDeletingUser" class="flex-1 py-2.5 rounded-xl font-extrabold text-xs md:text-sm text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors shadow-md flex items-center justify-center gap-1.5 cursor-pointer">
+            <span class="material-symbols-outlined !text-[18px]" *ngIf="isDeletingUser">hourglass_top</span>
+            <span>{{ isDeletingUser ? 'Excluindo...' : 'Excluir Definitivamente' }}</span>
           </button>
         </div>
       </div>
@@ -1314,10 +1609,18 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   isDeletingQuestion: boolean = false;
   questionToDelete: any = null;
 
+  // Delete User Modal state
+  showDeleteUserModal: boolean = false;
+  isDeletingUser: boolean = false;
+  userToDelete: any = null;
+  userToastMsg = '';
+  userToastType: 'success' | 'error' = 'success';
+  showUserToast = false;
+
   users: any[] = [];
   editais: any[] = [];
   qualityReport: any = null;
-  activeTab: 'questions' | 'quality' | 'users' | 'editais' = 'questions';
+  activeTab: 'questions' | 'quality' | 'users' | 'editais' | 'stats' = 'questions';
 
   // Real-Time Logs State
   importLogs: { message: string, type: string, time: Date }[] = [];
@@ -1472,7 +1775,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.questionsCurrentPage = page;
   }
 
-  goToTab(tab: 'questions' | 'quality' | 'users') {
+  goToTab(tab: 'questions' | 'quality' | 'users' | 'stats') {
     this.activeTab = tab;
     setTimeout(() => {
       const el = document.getElementById('tabbed-views-section');
@@ -1841,6 +2144,183 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     };
   }
 
+  // ---------------------------------------------------------------------------
+  // ESTATÍSTICAS DE ESTUDO (Admin Only)
+  // ---------------------------------------------------------------------------
+
+  /** Disciplina selecionada para filtro do gráfico de tendência por ano */
+  statsAnoSelectedDisciplina: string = 'Todas';
+
+  /** Cores padronizadas por disciplina */
+  private readonly disciplineColorMap: Record<string, string> = {
+    'BANCO DE DADOS': '#0ea5e9',
+    'BANCOS DE DADOS': '#0ea5e9',
+    'GOVERNANCA': '#f97316',
+    'GOVERNANÇA': '#f97316',
+    'GOVERNANCA DE TI': '#f97316',
+    'GOVERNANÇA DE TI': '#f97316',
+    'ENGENHARIA DE SOFTWARE': '#ec4899',
+    'REDES DE COMPUTADORES': '#10b981',
+    'REDES': '#10b981',
+    'SEGURANCA DA INFORMACAO': '#ef4444',
+    'SEGURANÇA DA INFORMAÇÃO': '#ef4444',
+    'SISTEMAS OPERACIONAIS': '#eab308',
+    'ARQUITETURA DE COMPUTADORES': '#8b5cf6',
+    'CIENCIA DE DADOS': '#6366f1',
+    'CIÊNCIA DE DADOS': '#6366f1',
+    'DESENVOLVIMENTO DE SISTEMAS': '#a855f7',
+    'PROGRAMACAO': '#a855f7',
+    'PROGRAMAÇÃO': '#a855f7',
+    'INFORMATICA': '#06b6d4',
+    'INFORMÁTICA': '#06b6d4',
+    'TECNOLOGIA DA INFORMACAO': '#06b6d4',
+    'TECNOLOGIA DA INFORMAÇÃO': '#06b6d4',
+    'DIREITO ADMINISTRATIVO': '#5d3bf6',
+    'DIREITO CONSTITUCIONAL': '#22d3ee',
+    'LINGUA PORTUGUESA': '#10b981',
+    'PORTUGUES': '#10b981',
+    'PORTUGUÊS': '#10b981',
+    'RACIOCINIO LOGICO': '#f59e0b',
+    'RACIOCÍNIO LÓGICO': '#f59e0b',
+    'MATEMATICA': '#f59e0b',
+    'MATEMÁTICA': '#f59e0b',
+    'DIREITO PENAL': '#ef4444',
+    'DIREITO CIVIL': '#8b5cf6',
+    'DIREITO TRIBUTARIO': '#ec4899',
+    'ADMINISTRACAO PUBLICA': '#14b8a6',
+  };
+
+  getDisciplineColor(disciplinaName: string): string {
+    if (!disciplinaName) return '#5d3bf6';
+    const normalized = disciplinaName
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .trim();
+
+    if (this.disciplineColorMap[normalized]) {
+      return this.disciplineColorMap[normalized];
+    }
+
+    const palette = ['#5d3bf6', '#22d3ee', '#10b981', '#f59e0b', '#ec4899', '#3b82f6', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316'];
+    let hash = 0;
+    for (let i = 0; i < normalized.length; i++) {
+      hash = normalized.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return palette[Math.abs(hash) % palette.length];
+  }
+
+  getDisciplinaTotalCount(disciplina: string): number {
+    if (!this.questions || this.questions.length === 0) return 0;
+    const target = disciplina.trim().toUpperCase();
+    return this.questions.filter(q => {
+      const d = (q.disciplina || q.subject || '').toString().trim().toUpperCase();
+      return d === target;
+    }).length;
+  }
+
+  get statsFilteredQuestionsForAno(): any[] {
+    if (!this.questions || this.questions.length === 0) return [];
+    if (this.statsAnoSelectedDisciplina === 'Todas') return this.questions;
+    const target = this.statsAnoSelectedDisciplina.trim().toUpperCase();
+    return this.questions.filter(q => {
+      const d = (q.disciplina || q.subject || '').toString().trim().toUpperCase();
+      return d === target;
+    });
+  }
+
+  /** Cores para os gráficos de banca */
+  readonly bancaColors = [
+    'linear-gradient(135deg, #433fe5 0%, #6b38d4 100%)',
+    'linear-gradient(135deg, #00897b 0%, #00bfa5 100%)',
+    'linear-gradient(135deg, #e65100 0%, #ff8f00 100%)',
+    'linear-gradient(135deg, #1565c0 0%, #1e88e5 100%)',
+    'linear-gradient(135deg, #ad1457 0%, #e91e63 100%)',
+    'linear-gradient(135deg, #37474f 0%, #607d8b 100%)',
+    'linear-gradient(135deg, #558b2f 0%, #8bc34a 100%)',
+    'linear-gradient(135deg, #6a1b9a 0%, #ab47bc 100%)',
+    'linear-gradient(135deg, #c62828 0%, #ef5350 100%)',
+    'linear-gradient(135deg, #0277bd 0%, #29b6f6 100%)',
+  ];
+
+  /** Distribuição de questões por banca, ordenada de maior para menor */
+  get statsBancas(): { banca: string; count: number; percentage: string }[] {
+    if (!this.questions || this.questions.length === 0) return [];
+    const map = new Map<string, number>();
+    for (const q of this.questions) {
+      const banca = (q.banca || '').toString().trim();
+      if (banca) {
+        map.set(banca, (map.get(banca) || 0) + 1);
+      }
+    }
+    const total = this.questions.length;
+    return Array.from(map.entries())
+      .map(([banca, count]) => ({
+        banca,
+        count,
+        percentage: total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
+      }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  /** Distribuição de questões por ano, filtrada por disciplina e com top disciplinas */
+  get statsAnos(): { ano: string | number; count: number; percentage: string; topDisciplinas: { name: string; count: number; color: string }[] }[] {
+    const list = this.statsFilteredQuestionsForAno;
+    if (list.length === 0) return [];
+    const map = new Map<string, { total: number; discMap: Map<string, number> }>();
+    for (const q of list) {
+      const ano = q.ano != null && q.ano !== '' ? String(q.ano).trim() : '';
+      if (ano) {
+        if (!map.has(ano)) {
+          map.set(ano, { total: 0, discMap: new Map<string, number>() });
+        }
+        const entry = map.get(ano)!;
+        entry.total++;
+        const d = (q.disciplina || q.subject || 'Geral').toString().trim();
+        entry.discMap.set(d, (entry.discMap.get(d) || 0) + 1);
+      }
+    }
+    const total = list.length;
+    return Array.from(map.entries())
+      .map(([ano, data]) => {
+        const topDisciplinas = Array.from(data.discMap.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([name, count]) => ({
+            name,
+            count,
+            color: this.getDisciplineColor(name)
+          }));
+
+        return {
+          ano,
+          count: data.total,
+          percentage: total > 0 ? ((data.total / total) * 100).toFixed(1) : '0.0',
+          topDisciplinas
+        };
+      })
+      .sort((a, b) => Number(a.ano) - Number(b.ano));
+  }
+
+  /** Ano com mais questões */
+  get statsTopAno(): { ano: string | number; count: number; percentage: string } | null {
+    if (this.statsAnos.length === 0) return null;
+    return this.statsAnos.reduce((max, item) => item.count > max.count ? item : max, this.statsAnos[0]);
+  }
+
+  /** Contagem máxima de questões em um único ano (para escalar o gráfico) */
+  get statsMaxAnoCount(): number {
+    if (this.statsAnos.length === 0) return 1;
+    return Math.max(...this.statsAnos.map(i => i.count), 1);
+  }
+
+  /** Média de questões por ano */
+  get statsAvgPerYear(): string {
+    if (this.statsAnos.length === 0) return '0';
+    const total = this.statsAnos.reduce((sum, i) => sum + i.count, 0);
+    return (total / this.statsAnos.length).toFixed(0);
+  }
+
   get promptQualityJson(): string {
     return JSON.stringify(this.promptQualitySummary?.conteudoProgramaticoRaw || {}, null, 2);
   }
@@ -2111,6 +2591,45 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const newRole = u.role === 'admin' ? 'user' : 'admin';
     this.apiService.updateUserRole(u.id, newRole).subscribe({
       next: () => u.role = newRole
+    });
+  }
+
+  openDeleteUserModal(u: any) {
+    this.userToDelete = u;
+    this.showDeleteUserModal = true;
+  }
+
+  closeDeleteUserModal() {
+    this.showDeleteUserModal = false;
+    this.userToDelete = null;
+    this.isDeletingUser = false;
+  }
+
+  executeDeleteUser() {
+    if (!this.userToDelete || this.isDeletingUser) return;
+    this.isDeletingUser = true;
+
+    const userToRemove = this.userToDelete;
+    this.apiService.deleteUser(userToRemove.id).subscribe({
+      next: () => {
+        this.isDeletingUser = false;
+        this.closeDeleteUserModal();
+        this.users = this.users.filter(u => u.id !== userToRemove.id);
+        this.loadDashboardData();
+
+        this.userToastMsg = `Usuário ${userToRemove.email} excluído com sucesso!`;
+        this.userToastType = 'success';
+        this.showUserToast = true;
+        setTimeout(() => { this.showUserToast = false; }, 5000);
+      },
+      error: (err) => {
+        console.error('Erro ao excluir usuário:', err);
+        this.isDeletingUser = false;
+        this.userToastMsg = err?.error?.message || 'Erro ao excluir usuário.';
+        this.userToastType = 'error';
+        this.showUserToast = true;
+        setTimeout(() => { this.showUserToast = false; }, 5000);
+      }
     });
   }
 

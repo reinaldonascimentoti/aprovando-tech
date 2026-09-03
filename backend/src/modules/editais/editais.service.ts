@@ -123,10 +123,23 @@ export class EditaisService {
 
   async getPublicEditais() {
     const editais = await this.supabaseService.getEditais();
-    // Return only public metadata fields
+    // Return full public metadata fields needed by the frontend cards
     return editais.map(e => ({
       id: e.id,
       title: e.title,
+      cargo: e.cargo,
+      concurso: e.concurso,
+      status: e.status,
+      data_prova: e.data_prova,
+      horas_por_dia: e.horas_por_dia,
+      dias_por_semana: e.dias_por_semana,
+      // Retorna pareto_data sem o texto bruto do PDF (pode ser grande e sensível)
+      pareto_data: e.pareto_data
+        ? (() => {
+            const { _raw_pdf_text, ...rest } = e.pareto_data ?? {};
+            return rest;
+          })()
+        : null,
       uploaded_by: e.uploaded_by,
       uploader_name: e.uploader_name,
       created_at: e.created_at,

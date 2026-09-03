@@ -94,10 +94,10 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
           </a>
 
           <a [routerLink]="['/sprints', edital.id]"
-             class="btn-neo py-2.5 px-3 rounded-xl text-xs sm:text-[13px] font-bold flex items-center justify-center gap-1.5 text-[var(--on-surface)] text-center"
-             title="Cronograma Semanal">
+             class="btn-neo py-2.5 px-3 rounded-xl text-xs sm:text-[13px] font-bold flex items-center justify-center gap-2 text-[var(--on-surface)] text-center"
+             title="Ver Cronograma de Estudos">
             <span class="material-symbols-outlined !text-[17px] text-[var(--primary)]">calendar_month</span>
-            <span class="truncate">Sprints</span>
+            <span class="truncate">Ver Cronograma</span>
           </a>
         </div>
 

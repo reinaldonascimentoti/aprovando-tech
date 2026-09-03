@@ -15,6 +15,8 @@ export interface QuestionJsonInput {
   enunciado?: string;
   alternativas?: AlternativaJson[];
   resposta_correta?: string;
+  /** Alias de gabarito_comentado — aceito no upload JSON */
+  justificativa?: string;
   gabarito_comentado?: string;
   imagem_url?: string | null;
   imagens?: string[];
@@ -35,6 +37,8 @@ export interface QuestionJsonResponse {
   enunciado: string;
   alternativas: AlternativaJson[];
   resposta_correta: string | null;
+  /** Alias de gabarito_comentado — retornado na resposta */
+  justificativa: string | null;
   gabarito_comentado: string | null;
   imagem_url: string | null;
   imagens: string[];

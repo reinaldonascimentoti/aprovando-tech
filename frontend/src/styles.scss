@@ -71,6 +71,56 @@ body {
   transition: background-color 0.35s ease, color 0.35s ease;
 }
 
+/* ================================================
+   Select / Dropdown — Dark Mode Native Popup Fix
+   ================================================ */
+select {
+  color-scheme: light;
+  background-color: var(--surface-container-low);
+  color: var(--on-surface);
+}
+
+option {
+  background-color: var(--surface-container-low);
+  color: var(--on-surface);
+}
+
+:root[data-theme="dark"] select,
+.dark-theme select,
+[data-theme="dark"] select,
+.dark select {
+  color-scheme: dark;
+  background-color: var(--surface-container);
+  color: var(--on-surface);
+}
+
+:root[data-theme="dark"] option,
+.dark-theme option,
+[data-theme="dark"] option,
+.dark option {
+  background-color: var(--surface-container);
+  color: var(--on-surface);
+}
+
+/* ================================================
+   Input[type=date] — Dark Mode Fix
+   ================================================ */
+input[type="date"],
+input[type="number"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] input[type="date"],
+.dark-theme input[type="date"],
+[data-theme="dark"] input[type="date"],
+.dark input[type="date"],
+:root[data-theme="dark"] input[type="number"],
+.dark-theme input[type="number"],
+[data-theme="dark"] input[type="number"],
+.dark input[type="number"] {
+  color-scheme: dark;
+}
+
 /* Modern Raised Cards */
 .neo-raised {
   background: var(--surface);
@@ -93,21 +143,48 @@ body {
 
 /* Modern Input */
 .neo-input {
-  background: var(--surface-container-low);
-  border: 1.5px solid var(--outline-variant);
-  color: var(--on-surface);
+  background-color: var(--surface-container-low) !important;
+  border: 1.5px solid var(--outline-variant) !important;
+  color: var(--on-surface) !important;
+  caret-color: var(--primary);
   transition: all 0.25s ease;
 }
 
 .neo-input::placeholder {
-  color: var(--outline);
-  opacity: 0.75;
+  color: var(--outline) !important;
+  opacity: 0.85;
+}
+
+:root[data-theme="dark"] .neo-input::placeholder,
+.dark .neo-input::placeholder,
+[data-theme="dark"] .neo-input::placeholder {
+  color: #94a3b8 !important;
+  opacity: 0.85;
+}
+
+:root[data-theme="light"] .neo-input::placeholder,
+.light .neo-input::placeholder,
+[data-theme="light"] .neo-input::placeholder {
+  color: #64748b !important;
+  opacity: 0.85;
 }
 
 .neo-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(67, 63, 229, 0.15);
-  outline: none;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(67, 63, 229, 0.2) !important;
+  outline: none !important;
+}
+
+/* Browser Autofill Support for Dark & Light Themes */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--on-surface) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--surface-container-low) inset !important;
+  box-shadow: 0 0 0px 1000px var(--surface-container-low) inset !important;
+  caret-color: var(--on-surface) !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 /* Mesh Gradient Button */

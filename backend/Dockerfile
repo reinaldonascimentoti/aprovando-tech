@@ -1,16 +1,40 @@
 # ====================================================================
-# Imagem de Produção Otimizada do Backend Aprovando Tech
+# Estágio Base
 # ====================================================================
-FROM node:20-alpine AS production
+FROM node:20-alpine AS base
 WORKDIR /usr/src/app
 
+# ====================================================================
+# Estágio de Desenvolvimento (usado por docker-compose.dev.yml)
+# ====================================================================
+FROM base AS development
+ENV NODE_ENV=development
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 3000
+CMD ["npm", "run", "start:dev"]
+
+# ====================================================================
+# Estágio de Build (compilação TypeScript)
+# ====================================================================
+FROM base AS build
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+RUN npm prune --omit=dev
+
+# ====================================================================
+# Estágio de Produção (Imagem final otimizada)
+# ====================================================================
+FROM base AS production
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Copia dependências e artefatos compilados
 COPY package*.json ./
-COPY node_modules ./node_modules
-COPY dist ./dist
+COPY --from=build /usr/src/app/node_modules ./node_modules
+COPY --from=build /usr/src/app/dist ./dist
 
 # Segurança: Executa como usuário não-root
 USER node

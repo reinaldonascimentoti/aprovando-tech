@@ -7,10 +7,12 @@ import { ParetoAnalysisComponent } from './pages/pareto-analysis/pareto-analysis
 import { SprintScheduleComponent } from './pages/sprint-schedule/sprint-schedule.component';
 import { DisciplinesSheetComponent } from './pages/disciplines-sheet/disciplines-sheet.component';
 import { EditaisCatalogComponent } from './pages/editais-catalog/editais-catalog.component';
+import { AuthCallbackComponent } from './pages/auth-callback/auth-callback.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent, pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
+  { path: 'auth/callback', component: AuthCallbackComponent },
   { path: 'admin', component: AdminDashboardComponent },
   { path: 'student', component: StudentDashboardComponent },
   { path: 'pareto/:id', component: ParetoAnalysisComponent },

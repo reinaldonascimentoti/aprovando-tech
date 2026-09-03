@@ -275,6 +275,12 @@ export class ApiService {
     });
   }
 
+  deleteUser(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/users/${id}`, {
+      headers: this.getHeaders()
+    });
+  }
+
   // ----------------------------------------------------------------
   // EDITAIS RECENTES GLOBAIS
   // ----------------------------------------------------------------

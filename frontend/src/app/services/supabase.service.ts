@@ -63,7 +63,10 @@ export class SupabaseService implements OnDestroy {
     const { data, error } = await this.supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } }
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      }
     });
     if (error) throw error;
     return data;
@@ -173,6 +176,17 @@ export class SupabaseService implements OnDestroy {
   /** Busca contagem pública de editais, questões e candidatos */
   async getPublicStats(): Promise<{ editaisCount: number; questoesCount: number; candidatosCount: number }> {
     try {
+      // 1. Tenta obter via RPC get_platform_stats (seguro e com permissão pública)
+      const { data: rpcData, error: rpcError } = await this.supabase.rpc('get_platform_stats');
+      if (!rpcError && rpcData) {
+        return {
+          editaisCount: Number(rpcData.editaisCount) || 0,
+          questoesCount: Number(rpcData.questoesCount) || 0,
+          candidatosCount: Number(rpcData.candidatosCount) || 0,
+        };
+      }
+
+      // 2. Fallback direto nas tabelas públicas caso RPC ainda não tenha sido criada
       const [editaisRes, questoesRes, profilesRes] = await Promise.all([
         this.supabase.from('editais').select('id', { count: 'exact', head: true }),
         this.supabase.from('questoes').select('id', { count: 'exact', head: true }),
@@ -214,8 +228,115 @@ export class SupabaseService implements OnDestroy {
     if (error) throw error;
   }
 
+
+  // ----------------------------------------------------------------
+  // USER QUESTION ANSWERS (Acerto por Disciplina)
+  // ----------------------------------------------------------------
+
+  /**
+   * Salva ou atualiza (upsert) a resposta de uma questão.
+   * A resposta mais recente substitui a anterior para a mesma questão.
+   */
+  async saveQuestionAnswer(payload: {
+    questionId: string;
+    disciplina: string;
+    banca?: string;
+    ano?: number;
+    isCorrect: boolean;
+  }): Promise<void> {
+    const user = this.currentUser;
+    if (!user) {
+      console.warn('saveQuestionAnswer: Usuário não autenticado no Supabase. Resposta não persistida.');
+      return;
+    }
+    try {
+      const { error } = await this.supabase
+        .from('user_question_answers')
+        .upsert(
+          {
+            user_id: user.id,
+            question_id: payload.questionId,
+            disciplina: (payload.disciplina || 'Geral').toUpperCase().trim(),
+            banca: payload.banca || null,
+            ano: payload.ano || null,
+            is_correct: payload.isCorrect,
+            answered_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id,question_id' }
+        );
+      if (error) {
+        console.error('Erro ao salvar resposta no Supabase:', error);
+      }
+    } catch (e) {
+      console.error('Exceção ao salvar resposta no Supabase:', e);
+    }
+  }
+
+  /**
+   * Busca o % de acerto por disciplina do usuário atual via RPC (com fallback para consulta direta).
+   * Retorna array ordenado por % decrescente.
+   */
+  async getAccuracyByDisciplina(): Promise<{
+    disciplina: string;
+    total: number;
+    corretas: number;
+    pct: number;
+  }[]> {
+    const user = this.currentUser;
+    if (!user) return [];
+    try {
+      const { data, error } = await this.supabase.rpc('get_accuracy_by_disciplina');
+      if (!error && data && data.length > 0) {
+        return data.map((row: any) => ({
+          disciplina: row.disciplina,
+          total: Number(row.total),
+          corretas: Number(row.corretas),
+          pct: Number(row.pct),
+        }));
+      }
+      // Fallback: consulta direta à tabela user_question_answers caso RPC não retorne
+      return await this.getAccuracyByDisciplinaFallback(user.id);
+    } catch (e) {
+      console.error('Exceção ao buscar acerto por disciplina:', e);
+      return await this.getAccuracyByDisciplinaFallback(user.id);
+    }
+  }
+
+  private async getAccuracyByDisciplinaFallback(userId: string): Promise<{
+    disciplina: string;
+    total: number;
+    corretas: number;
+    pct: number;
+  }[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('user_question_answers')
+        .select('disciplina, is_correct')
+        .eq('user_id', userId);
+
+      if (error || !data || data.length === 0) return [];
+
+      const map = new Map<string, { total: number; corretas: number }>();
+      for (const row of data) {
+        const d = (row.disciplina || 'GERAL').toUpperCase().trim();
+        const cur = map.get(d) || { total: 0, corretas: 0 };
+        cur.total++;
+        if (row.is_correct) cur.corretas++;
+        map.set(d, cur);
+      }
+
+      return Array.from(map.entries()).map(([disciplina, s]) => ({
+        disciplina,
+        total: s.total,
+        corretas: s.corretas,
+        pct: Math.round((s.corretas / s.total) * 100 * 10) / 10,
+      })).sort((a, b) => b.pct - a.pct || b.total - a.total);
+    } catch {
+      return [];
+    }
+  }
+
   ngOnDestroy() {
     this.supabase.auth.onAuthStateChange(() => {});
   }
 }
-

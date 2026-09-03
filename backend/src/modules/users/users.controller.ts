@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Param, Body, HttpException, HttpStatus } from '@nestjs/common';
 import { UsersService } from './users.service';
 
 @Controller('api/users')
@@ -16,6 +16,17 @@ export class UsersController {
     return {
       message: 'Permissão de usuário atualizada.',
       data: updated,
+    };
+  }
+
+  @Delete(':id')
+  async deleteUser(@Param('id') id: string) {
+    const success = await this.usersService.deleteUser(id);
+    if (!success) {
+      throw new HttpException('Falha ao excluir usuário.', HttpStatus.BAD_REQUEST);
+    }
+    return {
+      message: 'Usuário excluído com sucesso.',
     };
   }
 }

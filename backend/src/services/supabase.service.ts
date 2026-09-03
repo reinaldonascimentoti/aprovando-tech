@@ -60,6 +60,17 @@ export class SupabaseService {
   }
 
   // ----------------------------------------------------------------
+  // UTILITIES (helpers)
+  // ----------------------------------------------------------------
+
+  /** Converte string para Title Case: "BANCO DE DADOS" → "Banco de Dados" */
+  private toTitleCase(str: string): string {
+    return str
+      .toLowerCase()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  // ----------------------------------------------------------------
   // USERS / PROFILES
   // ----------------------------------------------------------------
 
@@ -102,6 +113,31 @@ export class SupabaseService {
     return data;
   }
 
+  async deleteUser(id: string): Promise<boolean> {
+    if (!this.adminClient || !id) return false;
+
+    try {
+      // 1. Limpa tabelas dependentes
+      await this.adminClient.from('user_topic_progress').delete().eq('user_id', id);
+      await this.adminClient.from('user_edital_assignments').delete().eq('user_id', id);
+      await this.adminClient.from('user_edital_dismissals').delete().eq('user_id', id);
+      await this.adminClient.from('profiles').delete().eq('id', id);
+
+      // 2. Exclui do Supabase Auth (auth.users)
+      const { error } = await this.adminClient.auth.admin.deleteUser(id);
+      if (error) {
+        this.logger.error(`deleteUser auth error for ${id}: ${error.message}`);
+        return false;
+      }
+
+      this.logger.log(`deleteUser: Usuário ${id} excluído com sucesso do Auth e tabelas associadas.`);
+      return true;
+    } catch (e: any) {
+      this.logger.error(`deleteUser exception for ${id}: ${e?.message}`);
+      return false;
+    }
+  }
+
   // ----------------------------------------------------------------
   // QUESTIONS
   // ----------------------------------------------------------------
@@ -109,21 +145,43 @@ export class SupabaseService {
   async getQuestions(isReleasedOnly = false) {
     if (!this.adminClient) return [];
 
-    let query = this.adminClient
-      .from('questoes')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const BATCH_SIZE = 1000;
+    const allData: any[] = [];
+    let from = 0;
+    let hasMore = true;
 
-    if (isReleasedOnly) {
-      query = query.eq('is_released', true);
+    while (hasMore) {
+      let query = this.adminClient
+        .from('questoes')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + BATCH_SIZE - 1);
+
+      if (isReleasedOnly) {
+        query = query.eq('is_released', true);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        this.logger.error(`getQuestions error (range ${from}-${from + BATCH_SIZE - 1}): ${error.message}`);
+        break;
+      }
+
+      if (!data || data.length === 0) {
+        hasMore = false;
+      } else {
+        allData.push(...data);
+        if (data.length < BATCH_SIZE) {
+          hasMore = false;
+        } else {
+          from += BATCH_SIZE;
+        }
+      }
     }
 
-    const { data, error } = await query;
-    if (error) {
-      this.logger.error(`getQuestions error: ${error.message}`);
-      return [];
-    }
-    return (data ?? []).map((question) => this.toQuestionResponse(question));
+    this.logger.log(`getQuestions: ${allData.length} questões carregadas (isReleasedOnly=${isReleasedOnly})`);
+    return allData.map((question) => this.toQuestionResponse(question));
   }
 
   async getQualityAnalysis() {
@@ -168,7 +226,7 @@ export class SupabaseService {
 
     const payload: any = {};
 
-    if (updateData.disciplina !== undefined) payload.disciplina = updateData.disciplina || 'Geral';
+    if (updateData.disciplina !== undefined) payload.disciplina = updateData.disciplina ? String(updateData.disciplina).toUpperCase().trim() : 'GERAL';
     if (updateData.banca !== undefined) payload.banca = updateData.banca || null;
     if (updateData.ano !== undefined) payload.ano = updateData.ano ? Number(updateData.ano) : null;
     if (updateData.orgao !== undefined) payload.orgao = updateData.orgao || null;
@@ -178,6 +236,8 @@ export class SupabaseService {
     if (updateData.enunciado !== undefined) payload.enunciado = updateData.enunciado;
     if (updateData.alternativas !== undefined) payload.alternativas = Array.isArray(updateData.alternativas) ? updateData.alternativas : [];
     if (updateData.resposta_correta !== undefined) payload.resposta_correta = updateData.resposta_correta || null;
+    // Aceita `justificativa` como alias de `gabarito_comentado`
+    if (updateData.justificativa !== undefined) payload.gabarito_comentado = updateData.justificativa || null;
     if (updateData.gabarito_comentado !== undefined) payload.gabarito_comentado = updateData.gabarito_comentado || null;
     if (updateData.imagem_url !== undefined) payload.imagem_url = updateData.imagem_url || null;
     if (updateData.is_released !== undefined) payload.is_released = !!updateData.is_released;
@@ -238,11 +298,13 @@ export class SupabaseService {
           tipo = 'certo_errado';
         }
 
-        const disciplina = q.disciplina || q.subject || q.materia || 'Geral';
+        const disciplinaRaw = q.disciplina || q.subject || q.materia || 'GERAL';
+        const disciplina = String(disciplinaRaw).toUpperCase().trim();
         const assunto = q.assunto || q.tema || q.topic || null;
         const alternativas = Array.isArray(q.alternativas) ? q.alternativas : (Array.isArray(q.options) ? q.options : []);
         const resposta_correta = q.resposta_correta ? String(q.resposta_correta).toUpperCase() : (q.correct_option ? String(q.correct_option).toUpperCase() : null);
-        const gabarito_comentado = q.gabarito_comentado || q.explanation || q.explicacao || null;
+        // Aceita `justificativa` como alias de `gabarito_comentado`
+        const gabarito_comentado = q.justificativa || q.gabarito_comentado || q.explanation || q.explicacao || null;
         const imagem_url = q.imagem_url || null;
         const imagens = Array.isArray(q.imagens) ? q.imagens : (imagem_url ? [imagem_url] : []);
 
@@ -351,25 +413,42 @@ export class SupabaseService {
   async getEditais(userId?: string) {
     if (!this.adminClient) return [];
 
-    let dismissedIds: string[] = [];
+    // Se userId fornecido, busca apenas os editais que o usuário explicitamente adicionou
     if (userId) {
-      const { data: dismissed } = await this.adminClient
-        .from('user_edital_dismissals')
+      const { data: assignments, error: assignErr } = await this.adminClient
+        .from('user_edital_assignments')
         .select('edital_id')
         .eq('user_id', userId);
-      dismissedIds = (dismissed ?? []).map((d: any) => d.edital_id);
+
+      if (assignErr) {
+        this.logger.error(`getEditais (assignments) error: ${assignErr.message}`);
+        return [];
+      }
+
+      const assignedIds = (assignments ?? []).map((a: any) => a.edital_id);
+
+      // Usuário não possui nenhum edital adicionado ainda
+      if (assignedIds.length === 0) return [];
+
+      const { data, error } = await this.adminClient
+        .from('editais')
+        .select('*')
+        .in('id', assignedIds)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        this.logger.error(`getEditais error: ${error.message}`);
+        return [];
+      }
+      return data ?? [];
     }
 
-    let query = this.adminClient
+    // Sem userId: retorna todos (admin / listagem pública)
+    const { data, error } = await this.adminClient
       .from('editais')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (dismissedIds.length > 0) {
-      query = query.not('id', 'in', `(${dismissedIds.join(',')})`);
-    }
-
-    const { data, error } = await query;
     if (error) {
       this.logger.error(`getEditais error: ${error.message}`);
       return [];
@@ -529,6 +608,22 @@ export class SupabaseService {
       }
     }
 
+    // Cria automaticamente um user_edital_assignment para o uploader,
+    // garantindo que o edital apareça em "Meus Editais" imediatamente.
+    if (data?.id && uploadedBy) {
+      try {
+        await this.adminClient
+          .from('user_edital_assignments')
+          .upsert({
+            user_id: uploadedBy,
+            edital_id: data.id,
+            assigned_at: new Date().toISOString(),
+          }, { onConflict: 'user_id,edital_id' });
+      } catch (e) {
+        this.logger.warn(`Criação automática de user_edital_assignment falhou: ${e?.message ?? e}`);
+      }
+    }
+
     return data;
   }
 
@@ -664,6 +759,7 @@ export class SupabaseService {
   // ----------------------------------------------------------------
 
   private toQuestionResponse(question: any) {
+    const gabaritoComentado = question.gabarito_comentado || null;
     return {
       id: question.id,
       id_qc: question.id_qc,
@@ -677,7 +773,10 @@ export class SupabaseService {
       enunciado: question.enunciado,
       alternativas: question.alternativas || [],
       resposta_correta: question.resposta_correta || null,
-      gabarito_comentado: question.gabarito_comentado || null,
+      // gabarito_comentado mantido para retrocompatibilidade
+      gabarito_comentado: gabaritoComentado,
+      // justificativa é alias de gabarito_comentado na resposta
+      justificativa: gabaritoComentado,
       imagem_url: question.imagem_url || null,
       imagens: question.imagens || [],
       quality_metrics: question.quality_metrics || {},
@@ -789,7 +888,7 @@ export class SupabaseService {
 
     let query = this.adminClient
       .from('editais')
-      .select('id, title, cargo, concurso, data_prova, uploader_name, created_at, status')
+      .select('id, title, cargo, concurso, data_prova, uploader_name, created_at, status, pareto_data')
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
       .limit(limit + assignedIds.length + 10); // busca extra para compensar exclusão

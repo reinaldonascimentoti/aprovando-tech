@@ -5,16 +5,18 @@ import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService, UserProfile } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
+import { SupabaseService } from '../../services/supabase.service';
 import { EditalCardComponent } from '../../components/edital-card/edital-card.component';
 import { QuestionCardComponent } from '../../components/question-card/question-card.component';
 import { PaginationComponent } from '../../components/pagination/pagination.component';
 import { UserProfileComponent } from '../../components/user-profile/user-profile.component';
+import { StatsDashboardComponent } from '../../components/stats-dashboard/stats-dashboard.component';
 import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
 
 @Component({
   selector: 'app-student-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, EditalCardComponent, QuestionCardComponent, PaginationComponent, UserProfileComponent],
+  imports: [CommonModule, FormsModule, RouterModule, EditalCardComponent, QuestionCardComponent, PaginationComponent, UserProfileComponent, StatsDashboardComponent],
   template: `
     <div class="min-h-screen bg-[var(--background)] text-[var(--on-surface)] transition-colors duration-300 p-3 sm:p-6 md:p-8">
       <!-- Top Navigation Bar -->
@@ -79,6 +81,38 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
         </div>
       </header>
 
+      <!-- ===== Email Not Verified Banner ===== -->
+      <div
+        *ngIf="!authService.isEmailConfirmed() && !emailBannerDismissed"
+        class="rounded-2xl px-4 py-3 mb-5 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4"
+        style="background: linear-gradient(90deg, #f97316 0%, #fb923c 100%); color: #fff;">
+        <div class="flex items-center gap-2 flex-1">
+          <span class="material-symbols-outlined !text-[22px] shrink-0">mark_email_unread</span>
+          <p class="text-sm font-semibold leading-tight">
+            <strong>Confirme seu e-mail!</strong>
+            Enviamos um link para o seu endereço de e-mail. Verifique a caixa de entrada (e spam) para ativar sua conta.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button
+            id="btn-resend-verify-email"
+            type="button"
+            (click)="resendVerificationEmail()"
+            [disabled]="isResendingVerify"
+            class="text-xs font-bold px-3 py-1.5 rounded-xl border-2 border-white/60 hover:bg-white/20 transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer bg-transparent text-white">
+            <span class="material-symbols-outlined !text-[15px]">{{ isResendingVerify ? 'sync' : 'send' }}</span>
+            <span>{{ isResendingVerify ? 'Enviando...' : (resendVerifySuccess ? 'E-mail enviado!' : 'Reenviar') }}</span>
+          </button>
+          <button
+            type="button"
+            (click)="emailBannerDismissed = true"
+            class="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-white/20 transition-all cursor-pointer bg-transparent text-white border-none"
+            title="Fechar aviso">
+            <span class="material-symbols-outlined !text-[18px]">close</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Linha 1: Navigation Tabs Bar (Oculto no modo Questões) -->
       <div *ngIf="activeTab !== 'questions'" class="neo-raised rounded-3xl p-3 sm:p-4 md:p-6 mb-6 md:mb-8 bg-[var(--card-bg)] shadow-lg border border-[var(--outline-variant)]">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--outline-variant)]/40 pb-2">
@@ -129,6 +163,16 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
               <span class="material-symbols-outlined !text-[18px] sm:!text-[20px]">account_circle</span>
               <span>5. Meu Perfil</span>
             </button>
+
+            <button
+              (click)="activeTab = 'estatisticas'"
+              [class.border-b-2]="activeTab === 'estatisticas'"
+              [class.border-[var(--primary)]]="activeTab === 'estatisticas'"
+              [class.text-[var(--primary)]]="activeTab === 'estatisticas'"
+              class="pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs sm:text-sm font-bold text-[var(--on-surface-variant)] hover:text-[var(--primary)] transition-colors flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 cursor-pointer">
+              <span class="material-symbols-outlined !text-[18px] sm:!text-[20px]">bar_chart</span>
+              <span>6. Estatísticas</span>
+            </button>
           </div>
 
           <button 
@@ -141,6 +185,29 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
       </div>
 
       <!-- Tab Content Area -->
+      <!-- 6. Estatísticas -->
+      <div *ngIf="activeTab === 'estatisticas'">
+        <div class="mb-6 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#5d3bf6] to-[#22d3ee] text-white flex items-center justify-center shadow-md">
+            <span class="material-symbols-outlined !text-[22px]">bar_chart</span>
+          </div>
+          <div>
+            <h2 class="text-lg font-black text-[var(--on-surface)]">Estatísticas de Estudo</h2>
+            <p class="text-xs text-[var(--on-surface-variant)]">Visão geral do seu desempenho e progresso</p>
+          </div>
+        </div>
+        <app-stats-dashboard
+          [isAdmin]="false"
+          [questions]="questions"
+          [editais]="editais"
+          [userSchedules]="userSchedules"
+          [editalProgressMap]="editalProgressMap"
+          [selectedAnswers]="selectedAnswers"
+          [sessionAnswers]="sessionAnswers"
+          [accuracyByDisciplina]="accuracyByDisciplina">
+        </app-stats-dashboard>
+      </div>
+
       <!-- 1. My Editais List & Seções Associadas -->
       <div *ngIf="activeTab === 'editais'" class="space-y-8">
 
@@ -509,82 +576,167 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
 
           <!-- 2. Cronogramas Tab -->
         <div *ngIf="activeTab === 'cronogramas'" class="space-y-6">
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#f0eaff] p-4 md:p-6 rounded-3xl border border-[#e4d9ff]">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-purple-50/80 dark:bg-[#7c3aed]/15 p-4 md:p-6 rounded-3xl border border-purple-200/80 dark:border-[#7c3aed]/30">
             <div class="flex items-center gap-3">
               <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white flex items-center justify-center shadow-md shrink-0">
                 <span class="material-symbols-outlined !text-[26px]">calendar_month</span>
               </div>
               <div>
-                <h3 class="text-lg font-black text-[#191c1e]">Meu Cronograma de Estudos</h3>
-                <p class="text-xs text-[#5516be] font-medium">Cada edital tem seu próprio ritmo de estudo configurado por você.</p>
+                <h3 class="text-lg font-black text-[var(--on-surface)]">Meu Cronograma de Estudos</h3>
+                <p class="text-xs text-[var(--primary)] font-medium">Cada edital tem seu próprio ritmo de estudo configurado por você.</p>
               </div>
             </div>
 
-            <!-- Edital Selector Dropdown -->
-            <div *ngIf="editais.length > 0" class="flex items-center gap-2">
-              <label class="text-xs font-bold text-[#464556] whitespace-nowrap">Edital:</label>
-              <select
-                [(ngModel)]="selectedCronogramaEditalId"
-                (ngModelChange)="onCronogramaEditalChange($event)"
-                class="neo-pressed rounded-xl px-3 py-2 text-xs font-bold text-[#191c1e] bg-white border border-[#c7c4d8] outline-none cursor-pointer focus:border-[#433fe5]">
-                <option *ngFor="let ed of editais" [value]="ed.id">
-                  {{ ed.cargo || ed.title }} ({{ ed.concurso || 'Edital' }})
-                </option>
-              </select>
+            <!-- Edital Selector Dropdown & Ver Cronograma Action -->
+            <div *ngIf="editais.length > 0" class="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+              <div class="flex items-center gap-2">
+                <label class="text-xs font-bold text-[var(--on-surface-variant)] whitespace-nowrap">Edital:</label>
+                <select
+                  [(ngModel)]="selectedCronogramaEditalId"
+                  (ngModelChange)="onCronogramaEditalChange($event)"
+                  class="neo-pressed rounded-xl px-3 py-2 text-xs font-bold text-[var(--on-surface)] bg-[var(--background)] border border-[var(--outline-variant)] outline-none cursor-pointer focus:border-[var(--primary)] max-w-[260px] truncate">
+                  <option *ngFor="let ed of editais" [value]="ed.id">
+                    {{ ed.cargo || ed.title }} ({{ ed.concurso || 'Edital' }})
+                  </option>
+                </select>
+              </div>
+
+              <!-- Botão Ver Cronograma no Cabeçalho -->
+              <button
+                *ngIf="selectedCronogramaEdital"
+                (click)="openEditalCronograma(selectedCronogramaEdital.id)"
+                class="btn-mesh px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-sm hover:scale-105 transition-all whitespace-nowrap cursor-pointer"
+                title="Abrir Cronograma de Estudos Completo">
+                <span class="material-symbols-outlined !text-[18px]">calendar_month</span>
+                <span>Ver Cronograma</span>
+              </button>
             </div>
           </div>
 
           <!-- ═══ Empty State: sem editais ═══ -->
           <div *ngIf="editais.length === 0" class="flex flex-col items-center justify-center py-16 text-center gap-4">
-            <span class="material-symbols-outlined !text-[64px] text-[#c7c4d8]">event_busy</span>
-            <p class="text-sm font-semibold text-[#767587]">Você ainda não possui editais para gerar um cronograma.</p>
-            <p class="text-xs text-[#767587] max-w-sm">Adicione um edital ao seu perfil primeiro — vá até a aba <strong>Meus Editais</strong> e clique em "+ Adicionar" em um dos editais recentes.</p>
-            <button (click)="activeTab = 'editais'" class="btn-mesh px-6 py-3 rounded-2xl text-sm font-bold flex items-center gap-2">
+            <span class="material-symbols-outlined !text-[64px] text-[var(--outline-variant)]">event_busy</span>
+            <p class="text-sm font-semibold text-[var(--on-surface-variant)]">Você ainda não possui editais para gerar um cronograma.</p>
+            <p class="text-xs text-[var(--on-surface-variant)] max-w-sm">Adicione um edital ao seu perfil primeiro — vá até a aba <strong>Meus Editais</strong> e clique em "+ Adicionar" em um dos editais recentes.</p>
+            <button (click)="activeTab = 'editais'" class="btn-mesh px-6 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 cursor-pointer">
               <span class="material-symbols-outlined">folder_special</span>Ir para Meus Editais
             </button>
           </div>
 
+          <!-- ═══ Card de Progresso Geral do Edital Selecionado ═══ -->
+          <div *ngIf="editais.length > 0 && selectedCronogramaEdital" class="neo-raised rounded-3xl p-5 sm:p-6 bg-[var(--card-bg)] border border-[var(--outline-variant)] shadow-sm space-y-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div class="flex items-center gap-3.5">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white flex items-center justify-center shadow-md shrink-0">
+                  <span class="material-symbols-outlined !text-[26px]">speed</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2 flex-wrap mb-1">
+                    <span class="text-xs font-black text-[var(--on-surface-variant)] uppercase tracking-wider">Progresso Geral</span>
+                    <span *ngIf="selectedCronogramaEdital.concurso" class="bg-[var(--primary)]/15 text-[var(--primary)] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">
+                      {{ selectedCronogramaEdital.concurso }}
+                    </span>
+                    <span *ngIf="selectedCronogramaEdital.pareto_analisado" class="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span class="material-symbols-outlined !text-[12px]">check_circle</span>
+                      Pareto Ativo
+                    </span>
+                  </div>
+                  <h4 class="text-base font-black text-[var(--on-surface)] leading-snug">
+                    {{ selectedCronogramaEdital.cargo || selectedCronogramaEdital.title }}
+                  </h4>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2.5 flex-wrap">
+                <button
+                  (click)="openEditalCronograma(selectedCronogramaEdital.id)"
+                  class="btn-mesh px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 shadow-md hover:scale-105 transition-all cursor-pointer">
+                  <span class="material-symbols-outlined !text-[18px]">play_circle</span>
+                  <span>Abrir Cronograma (Sprints)</span>
+                </button>
+                <button
+                  (click)="openScheduleModal()"
+                  class="btn-neo px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 text-[var(--on-surface)] cursor-pointer">
+                  <span class="material-symbols-outlined !text-[16px] text-[var(--primary)]">tune</span>
+                  <span>{{ selectedUserSchedule ? 'Ajustar Ritmo' : 'Configurar Ritmo' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Progress Bar & Metrics -->
+            <div class="pt-3 border-t border-[var(--outline-variant)]/40 space-y-2">
+              <div class="flex justify-between items-center text-xs font-bold">
+                <span class="text-[var(--on-surface-variant)] flex items-center gap-1.5">
+                  <span class="material-symbols-outlined !text-[16px] text-[var(--primary)]">checklist_rtl</span>
+                  <span>Conclusão das Metas & Checklist</span>
+                </span>
+                <span class="text-[var(--primary)] font-black text-sm">{{ selectedCronogramaProgress.percentage }}% Concluído</span>
+              </div>
+
+              <div class="w-full h-3 neo-pressed rounded-full overflow-hidden p-0.5">
+                <div class="h-full bg-gradient-to-r from-[var(--primary)] via-[var(--secondary)] to-[#8455ef] rounded-full transition-all duration-500"
+                     [style.width.%]="selectedCronogramaProgress.percentage"></div>
+              </div>
+
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-[var(--on-surface-variant)] font-semibold pt-1">
+                <span>{{ selectedCronogramaProgress.completed }} de {{ selectedCronogramaProgress.total }} assuntos/subtópicos concluídos</span>
+                <button (click)="openEditalCronograma(selectedCronogramaEdital.id)" class="text-[var(--primary)] hover:text-[var(--secondary)] font-bold flex items-center gap-1 cursor-pointer transition-colors w-fit">
+                  <span>Acessar Cronograma Completo</span>
+                  <span class="material-symbols-outlined !text-[14px]">arrow_forward</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- ═══ Edital selecionado mas sem schedule configurado ═══ -->
           <div *ngIf="editais.length > 0 && selectedCronogramaEdital && !selectedUserSchedule && !loadingSchedule"
-               class="neo-raised rounded-3xl p-6 md:p-8 border-2 border-dashed border-[#c7c4d8] text-center space-y-4">
+               class="neo-raised rounded-3xl p-6 md:p-8 border-2 border-dashed border-[var(--outline-variant)] text-center space-y-4">
             <div class="flex items-center justify-center">
-              <div class="w-14 h-14 rounded-2xl bg-[#f0eaff] text-[#5516be] flex items-center justify-center">
+              <div class="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-[#7c3aed]/20 text-[var(--primary)] flex items-center justify-center">
                 <span class="material-symbols-outlined !text-[30px]">schedule</span>
               </div>
             </div>
-            <h3 class="text-base font-black text-[#191c1e]">Configure seu ritmo de estudos</h3>
-            <p class="text-xs text-[#767587] max-w-sm mx-auto">
-              Para gerar o cronograma de <strong>{{ selectedCronogramaEdital.cargo || selectedCronogramaEdital.title }}</strong>,
+            <h3 class="text-base font-black text-[var(--on-surface)]">Configure seu ritmo de estudos</h3>
+            <p class="text-xs text-[var(--on-surface-variant)] max-w-sm mx-auto">
+              Para personalizar a carga horária de <strong class="text-[var(--on-surface)]">{{ selectedCronogramaEdital.cargo || selectedCronogramaEdital.title }}</strong>,
               informe quantas horas por dia e dias por semana você pode estudar.
             </p>
-            <button
-              (click)="openScheduleModal()"
-              class="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#6b38d4] via-[#5d3bf6] to-[#7c3aed] text-white font-extrabold text-sm flex items-center gap-2 mx-auto shadow-xl shadow-[#5d3bf6]/30 hover:scale-105 transition-all cursor-pointer">
-              <span class="material-symbols-outlined !text-[20px]">tune</span>
-              <span>Configurar Meu Cronograma</span>
-            </button>
+            <div class="flex items-center justify-center gap-3 flex-wrap">
+              <button
+                (click)="openScheduleModal()"
+                class="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#6b38d4] via-[#5d3bf6] to-[#7c3aed] text-white font-extrabold text-sm flex items-center gap-2 shadow-xl shadow-[#5d3bf6]/30 hover:scale-105 transition-all cursor-pointer">
+                <span class="material-symbols-outlined !text-[20px]">tune</span>
+                <span>Configurar Ritmo de Estudos</span>
+              </button>
+              <button
+                (click)="openEditalCronograma(selectedCronogramaEdital.id)"
+                class="btn-neo px-5 py-3 rounded-2xl text-xs font-bold flex items-center gap-2 text-[var(--on-surface)] hover:text-[var(--primary)] transition-all cursor-pointer">
+                <span class="material-symbols-outlined !text-[18px] text-[var(--primary)]">calendar_month</span>
+                <span>Ver Cronograma Diretamente</span>
+              </button>
+            </div>
           </div>
 
           <!-- Selected Edital Cronograma Card — só aparece quando schedule configurado -->
           <div *ngIf="selectedCronogramaEdital && selectedUserSchedule" class="neo-pressed rounded-3xl p-6 md:p-8 space-y-6">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#c7c4d8]/40 pb-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--outline-variant)]/40 pb-6">
               <div>
                 <div class="flex items-center gap-2 mb-2">
-                  <span class="bg-[#e1dfff] text-[#2b20d2] text-[11px] font-extrabold px-3 py-1 rounded-full">
+                  <span class="bg-indigo-100 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-300 text-[11px] font-extrabold px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-800/50">
                     {{ selectedCronogramaEdital.concurso || 'Concurso Alvo' }}
                   </span>
-                  <span *ngIf="selectedCronogramaEdital.cargo" class="bg-[#e9ddff] text-[#5516be] text-[11px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1">
+                  <span *ngIf="selectedCronogramaEdital.cargo" class="bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 text-[11px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1 border border-purple-200 dark:border-purple-800/50">
                     <span class="material-symbols-outlined !text-[13px]">badge</span>
                     {{ selectedCronogramaEdital.cargo }}
                   </span>
                 </div>
-                <h2 class="text-xl md:text-2xl font-black text-[#191c1e]">{{ selectedCronogramaEdital.title }}</h2>
+                <h2 class="text-xl md:text-2xl font-black text-[var(--on-surface)]">{{ selectedCronogramaEdital.title }}</h2>
               </div>
 
               <div class="flex items-center gap-3 flex-wrap">
                 <!-- Editar configuração -->
-                <button (click)="openScheduleModal()" class="btn-neo px-4 py-3 rounded-2xl text-xs font-bold flex items-center gap-2">
-                  <span class="material-symbols-outlined !text-[18px]">tune</span>
+                <button (click)="openScheduleModal()" class="btn-neo px-4 py-3 rounded-2xl text-xs font-bold flex items-center gap-2 text-[var(--on-surface)]">
+                  <span class="material-symbols-outlined !text-[18px] text-[var(--primary)]">tune</span>
                   <span>Editar Configuração</span>
                 </button>
                 <!-- Abrir cronograma completo -->
@@ -598,44 +750,44 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
             <!-- Stats Grid — usa dados do user_schedule -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div class="neo-raised rounded-2xl p-4 text-center">
-                <span class="material-symbols-outlined text-[#433fe5] mb-1">schedule</span>
-                <span class="text-[11px] font-bold text-[#767587] block">Horas por Dia</span>
-                <span class="text-lg font-black text-[#191c1e]">{{ selectedUserSchedule.horas_por_dia || '--' }}h</span>
+                <span class="material-symbols-outlined text-[var(--primary)] mb-1">schedule</span>
+                <span class="text-[11px] font-bold text-[var(--on-surface-variant)] block">Horas por Dia</span>
+                <span class="text-lg font-black text-[var(--on-surface)]">{{ selectedUserSchedule.horas_por_dia || '--' }}h</span>
               </div>
               <div class="neo-raised rounded-2xl p-4 text-center">
-                <span class="material-symbols-outlined text-[#433fe5] mb-1">calendar_view_week</span>
-                <span class="text-[11px] font-bold text-[#767587] block">Dias por Semana</span>
-                <span class="text-lg font-black text-[#191c1e]">{{ selectedUserSchedule.dias_por_semana || '--' }} dias</span>
+                <span class="material-symbols-outlined text-[var(--primary)] mb-1">calendar_view_week</span>
+                <span class="text-[11px] font-bold text-[var(--on-surface-variant)] block">Dias por Semana</span>
+                <span class="text-lg font-black text-[var(--on-surface)]">{{ selectedUserSchedule.dias_por_semana || '--' }} dias</span>
               </div>
               <div class="neo-raised rounded-2xl p-4 text-center">
-                <span class="material-symbols-outlined text-[#433fe5] mb-1">event</span>
-                <span class="text-[11px] font-bold text-[#767587] block">Data da Prova</span>
-                <span class="text-sm font-black text-[#191c1e] mt-1 block">{{ selectedUserSchedule.data_prova || 'Não informada' }}</span>
+                <span class="material-symbols-outlined text-[var(--primary)] mb-1">event</span>
+                <span class="text-[11px] font-bold text-[var(--on-surface-variant)] block">Data da Prova</span>
+                <span class="text-sm font-black text-[var(--on-surface)] mt-1 block">{{ selectedUserSchedule.data_prova || 'Não informada' }}</span>
               </div>
               <div class="neo-raised rounded-2xl p-4 text-center">
-                <span class="material-symbols-outlined text-[#5516be] mb-1">insights</span>
-                <span class="text-[11px] font-bold text-[#767587] block">Status Análise</span>
-                <span class="text-xs font-black text-[#5516be] bg-[#e9ddff] px-2 py-0.5 rounded-full inline-block mt-1">
+                <span class="material-symbols-outlined text-[var(--secondary)] mb-1">insights</span>
+                <span class="text-[11px] font-bold text-[var(--on-surface-variant)] block">Status Análise</span>
+                <span class="text-xs font-black text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/70 px-2 py-0.5 rounded-full inline-block mt-1 border border-purple-200 dark:border-purple-800/50">
                   {{ selectedCronogramaEdital.pareto_analisado ? 'Pareto Concluído' : 'Aguardando Pareto' }}
                 </span>
               </div>
             </div>
 
             <!-- Quick Selector Cards for All Saved Editais -->
-            <div *ngIf="editais.length > 1" class="pt-4 border-t border-[#c7c4d8]/40">
-              <p class="text-xs font-bold text-[#464556] mb-3">Outros Cronogramas Salvos:</p>
+            <div *ngIf="editais.length > 1" class="pt-4 border-t border-[var(--outline-variant)]/40">
+              <p class="text-xs font-bold text-[var(--on-surface-variant)] mb-3">Outros Cronogramas Salvos:</p>
               <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 <div 
                   *ngFor="let ed of editais"
                   (click)="selectedCronogramaEditalId = ed.id"
                   [class.border-2]="selectedCronogramaEditalId === ed.id"
-                  [class.border-[#433fe5]]="selectedCronogramaEditalId === ed.id"
-                  class="neo-raised rounded-2xl p-3.5 cursor-pointer hover:border-[#433fe5] transition-all flex items-center justify-between">
+                  [class.border-[var(--primary)]]="selectedCronogramaEditalId === ed.id"
+                  class="neo-raised rounded-2xl p-3.5 cursor-pointer hover:border-[var(--primary)] transition-all flex items-center justify-between">
                   <div class="truncate">
-                    <p class="text-xs font-bold text-[#191c1e] truncate">{{ ed.cargo || ed.title }}</p>
-                    <p class="text-[10px] text-[#767587] truncate">{{ ed.concurso || 'Edital' }}</p>
+                    <p class="text-xs font-bold text-[var(--on-surface)] truncate">{{ ed.cargo || ed.title }}</p>
+                    <p class="text-[10px] text-[var(--on-surface-variant)] truncate">{{ ed.concurso || 'Edital' }}</p>
                   </div>
-                  <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">chevron_right</span>
+                  <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">chevron_right</span>
                 </div>
               </div>
             </div>
@@ -645,23 +797,23 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
         <!-- 3. Mapa de Disciplinas Tab -->
         <div *ngIf="activeTab === 'mapa'" class="space-y-6">
           <!-- Banner & Edital Selector -->
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-[#f7f4ff] to-[#f0eaff] p-4 md:p-6 rounded-3xl border border-[#e4d9ff]">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-purple-50/80 dark:bg-[#7c3aed]/15 p-4 md:p-6 rounded-3xl border border-purple-200/80 dark:border-[#7c3aed]/30">
             <div class="flex items-center gap-3">
               <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#433fe5] to-[#6b38d4] text-white flex items-center justify-center shadow-md shrink-0">
                 <span class="material-symbols-outlined !text-[26px]">map</span>
               </div>
               <div>
-                <h3 class="text-lg font-black text-[#191c1e]">Mapa de Disciplinas</h3>
-                <p class="text-xs text-[#5516be] font-medium">Selecione um edital salvo para explorar sua estrutura em 3 camadas e índice estratégico.</p>
+                <h3 class="text-lg font-black text-[var(--on-surface)]">Mapa de Disciplinas</h3>
+                <p class="text-xs text-[var(--primary)] font-medium">Selecione um edital salvo para explorar sua estrutura em 3 camadas e índice estratégico.</p>
               </div>
             </div>
 
             <!-- Edital Selector Dropdown -->
             <div *ngIf="editais.length > 0" class="flex items-center gap-2">
-              <label class="text-xs font-bold text-[#464556] whitespace-nowrap">Escolher Edital:</label>
+              <label class="text-xs font-bold text-[var(--on-surface-variant)] whitespace-nowrap">Escolher Edital:</label>
               <select 
                 [(ngModel)]="selectedMapaEditalId"
-                class="neo-pressed rounded-xl px-4 py-2.5 text-xs font-bold text-[#191c1e] bg-white border border-[#c7c4d8] outline-none cursor-pointer focus:border-[#433fe5] shadow-sm">
+                class="neo-pressed rounded-xl px-4 py-2.5 text-xs font-bold text-[var(--on-surface)] bg-[var(--background)] border border-[var(--outline-variant)] outline-none cursor-pointer focus:border-[var(--primary)] shadow-sm">
                 <option *ngFor="let ed of editais" [value]="ed.id">
                   {{ ed.cargo || ed.title }} — {{ ed.concurso || 'Edital Salvo' }}
                 </option>
@@ -671,8 +823,8 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
 
           <!-- Empty State -->
           <div *ngIf="editais.length === 0" class="flex flex-col items-center justify-center py-16 text-center gap-4">
-            <span class="material-symbols-outlined !text-[64px] text-[#c7c4d8]">map</span>
-            <p class="text-sm font-semibold text-[#767587]">Nenhum edital disponível para exibir o Mapa de Disciplinas.</p>
+            <span class="material-symbols-outlined !text-[64px] text-[var(--outline-variant)]">map</span>
+            <p class="text-sm font-semibold text-[var(--on-surface-variant)]">Nenhum edital disponível para exibir o Mapa de Disciplinas.</p>
             <button (click)="openUploadModal()" class="btn-mesh px-6 py-3 rounded-2xl text-sm font-bold flex items-center gap-2">
               <span class="material-symbols-outlined">add</span>Analisar Novo Edital
             </button>
@@ -681,23 +833,23 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
           <!-- Active Edital Mapa Details -->
           <div *ngIf="selectedMapaEdital" class="neo-pressed rounded-3xl p-6 md:p-8 space-y-6">
             <!-- Edital Header Info -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#c7c4d8]/40 pb-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--outline-variant)]/40 pb-6">
               <div>
                 <div class="flex items-center gap-2 mb-2 flex-wrap">
-                  <span class="bg-[#e1dfff] text-[#2b20d2] text-[11px] font-extrabold px-3 py-1 rounded-full">
+                  <span class="bg-indigo-100 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-300 text-[11px] font-extrabold px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-800/50">
                     {{ selectedMapaEdital.concurso || 'Edital Salvo' }}
                   </span>
-                  <span *ngIf="selectedMapaEdital.cargo" class="bg-[#e9ddff] text-[#5516be] text-[11px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1">
+                  <span *ngIf="selectedMapaEdital.cargo" class="bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 text-[11px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1 border border-purple-200 dark:border-purple-800/50">
                     <span class="material-symbols-outlined !text-[13px]">badge</span>
                     {{ selectedMapaEdital.cargo }}
                   </span>
-                  <span class="bg-[#d1fae5] text-[#047857] text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                  <span class="bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1 border border-emerald-200 dark:border-emerald-800/50">
                     <span class="material-symbols-outlined !text-[13px]">check_circle</span>
                     Edital Selecionado
                   </span>
                 </div>
-                <h2 class="text-xl md:text-2xl font-black text-[#191c1e]">{{ selectedMapaEdital.title }}</h2>
-                <p class="text-xs text-[#767587] mt-1">Status: {{ selectedMapaEdital.pareto_analisado ? 'Análise Pareto Realizada' : 'Cadastrado / Aguardando Pareto' }}</p>
+                <h2 class="text-xl md:text-2xl font-black text-[var(--on-surface)]">{{ selectedMapaEdital.title }}</h2>
+                <p class="text-xs text-[var(--on-surface-variant)] mt-1">Status: {{ selectedMapaEdital.pareto_analisado ? 'Análise Pareto Realizada' : 'Cadastrado / Aguardando Pareto' }}</p>
               </div>
 
               <!-- Action Buttons -->
@@ -706,8 +858,8 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
                   <span class="material-symbols-outlined !text-[20px]">grid_view</span>
                   <span>Abrir Mapa Geral das Disciplinas</span>
                 </button>
-                <button *ngIf="selectedMapaEdital.pareto_analisado" (click)="openEditalPareto(selectedMapaEdital.id)" class="btn-neo px-4 py-3 rounded-2xl text-xs font-bold flex items-center gap-2">
-                  <span class="material-symbols-outlined !text-[20px]">analytics</span>
+                <button *ngIf="selectedMapaEdital.pareto_analisado" (click)="openEditalPareto(selectedMapaEdital.id)" class="btn-neo px-4 py-3 rounded-2xl text-xs font-bold flex items-center gap-2 text-[var(--on-surface)]">
+                  <span class="material-symbols-outlined !text-[20px] text-[var(--primary)]">analytics</span>
                   <span>Ver Pareto</span>
                 </button>
               </div>
@@ -715,25 +867,23 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
 
             <!-- Quick Discipline Cards / Visual Pills Selector -->
             <div class="space-y-4">
-              <h4 class="text-xs font-bold text-[#464556] uppercase tracking-wider">Alternar entre Editais Salvos para visualizar o Mapa:</h4>
+              <h4 class="text-xs font-bold text-[var(--on-surface-variant)] uppercase tracking-wider">Alternar entre Editais Salvos para visualizar o Mapa:</h4>
               <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 <div 
                   *ngFor="let ed of editais"
                   (click)="selectedMapaEditalId = ed.id"
-                  [class.bg-[#f0eaff]]="selectedMapaEditalId === ed.id"
-                  [class.border-2]="selectedMapaEditalId === ed.id"
-                  [class.border-[#433fe5]]="selectedMapaEditalId === ed.id"
-                  class="neo-raised rounded-2xl p-4 cursor-pointer hover:border-[#433fe5] transition-all flex items-center justify-between">
+                  [ngClass]="selectedMapaEditalId === ed.id ? 'bg-purple-100/50 dark:bg-[#7c3aed]/20 border-2 border-[var(--primary)]' : ''"
+                  class="neo-raised rounded-2xl p-4 cursor-pointer hover:border-[var(--primary)] transition-all flex items-center justify-between">
                   <div class="flex items-center gap-3 truncate">
-                    <div class="w-8 h-8 rounded-xl bg-[#e9ddff] text-[#5516be] flex items-center justify-center font-bold text-xs shrink-0">
+                    <div class="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 flex items-center justify-center font-bold text-xs shrink-0 border border-purple-200 dark:border-purple-800/50">
                       <span class="material-symbols-outlined !text-[18px]">menu_book</span>
                     </div>
                     <div class="truncate">
-                      <p class="text-xs font-bold text-[#191c1e] truncate">{{ ed.cargo || ed.title }}</p>
-                      <p class="text-[10px] text-[#767587] truncate">{{ ed.concurso || 'Edital' }}</p>
+                      <p class="text-xs font-bold text-[var(--on-surface)] truncate">{{ ed.cargo || ed.title }}</p>
+                      <p class="text-[10px] text-[var(--on-surface-variant)] truncate">{{ ed.concurso || 'Edital' }}</p>
                     </div>
                   </div>
-                  <span *ngIf="selectedMapaEditalId === ed.id" class="material-symbols-outlined text-[#433fe5] !text-[20px] shrink-0">check_circle</span>
+                  <span *ngIf="selectedMapaEditalId === ed.id" class="material-symbols-outlined text-[var(--primary)] !text-[20px] shrink-0">check_circle</span>
                 </div>
               </div>
             </div>
@@ -755,9 +905,18 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
                 </span>
               </div>
               <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                <span class="text-xs font-semibold text-[var(--on-surface-variant)]">
-                  Mostrando <strong>{{ filteredQuestions.length }}</strong> de {{ questions.length }} questões
-                </span>
+                <!-- Badge de quantidade de questões localizadas -->
+                <div
+                  [class]="hasActiveFilters
+                    ? 'flex items-center gap-2 px-3 py-1.5 rounded-xl border font-bold text-xs transition-all duration-300 bg-emerald-500/10 border-emerald-500/40 text-emerald-600 dark:text-emerald-400'
+                    : 'flex items-center gap-2 px-3 py-1.5 rounded-xl border font-bold text-xs transition-all duration-300 bg-[var(--primary)]/10 border-[var(--primary)]/30 text-[var(--primary)]'">
+                  <span class="material-symbols-outlined !text-[16px]">{{ hasActiveFilters ? 'filter_alt' : 'quiz' }}</span>
+                  <span>
+                    <strong class="text-[15px]">{{ filteredQuestions.length }}</strong>
+                    <span class="font-semibold opacity-80"> / {{ questions.length }}</span>
+                    <span class="ml-1 font-semibold">{{ hasActiveFilters ? 'questões localizadas' : 'questões no banco' }}</span>
+                  </span>
+                </div>
                 <button 
                   *ngIf="hasActiveFilters"
                   (click)="clearFilters()"
@@ -848,13 +1007,13 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
                   Cargo
                 </label>
                 <div class="neo-pressed rounded-xl px-3 py-2 flex items-center gap-2 bg-[var(--background)]">
-                  <span class="material-symbols-outlined text-[#767587] !text-[16px]">work</span>
+                  <span class="material-symbols-outlined text-[var(--outline)] !text-[16px]">work</span>
                   <input 
                     type="text"
                     [(ngModel)]="filterCargo" 
                     (ngModelChange)="onFilterChange()"
                     placeholder="Digite o termo do cargo..."
-                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[#767587]">
+                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--outline)]">
                 </div>
               </div>
 
@@ -865,13 +1024,13 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
                   Assunto
                 </label>
                 <div class="neo-pressed rounded-xl px-3 py-2 flex items-center gap-2 bg-[var(--background)]">
-                  <span class="material-symbols-outlined text-[#767587] !text-[16px]">topic</span>
+                  <span class="material-symbols-outlined text-[var(--outline)] !text-[16px]">topic</span>
                   <input 
                     type="text"
                     [(ngModel)]="filterAssunto" 
                     (ngModelChange)="onFilterChange()"
                     placeholder="Digite o termo do assunto..."
-                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[#767587]">
+                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--outline)]">
                 </div>
               </div>
 
@@ -882,19 +1041,19 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
                   Termo no Enunciado
                 </label>
                 <div class="neo-pressed rounded-xl px-3 py-2 flex items-center gap-2 bg-[var(--background)]">
-                  <span class="material-symbols-outlined text-[#767587] !text-[16px]">search</span>
+                  <span class="material-symbols-outlined text-[var(--outline)] !text-[16px]">search</span>
                   <input 
                     type="text"
                     [(ngModel)]="searchSubject" 
                     (ngModelChange)="onFilterChange()"
                     placeholder="Buscar palavra-chave..."
-                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[#767587]">
+                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--outline)]">
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="space-y-6">
+          <div class="flex flex-col gap-4 sm:gap-5">
             <app-question-card 
               *ngFor="let q of paginatedQuestions; let i = index" 
               [question]="q" 
@@ -922,21 +1081,21 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
     <!-- ===== EDIT MODAL ===== -->
     <div *ngIf="showEditModal"
          class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
-         style="background: rgba(25,28,30,0.55); backdrop-filter: blur(6px);">
-      <div class="neo-raised rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-fadeIn my-auto flex flex-col max-h-[92vh] bg-white">
+         style="background: rgba(10,12,20,0.65); backdrop-filter: blur(8px);">
+      <div class="neo-raised rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-fadeIn my-auto flex flex-col max-h-[92vh] bg-white dark:bg-[#141927] border border-[var(--outline-variant)]">
 
         <!-- Modal Header -->
-        <div class="flex items-center justify-between px-4 sm:px-6 pt-5 pb-4 border-b border-[#c7c4d8]/30 shrink-0">
+        <div class="flex items-center justify-between px-4 sm:px-6 pt-5 pb-4 border-b border-[var(--outline-variant)] shrink-0">
           <div class="flex items-center gap-2.5 sm:gap-3">
-            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl neo-raised flex items-center justify-center text-[#433fe5] shrink-0">
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl neo-raised flex items-center justify-center text-[var(--primary)] shrink-0">
               <span class="material-symbols-outlined !text-[18px] sm:!text-[20px]">edit_document</span>
             </div>
             <div class="truncate">
-              <h2 class="text-sm sm:text-base font-bold text-[#191c1e] truncate">Editar Edital</h2>
-              <p class="text-[10px] sm:text-[11px] text-[#767587] truncate">{{ editingEdital?.title }}</p>
+              <h2 class="text-sm sm:text-base font-bold text-[var(--on-surface)] truncate">Editar Edital</h2>
+              <p class="text-[10px] sm:text-[11px] text-[var(--on-surface-variant)] truncate">{{ editingEdital?.title }}</p>
             </div>
           </div>
-          <button (click)="closeEditModal()" class="w-8 h-8 rounded-full neo-raised flex items-center justify-center text-[#464556] hover:text-[#ba1a1a] transition-colors shrink-0">
+          <button (click)="closeEditModal()" class="w-8 h-8 rounded-full neo-raised flex items-center justify-center text-[var(--on-surface-variant)] hover:text-red-500 transition-colors shrink-0">
             <span class="material-symbols-outlined !text-[18px]">close</span>
           </button>
         </div>
@@ -945,104 +1104,104 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
         <div class="px-4 sm:px-6 py-4 sm:py-5 space-y-3 overflow-y-auto flex-1">
 
           <!-- Informação sobre re-análise -->
-          <div class="bg-[#e9ddff]/50 rounded-xl px-3 py-2.5 flex items-start gap-2 text-[11px] text-[#5516be]">
+          <div class="bg-purple-100/70 dark:bg-[#7c3aed]/20 rounded-xl px-3 py-2.5 flex items-start gap-2 text-[11px] text-purple-800 dark:text-[#c084fc] border border-purple-200/60 dark:border-[#7c3aed]/30">
             <span class="material-symbols-outlined !text-[15px] shrink-0 mt-0.5">info</span>
             <span><strong>Salvar</strong> atualiza os dados do contexto. <strong>Salvar e Reenviar</strong> refaz toda a análise Pareto com IA.</span>
           </div>
 
           <!-- Título Principal do Edital (Edital para análise) -->
-          <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
-            <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">description</span>
+          <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-[var(--background)]">
+            <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">description</span>
             <input
               [(ngModel)]="editTitle"
               type="text"
               placeholder="Título Principal (Edital para análise - Ex: Concurso TCU 2026) *"
-              class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+              class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
           </div>
 
           <!-- Cargo -->
-          <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
-            <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">badge</span>
+          <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-[var(--background)]">
+            <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">badge</span>
             <input
               [(ngModel)]="editCargo"
               type="text"
               placeholder="Cargo *"
-              class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+              class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
           </div>
 
           <!-- Concurso -->
-          <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
-            <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">emoji_events</span>
+          <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-[var(--background)]">
+            <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">emoji_events</span>
             <input
               [(ngModel)]="editConcurso"
               type="text"
               placeholder="Concurso alvo"
-              class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+              class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
           </div>
 
           <!-- Data da prova -->
-          <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
-            <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">event</span>
+          <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-[var(--background)]">
+            <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">event</span>
             <input
               [(ngModel)]="editDataProva"
               type="date"
               [min]="today"
-              class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[#191c1e]">
+              class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--on-surface)]">
           </div>
 
           <!-- Horas/dia + Dias/semana -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
-              <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">schedule</span>
+            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-[var(--background)]">
+              <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">schedule</span>
               <input
                 [(ngModel)]="editHorasPorDia"
                 type="number"
                 min="0.5" max="24" step="0.5"
                 placeholder="Horas/dia"
-                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
             </div>
-            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
-              <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">calendar_view_week</span>
+            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-[var(--background)]">
+              <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">calendar_view_week</span>
               <input
                 [(ngModel)]="editDiasPorSemana"
                 type="number"
                 min="1" max="7" step="1"
                 placeholder="Dias/semana"
-                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
             </div>
           </div>
 
           <!-- Seção de re-análise: novo arquivo/link (opcional) -->
-          <div class="rounded-xl border border-dashed border-[#c7c4d8] p-3 space-y-2">
-            <p class="text-[11px] font-bold text-[#767587] uppercase tracking-wider flex items-center gap-1.5">
+          <div class="rounded-xl border border-dashed border-[var(--outline-variant)] p-3 space-y-2">
+            <p class="text-[11px] font-bold text-[var(--on-surface-variant)] uppercase tracking-wider flex items-center gap-1.5">
               <span class="material-symbols-outlined !text-[14px]">refresh</span>
               Re-análise (opcional — somente para "Salvar e Reenviar")
             </p>
             <!-- Modo link / pdf -->
-            <div class="flex gap-1.5 bg-[#eceef1] p-0.5 rounded-lg">
+            <div class="flex gap-1.5 bg-slate-100 dark:bg-white/5 p-0.5 rounded-lg">
               <button type="button"
                 (click)="editUploadMode = 'none'"
-                [ngClass]="editUploadMode === 'none' ? 'bg-white shadow-sm text-[#433fe5]' : 'text-[#464556]'"
+                [ngClass]="editUploadMode === 'none' ? 'bg-white dark:bg-[#1e2438] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
                 class="flex-1 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all">Sem novo arquivo</button>
               <button type="button"
                 (click)="editUploadMode = 'link'"
-                [ngClass]="editUploadMode === 'link' ? 'bg-white shadow-sm text-[#433fe5]' : 'text-[#464556]'"
+                [ngClass]="editUploadMode === 'link' ? 'bg-white dark:bg-[#1e2438] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
                 class="flex-1 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all">Novo Link</button>
               <button type="button"
                 (click)="editUploadMode = 'pdf'"
-                [ngClass]="editUploadMode === 'pdf' ? 'bg-white shadow-sm text-[#433fe5]' : 'text-[#464556]'"
+                [ngClass]="editUploadMode === 'pdf' ? 'bg-white dark:bg-[#1e2438] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
                 class="flex-1 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all">Novo PDF</button>
             </div>
 
-            <div *ngIf="editUploadMode === 'link'" class="neo-pressed rounded-lg p-2.5 flex items-center gap-2">
-              <span class="material-symbols-outlined text-[#433fe5] !text-[16px]">link</span>
+            <div *ngIf="editUploadMode === 'link'" class="neo-pressed rounded-lg p-2.5 flex items-center gap-2 bg-[var(--background)]">
+              <span class="material-symbols-outlined text-[var(--primary)] !text-[16px]">link</span>
               <input [(ngModel)]="editLink" type="text" placeholder="Cole aqui a URL do edital"
-                class="w-full bg-transparent border-none outline-none text-xs text-[#191c1e]">
+                class="w-full bg-transparent border-none outline-none text-xs text-[var(--on-surface)]">
             </div>
 
-            <div *ngIf="editUploadMode === 'pdf'" class="neo-pressed rounded-xl p-4 border-2 border-dashed border-[#c7c4d8] flex flex-col items-center text-center relative hover:border-[#6b38d4] transition-colors cursor-pointer">
-              <span class="material-symbols-outlined !text-[28px] text-[#6b38d4] mb-1">picture_as_pdf</span>
-              <p class="text-xs font-semibold text-[#191c1e] truncate max-w-xs">{{ editFile ? editFile.name : 'Selecionar novo PDF' }}</p>
+            <div *ngIf="editUploadMode === 'pdf'" class="neo-pressed rounded-xl p-4 border-2 border-dashed border-[var(--outline-variant)] flex flex-col items-center text-center relative hover:border-[var(--primary)] transition-colors cursor-pointer bg-[var(--background)]">
+              <span class="material-symbols-outlined !text-[28px] text-[var(--primary)] mb-1">picture_as_pdf</span>
+              <p class="text-xs font-semibold text-[var(--on-surface)] truncate max-w-xs">{{ editFile ? editFile.name : 'Selecionar novo PDF' }}</p>
               <input type="file" (change)="onEditFileSelected($event)" accept="application/pdf" class="absolute inset-0 opacity-0 cursor-pointer">
             </div>
           </div>
@@ -1050,23 +1209,23 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
           <!-- Toast do modal -->
           <div *ngIf="showEditToast"
                class="rounded-xl p-3 text-xs font-bold flex items-center gap-2 animate-fadeIn"
-               [ngClass]="editToastType === 'success' ? 'bg-[#eefff2] text-[#005236]' : 'bg-[#ffdad6] text-[#93000a]'">
+               [ngClass]="editToastType === 'success' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30'">
             <span class="material-symbols-outlined !text-[16px]">{{ editToastType === 'success' ? 'check_circle' : 'error' }}</span>
             <span>{{ editToastMsg }}</span>
           </div>
         </div>
 
         <!-- Modal Footer -->
-        <div class="px-4 sm:px-6 pb-5 pt-3 border-t border-[#c7c4d8]/30 flex flex-col sm:flex-row gap-2 sm:gap-3 shrink-0">
+        <div class="px-4 sm:px-6 pb-5 pt-3 border-t border-[var(--outline-variant)] flex flex-col sm:flex-row gap-2 sm:gap-3 shrink-0">
           <button
             (click)="closeEditModal()"
-            class="w-full sm:flex-1 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold border border-[#c7c4d8] text-[#464556] hover:border-[#433fe5] hover:text-[#433fe5] transition-colors">
+            class="w-full sm:flex-1 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold border border-[var(--outline-variant)] text-[var(--on-surface-variant)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors">
             Cancelar
           </button>
           <button
             (click)="saveEditalContext()"
             [disabled]="!editCargo.trim() || isSaving"
-            class="w-full sm:flex-1 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold btn-neo flex items-center justify-center gap-1.5">
+            class="w-full sm:flex-1 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold btn-neo flex items-center justify-center gap-1.5 text-[var(--on-surface)]">
             <span class="material-symbols-outlined !text-[18px]">save</span>
             <span>{{ isSaving ? 'Salvando...' : 'Salvar' }}</span>
           </button>
@@ -1084,21 +1243,21 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
     <!-- ===== UPLOAD EDITAL MODAL ===== -->
     <div *ngIf="showUploadModal"
          class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
-         style="background: rgba(15, 10, 30, 0.65); backdrop-filter: blur(8px);">
-      <div class="neo-raised rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden animate-fadeIn bg-white border border-[#e4d9ff] my-auto flex flex-col max-h-[92vh]">
+         style="background: rgba(10, 12, 20, 0.65); backdrop-filter: blur(8px);">
+      <div class="neo-raised rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden animate-fadeIn bg-white dark:bg-[#141927] border border-[var(--outline-variant)] my-auto flex flex-col max-h-[92vh]">
 
         <!-- Modal Header -->
-        <div class="flex items-center justify-between px-4 sm:px-6 pt-5 pb-4 border-b border-[#c7c4d8]/30 bg-gradient-to-r from-[#f7f4ff] to-[#ffffff] shrink-0">
+        <div class="flex items-center justify-between px-4 sm:px-6 pt-5 pb-4 border-b border-[var(--outline-variant)] bg-gradient-to-r from-purple-50/70 dark:from-[#1b2238] to-white dark:to-[#141927] shrink-0">
           <div class="flex items-center gap-3">
             <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white flex items-center justify-center shadow-md shrink-0">
               <span class="material-symbols-outlined !text-[20px] sm:!text-[22px]">cloud_upload</span>
             </div>
             <div>
-              <h2 class="text-sm sm:text-base font-extrabold text-[#191c1e]">Upload do Edital</h2>
-              <p class="text-[10px] sm:text-[11px] font-semibold text-[#6b38d4]">Informações para o Seu Plano Estratégico</p>
+              <h2 class="text-sm sm:text-base font-extrabold text-[var(--on-surface)]">Upload do Edital</h2>
+              <p class="text-[10px] sm:text-[11px] font-semibold text-[var(--primary)]">Informações para o Seu Plano Estratégico</p>
             </div>
           </div>
-          <button (click)="closeUploadModal()" [disabled]="isSubmitting" class="w-8 h-8 rounded-full neo-raised flex items-center justify-center text-[#464556] hover:text-[#ba1a1a] transition-colors disabled:opacity-50 shrink-0">
+          <button (click)="closeUploadModal()" [disabled]="isSubmitting" class="w-8 h-8 rounded-full neo-raised flex items-center justify-center text-[var(--on-surface-variant)] hover:text-red-500 transition-colors disabled:opacity-50 shrink-0">
             <span class="material-symbols-outlined !text-[18px]">close</span>
           </button>
         </div>
@@ -1106,60 +1265,60 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
         <!-- Modal Body -->
         <div class="px-4 sm:px-6 py-4 sm:py-5 space-y-4 overflow-y-auto flex-1">
 
-          <p class="text-xs text-[#464556] leading-relaxed">
+          <p class="text-xs text-[var(--on-surface-variant)] leading-relaxed">
             Preencha os dados do seu concurso e edital. A IA aplicará o princípio de Pareto 80/20 para gerar seu mapa de prioridades, régua de corte e cronograma personalizado.
           </p>
 
           <!-- Contexto do Candidato -->
-          <div class="rounded-2xl border border-[#c7c4d8] bg-[#f7f4ff] p-3 sm:p-4 space-y-3">
-            <p class="text-[11px] font-extrabold text-[#5516be] uppercase tracking-wider flex items-center gap-1.5">
+          <div class="rounded-2xl border border-[var(--outline-variant)] bg-purple-50/40 dark:bg-white/[0.02] p-3 sm:p-4 space-y-3">
+            <p class="text-[11px] font-extrabold text-[var(--primary)] uppercase tracking-wider flex items-center gap-1.5">
               <span class="material-symbols-outlined !text-[15px]">person</span>
               Contexto do Candidato
             </p>
 
             <!-- Título do Edital -->
-            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-white">
-              <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">description</span>
+            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-[var(--background)]">
+              <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">description</span>
               <input
                 [(ngModel)]="editalTitle"
                 type="text"
                 placeholder="Título do Edital (Ex: Concurso TCU 2026)"
-                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
             </div>
 
             <!-- Concurso Alvo -->
-            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-white">
-              <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">emoji_events</span>
+            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-[var(--background)]">
+              <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">emoji_events</span>
               <input
                 [(ngModel)]="editalConcurso"
                 type="text"
                 placeholder="Concurso alvo (Ex: SEFAZ-RS 2026)"
-                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
             </div>
 
             <!-- Cargo -->
-            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-white">
-              <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">badge</span>
+            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-[var(--background)]">
+              <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">badge</span>
               <input
                 [(ngModel)]="editalCargo"
                 type="text"
                 placeholder="Cargo (Ex: Auditor Fiscal da Receita Estadual) *"
-                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
             </div>
 
             <!-- Data da prova (opcional no upload) -->
-            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-white">
-              <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">event</span>
+            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-[var(--background)]">
+              <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">event</span>
               <input
                 [(ngModel)]="editalDataProva"
                 type="date"
                 [min]="today"
                 placeholder="Data da prova (opcional)"
-                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
+                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
             </div>
 
             <!-- Info: horas/dia serão configuradas depois -->
-            <div class="bg-[#e9ddff]/50 rounded-xl px-3 py-2.5 flex items-start gap-2 text-[11px] text-[#5516be]">
+            <div class="bg-purple-100/70 dark:bg-[#7c3aed]/20 rounded-xl px-3 py-2.5 flex items-start gap-2 text-[11px] text-purple-800 dark:text-[#c084fc] border border-purple-200/60 dark:border-[#7c3aed]/30">
               <span class="material-symbols-outlined !text-[15px] shrink-0 mt-0.5">info</span>
               <span>Após adicionar o edital ao seu perfil, você poderá configurar seu ritmo de estudos (horas/dia, dias/semana) na aba <strong>Cronogramas</strong>.</span>
             </div>
@@ -1167,36 +1326,36 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
           </div>
 
           <!-- Modo de upload (Link / PDF) -->
-          <div class="flex gap-2 bg-[#eceef1] p-1 rounded-xl">
+          <div class="flex gap-2 bg-slate-100 dark:bg-white/5 p-1 rounded-xl">
             <button
               type="button"
               (click)="editalUploadMode = 'link'"
-              [ngClass]="editalUploadMode === 'link' ? 'bg-white shadow-sm text-[#433fe5]' : 'text-[#464556]'"
+              [ngClass]="editalUploadMode === 'link' ? 'bg-white dark:bg-[#1e2438] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
               class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all">
               Link do Edital
             </button>
             <button
               type="button"
               (click)="editalUploadMode = 'pdf'"
-              [ngClass]="editalUploadMode === 'pdf' ? 'bg-white shadow-sm text-[#433fe5]' : 'text-[#464556]'"
+              [ngClass]="editalUploadMode === 'pdf' ? 'bg-white dark:bg-[#1e2438] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
               class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all">
               Arquivo PDF
             </button>
           </div>
 
           <div class="space-y-3">
-            <div *ngIf="editalUploadMode === 'link'" class="neo-pressed rounded-xl p-3 flex items-center bg-white">
-              <span class="material-symbols-outlined text-[#433fe5] mr-2 shrink-0">link</span>
+            <div *ngIf="editalUploadMode === 'link'" class="neo-pressed rounded-xl p-3 flex items-center bg-[var(--background)]">
+              <span class="material-symbols-outlined text-[var(--primary)] mr-2 shrink-0">link</span>
               <input
                 [(ngModel)]="editalLink"
                 type="text"
                 placeholder="Cole aqui a URL do edital"
-                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm px-1 text-[#191c1e]">
+                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm px-1 text-[var(--on-surface)]">
             </div>
 
-            <div *ngIf="editalUploadMode === 'pdf'" class="neo-pressed rounded-2xl p-5 sm:p-6 border-2 border-dashed border-[#c7c4d8] flex flex-col items-center justify-center text-center relative hover:border-[#6b38d4] transition-colors cursor-pointer bg-white">
-              <span class="material-symbols-outlined !text-[36px] sm:!text-[40px] text-[#6b38d4] mb-1">picture_as_pdf</span>
-              <p class="text-xs font-semibold text-[#191c1e] truncate max-w-xs">
+            <div *ngIf="editalUploadMode === 'pdf'" class="neo-pressed rounded-2xl p-5 sm:p-6 border-2 border-dashed border-[var(--outline-variant)] flex flex-col items-center justify-center text-center relative hover:border-[var(--primary)] transition-colors cursor-pointer bg-[var(--background)]">
+              <span class="material-symbols-outlined !text-[36px] sm:!text-[40px] text-[var(--primary)] mb-1">picture_as_pdf</span>
+              <p class="text-xs font-semibold text-[var(--on-surface)] truncate max-w-xs">
                 {{ selectedFile ? selectedFile.name : 'Selecionar Edital em PDF' }}
               </p>
               <input type="file" (change)="onFileSelected($event)" accept="application/pdf" class="absolute inset-0 opacity-0 cursor-pointer">
@@ -1206,7 +1365,7 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
           <!-- Toast Feedback -->
           <div *ngIf="showUploadToast"
                class="rounded-xl p-3 text-xs font-bold flex items-center gap-2 animate-fadeIn"
-               [ngClass]="uploadToastType === 'success' ? 'bg-[#eefff2] text-[#005236]' : 'bg-[#ffdad6] text-[#93000a]'">
+               [ngClass]="uploadToastType === 'success' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30'">
             <span class="material-symbols-outlined !text-[16px] shrink-0">
               {{ uploadToastType === 'success' ? 'check_circle' : 'error' }}
             </span>
@@ -1216,11 +1375,11 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
         </div>
 
         <!-- Modal Footer -->
-        <div class="px-4 sm:px-6 pb-5 pt-3 border-t border-[#c7c4d8]/30 flex flex-col sm:flex-row gap-2 sm:gap-3 shrink-0">
+        <div class="px-4 sm:px-6 pb-5 pt-3 border-t border-[var(--outline-variant)] flex flex-col sm:flex-row gap-2 sm:gap-3 shrink-0">
           <button
             (click)="closeUploadModal()"
             [disabled]="isSubmitting"
-            class="w-full sm:flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold border border-[#c7c4d8] text-[#464556] hover:border-[#433fe5] hover:text-[#433fe5] transition-colors disabled:opacity-50">
+            class="w-full sm:flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold border border-[var(--outline-variant)] text-[var(--on-surface-variant)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors disabled:opacity-50">
             Cancelar
           </button>
           <button
@@ -1241,22 +1400,22 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
     <div *ngIf="showScheduleModal"
          class="fixed inset-0 z-50 flex items-center justify-center p-4"
          (click)="closeScheduleModal()">
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
-      <div class="relative bg-white dark:bg-[#1a1a2e] rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+      <div class="relative bg-white dark:bg-[#141927] border border-[var(--outline-variant)] rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
            (click)="$event.stopPropagation()">
 
         <!-- Header do modal -->
-        <div class="p-5 sm:p-6 border-b border-[#c7c4d8]/30 flex items-center justify-between">
+        <div class="p-5 sm:p-6 border-b border-[var(--outline-variant)] flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white flex items-center justify-center shadow-md">
               <span class="material-symbols-outlined !text-[22px]">tune</span>
             </div>
             <div>
-              <h3 class="text-sm sm:text-base font-black text-[#191c1e]">Configurar Cronograma</h3>
-              <p class="text-[11px] text-[#767587]">Defina seu ritmo de estudos para este edital</p>
+              <h3 class="text-sm sm:text-base font-black text-[var(--on-surface)]">Configurar Cronograma</h3>
+              <p class="text-[11px] text-[var(--on-surface-variant)]">Defina seu ritmo de estudos para este edital</p>
             </div>
           </div>
-          <button (click)="closeScheduleModal()" class="w-8 h-8 rounded-xl neo-pressed flex items-center justify-center text-[#767587] hover:text-[#433fe5] transition-colors">
+          <button (click)="closeScheduleModal()" class="w-8 h-8 rounded-xl neo-pressed flex items-center justify-center text-[var(--on-surface-variant)] hover:text-[var(--primary)] transition-colors">
             <span class="material-symbols-outlined !text-[18px]">close</span>
           </button>
         </div>
@@ -1265,65 +1424,65 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
         <div class="p-5 sm:p-6 space-y-4">
 
           <!-- Edital selecionado (read-only info) -->
-          <div *ngIf="scheduleEditalId" class="bg-[#f0eaff] rounded-xl px-4 py-3">
-            <p class="text-[11px] font-bold text-[#5516be] uppercase tracking-wide mb-0.5">Edital</p>
-            <p class="text-xs font-bold text-[#191c1e] truncate">{{ scheduleEditalLabel }}</p>
+          <div *ngIf="scheduleEditalId" class="bg-purple-50/70 dark:bg-[#7c3aed]/15 border border-purple-200/60 dark:border-[#7c3aed]/30 rounded-xl px-4 py-3">
+            <p class="text-[11px] font-bold text-[var(--primary)] uppercase tracking-wide mb-0.5">Edital</p>
+            <p class="text-xs font-bold text-[var(--on-surface)] truncate">{{ scheduleEditalLabel }}</p>
           </div>
 
           <!-- Data da prova -->
           <div class="space-y-1.5">
-            <label class="text-xs font-bold text-[#464556] flex items-center gap-1">
+            <label class="text-xs font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
               <span class="material-symbols-outlined !text-[14px]">event</span>
               Data da Prova
             </label>
-            <div class="neo-pressed rounded-xl p-3 flex items-center gap-2 bg-white">
-              <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">event</span>
+            <div class="neo-pressed rounded-xl p-3 flex items-center gap-2 bg-[var(--background)]">
+              <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">event</span>
               <input
                 [(ngModel)]="scheduleDataProva"
                 type="date"
                 [min]="today"
-                class="w-full bg-transparent border-none outline-none text-sm text-[#191c1e]">
+                class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)]">
             </div>
           </div>
 
           <!-- Horas por dia -->
           <div class="space-y-1.5">
-            <label class="text-xs font-bold text-[#464556] flex items-center gap-1">
+            <label class="text-xs font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
               <span class="material-symbols-outlined !text-[14px]">schedule</span>
               Horas de Estudo por Dia <span class="text-red-500">*</span>
             </label>
-            <div class="neo-pressed rounded-xl p-3 flex items-center gap-2 bg-white">
-              <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">schedule</span>
+            <div class="neo-pressed rounded-xl p-3 flex items-center gap-2 bg-[var(--background)]">
+              <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">schedule</span>
               <input
                 [(ngModel)]="scheduleHorasPorDia"
                 type="number"
                 min="0.5" max="24" step="0.5"
                 placeholder="Ex: 2"
-                class="w-full bg-transparent border-none outline-none text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
-              <span class="text-xs text-[#767587] shrink-0">h/dia</span>
+                class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+              <span class="text-xs text-[var(--on-surface-variant)] shrink-0">h/dia</span>
             </div>
           </div>
 
           <!-- Dias por semana -->
           <div class="space-y-1.5">
-            <label class="text-xs font-bold text-[#464556] flex items-center gap-1">
+            <label class="text-xs font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
               <span class="material-symbols-outlined !text-[14px]">calendar_view_week</span>
               Dias de Estudo por Semana <span class="text-red-500">*</span>
             </label>
-            <div class="neo-pressed rounded-xl p-3 flex items-center gap-2 bg-white">
-              <span class="material-symbols-outlined text-[#433fe5] !text-[18px] shrink-0">calendar_view_week</span>
+            <div class="neo-pressed rounded-xl p-3 flex items-center gap-2 bg-[var(--background)]">
+              <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">calendar_view_week</span>
               <input
                 [(ngModel)]="scheduleDiasPorSemana"
                 type="number"
                 min="1" max="7" step="1"
                 placeholder="Ex: 5"
-                class="w-full bg-transparent border-none outline-none text-sm text-[#191c1e] placeholder:text-[#9e9eb8]">
-              <span class="text-xs text-[#767587] shrink-0">dias</span>
+                class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+              <span class="text-xs text-[var(--on-surface-variant)] shrink-0">dias</span>
             </div>
           </div>
 
           <!-- Preview dinâmico -->
-          <div *ngIf="scheduleHorasPorDia && scheduleDiasPorSemana" class="bg-[#e9ddff]/70 rounded-xl px-4 py-3 flex items-center gap-2 text-[11px] font-semibold text-[#5516be] flex-wrap">
+          <div *ngIf="scheduleHorasPorDia && scheduleDiasPorSemana" class="bg-purple-100/70 dark:bg-[#7c3aed]/20 border border-purple-200/60 dark:border-[#7c3aed]/30 rounded-xl px-4 py-3 flex items-center gap-2 text-[11px] font-semibold text-purple-800 dark:text-[#c084fc] flex-wrap">
             <span class="material-symbols-outlined !text-[15px] shrink-0">insights</span>
             <span>{{ scheduleHorasPorDia }}h/dia × {{ scheduleDiasPorSemana }} dias = <strong>{{ scheduleHorasPorDia * scheduleDiasPorSemana }}h/semana</strong></span>
           </div>
@@ -1331,11 +1490,11 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
         </div>
 
         <!-- Footer do modal -->
-        <div class="px-5 sm:px-6 pb-5 pt-3 border-t border-[#c7c4d8]/30 flex gap-3">
+        <div class="px-5 sm:px-6 pb-5 pt-3 border-t border-[var(--outline-variant)] flex gap-3">
           <button
             (click)="closeScheduleModal()"
             [disabled]="isSavingSchedule"
-            class="flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold border border-[#c7c4d8] text-[#464556] hover:border-[#433fe5] hover:text-[#433fe5] transition-colors disabled:opacity-50">
+            class="flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold border border-[var(--outline-variant)] text-[var(--on-surface-variant)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors disabled:opacity-50">
             Cancelar
           </button>
           <button
@@ -1357,7 +1516,7 @@ export class StudentDashboardComponent implements OnInit {
   user: UserProfile | null = null;
   editais: any[] = [];
   questions: any[] = [];
-  activeTab: 'editais' | 'cronogramas' | 'mapa' | 'questions' | 'perfil' = 'editais';
+  activeTab: 'editais' | 'cronogramas' | 'mapa' | 'questions' | 'perfil' | 'estatisticas' = 'editais';
   selectedMapaEditalId: string | null = null;
   selectedCronogramaEditalId: string | null = null;
 
@@ -1402,6 +1561,7 @@ export class StudentDashboardComponent implements OnInit {
   questionsCurrentPage = 1;
   questionsPageSize = 10;
   selectedAnswers: { [key: string]: string } = {};
+  sessionAnswers: Record<string, { selectedOption: string; isCorrect: boolean; disciplina: string }> = {};
 
   // ---- Toast (upload) ----
   uploadToastMsg = '';
@@ -1431,16 +1591,87 @@ export class StudentDashboardComponent implements OnInit {
 
   readonly today = new Date().toISOString().split('T')[0];
 
+  // ---- Edital Progress Map ----
+  editalProgressMap: Record<string, { percentage: number; completed: number; total: number }> = {};
+
+  // ---- Acerto por Disciplina (persistido no Supabase) ----
+  accuracyByDisciplina: { disciplina: string; total: number; corretas: number; pct: number }[] = [];
+
+  // ---- Email verification banner ----
+  emailBannerDismissed = false;
+  isResendingVerify = false;
+  resendVerifySuccess = false;
+
+  // Expose authService to template
+  readonly authService = this.authServiceRef;
+
   constructor(
     private apiService: ApiService,
-    private authService: AuthService,
-    private router: Router
+    private authServiceRef: AuthService,
+    private router: Router,
+    private supabaseService: SupabaseService
   ) { }
 
   ngOnInit() {
-    this.user = this.authService.getCurrentUser();
+    this.user = this.authServiceRef.getCurrentUser();
+    this.loadSavedAnswers();
     this.loadData();
     this.loadRecentEditais();
+    this.loadAccuracyStats();
+
+    this.supabaseService.session$.subscribe(session => {
+      if (session?.user) {
+        this.loadAccuracyStats();
+      }
+    });
+  }
+
+  async resendVerificationEmail() {
+    if (this.isResendingVerify) return;
+    this.isResendingVerify = true;
+    this.resendVerifySuccess = false;
+    try {
+      const email = this.authServiceRef.getCurrentUser()?.email ?? '';
+      await this.supabaseService.resendConfirmationEmail(email);
+      this.resendVerifySuccess = true;
+    } catch (err) {
+      console.error('Erro ao reenviar confirmação:', err);
+    } finally {
+      this.isResendingVerify = false;
+    }
+  }
+
+  private getStorageKey(): string {
+    const uid = this.user?.id || 'default_user';
+    return `aprovando_user_answers_${uid}`;
+  }
+
+  loadSavedAnswers() {
+    try {
+      const raw = localStorage.getItem(this.getStorageKey());
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.sessionAnswers) this.sessionAnswers = { ...parsed.sessionAnswers };
+        if (parsed.selectedAnswers) this.selectedAnswers = { ...parsed.selectedAnswers };
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar respostas do localStorage:', e);
+    }
+  }
+
+  saveAnswersToStorage() {
+    try {
+      localStorage.setItem(this.getStorageKey(), JSON.stringify({
+        sessionAnswers: this.sessionAnswers,
+        selectedAnswers: this.selectedAnswers
+      }));
+    } catch (e) {
+      console.warn('Erro ao salvar respostas no localStorage:', e);
+    }
+  }
+
+  async loadAccuracyStats() {
+    this.accuracyByDisciplina = await this.supabaseService.getAccuracyByDisciplina();
   }
 
   loadData() {
@@ -1454,6 +1685,7 @@ export class StudentDashboardComponent implements OnInit {
           this.selectedCronogramaEditalId = this.editais[0].id;
           this.loadUserSchedule(this.editais[0].id);
         }
+        this.editais.forEach(ed => this.calculateEditalProgress(ed));
       }
       // Recarrega editais recentes após atualizar a lista (exclui os já adicionados)
       this.loadRecentEditais();
@@ -1492,6 +1724,103 @@ export class StudentDashboardComponent implements OnInit {
   onCronogramaEditalChange(editalId: string) {
     this.selectedCronogramaEditalId = editalId;
     this.loadUserSchedule(editalId);
+    const ed = this.editais.find(e => e.id === editalId);
+    if (ed) {
+      this.calculateEditalProgress(ed);
+    }
+  }
+
+  get selectedCronogramaProgress(): { percentage: number; completed: number; total: number } {
+    if (!this.selectedCronogramaEditalId) return { percentage: 0, completed: 0, total: 0 };
+    return this.editalProgressMap[this.selectedCronogramaEditalId] || { percentage: 0, completed: 0, total: 0 };
+  }
+
+  async calculateEditalProgress(edital: any): Promise<{ percentage: number; completed: number; total: number }> {
+    if (!edital?.id) return { percentage: 0, completed: 0, total: 0 };
+    try {
+      const stored = localStorage.getItem(`edital_checklist_${edital.id}`);
+      let checkedMap = stored ? JSON.parse(stored) : {};
+
+      if (!stored || Object.keys(checkedMap).length === 0) {
+        const remoteMap = await this.supabaseService.getUserEditalChecklist(edital.id);
+        if (remoteMap && Object.keys(remoteMap).length > 0) {
+          checkedMap = remoteMap;
+          localStorage.setItem(`edital_checklist_${edital.id}`, JSON.stringify(checkedMap));
+        }
+      }
+
+      const disciplines = this.extractDisciplines(edital);
+      let totalSubtopics = 0;
+      let completedSubtopics = 0;
+
+      disciplines.forEach((disc: any) => {
+        const discName = disc.nome;
+        (disc.camada_2_topicos || []).forEach((topic: any) => {
+          const topicName = topic.nome;
+          const topicKey = `${discName}::${topicName}::__TOPIC__`;
+          const isTopicChecked = !!checkedMap[topicKey];
+
+          const subs = topic.camada_3_subtopicos || [];
+          if (subs.length > 0) {
+            subs.forEach((sub: any) => {
+              totalSubtopics++;
+              const subName = typeof sub === 'string' ? sub : (sub.nome || sub.name || 'Subtópico');
+              const subKey = `${discName}::${topicName}::${subName}`;
+              if (isTopicChecked || !!checkedMap[subKey]) {
+                completedSubtopics++;
+              }
+            });
+          } else {
+            totalSubtopics++;
+            if (isTopicChecked || !!checkedMap[`${discName}::${topicName}::${topicName}`]) {
+              completedSubtopics++;
+            }
+          }
+        });
+      });
+
+      const percentage = totalSubtopics > 0 ? Math.round((completedSubtopics / totalSubtopics) * 100) : 0;
+      const result = { percentage, completed: completedSubtopics, total: totalSubtopics };
+      this.editalProgressMap[edital.id] = result;
+      return result;
+    } catch (e) {
+      console.error('Erro ao ler progresso do edital:', e);
+      return { percentage: 0, completed: 0, total: 0 };
+    }
+  }
+
+  private extractDisciplines(editalInput: any): any[] {
+    let pd = editalInput?.pareto_data || editalInput || {};
+    if (typeof pd === 'string') {
+      try { pd = JSON.parse(pd); } catch (e) { }
+    }
+
+    let basicas: any[] = [];
+    let especificas: any[] = [];
+
+    if (pd?.mapa_geral?.disciplinas_basicas) {
+      basicas = pd.mapa_geral.disciplinas_basicas;
+    } else if (pd?.disciplinas_basicas) {
+      basicas = pd.disciplinas_basicas;
+    }
+
+    if (pd?.mapa_geral?.disciplinas_especificas) {
+      especificas = pd.mapa_geral.disciplinas_especificas;
+    } else if (pd?.disciplinas_especificas) {
+      especificas = pd.disciplinas_especificas;
+    }
+
+    if (basicas.length > 0 || especificas.length > 0) {
+      return [...basicas, ...especificas];
+    }
+
+    if (pd?.mapa_geral?.disciplinas) {
+      return pd.mapa_geral.disciplinas;
+    }
+    if (pd?.disciplinas) {
+      return pd.disciplinas;
+    }
+    return [];
   }
 
   get selectedUserSchedule(): any {
@@ -2029,8 +2358,41 @@ export class StudentDashboardComponent implements OnInit {
   // ---- Questions ----
 
   onAnswerSubmitted(event: { questionId: string; selectedOption: string; isCorrect: boolean }) {
-    if (event.questionId) {
-      this.selectedAnswers[event.questionId] = event.selectedOption;
+    if (!event.questionId) return;
+    const eventIdStr = String(event.questionId);
+
+    // Encontra a questão correspondente
+    const q = this.questions.find(
+      q => String(q.id) === eventIdStr ||
+           String(q.id_qc) === eventIdStr ||
+           String(q.codigo) === eventIdStr
+    );
+
+    const disciplina = q?.disciplina || q?.subject || 'GERAL';
+
+    this.selectedAnswers = { ...this.selectedAnswers, [eventIdStr]: event.selectedOption };
+    this.sessionAnswers = {
+      ...this.sessionAnswers,
+      [eventIdStr]: {
+        selectedOption: event.selectedOption,
+        isCorrect: event.isCorrect,
+        disciplina
+      }
+    };
+    this.saveAnswersToStorage();
+
+    // Persiste no Supabase (fire-and-forget)
+    if (q) {
+      this.supabaseService.saveQuestionAnswer({
+        questionId: String(q.id_qc || q.id || q.codigo || eventIdStr),
+        disciplina,
+        banca: q.banca,
+        ano: q.ano,
+        isCorrect: event.isCorrect,
+      }).then(() => {
+        // Atualiza o gráfico de acerto após salvar
+        this.loadAccuracyStats();
+      });
     }
   }
 
@@ -2054,7 +2416,7 @@ export class StudentDashboardComponent implements OnInit {
   }
 
   logout() {
-    this.authService.logout();
+    this.authServiceRef.logout();
     this.router.navigate(['/login']);
   }
 }
