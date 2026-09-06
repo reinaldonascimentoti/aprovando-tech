@@ -19,8 +19,9 @@ CMD ["npm", "run", "start:dev"]
 # Estágio de Build (compilação TypeScript)
 # ====================================================================
 FROM base AS build
+ENV NODE_ENV=development
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --include=dev
 COPY . .
 RUN npm run build
 RUN npm prune --omit=dev
