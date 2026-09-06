@@ -8,6 +8,7 @@ import { ThemeService } from '../../services/theme.service';
 import { EditalCardComponent } from '../../components/edital-card/edital-card.component';
 import { QuestionCardComponent } from '../../components/question-card/question-card.component';
 import { PaginationComponent } from '../../components/pagination/pagination.component';
+import { AnalysisLogStep } from '../student-dashboard/student-dashboard.component';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -130,9 +131,17 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
               <p class="text-xs text-[var(--outline)]">Gerencie os editais processados com Pareto 80/20, edite metadados ou envie para usuários.</p>
             </div>
           </div>
-          <span class="bg-[var(--primary)]/15 text-[var(--primary)] text-xs font-extrabold px-3 py-1 rounded-full">
-            Total Analisados: {{ editaisAnalisados.length }} Editais
-          </span>
+          <div class="flex items-center gap-3">
+            <span class="bg-[var(--primary)]/15 text-[var(--primary)] text-xs font-extrabold px-3 py-1.5 rounded-full">
+              Total Analisados: {{ editaisAnalisados.length }} Editais
+            </span>
+            <button
+              (click)="openUploadModal()"
+              class="btn-mesh px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md">
+              <span class="material-symbols-outlined !text-[16px]">cloud_upload</span>
+              <span>+ Novo Edital</span>
+            </button>
+          </div>
         </div>
 
         <!-- Tabela de Editais Analisados -->
@@ -301,10 +310,16 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
         </div>
 
         <ng-template #noEditaisAnalisados>
-          <div class="neo-pressed rounded-2xl p-8 text-center space-y-2">
+          <div class="neo-pressed rounded-2xl p-8 text-center space-y-3">
             <span class="material-symbols-outlined text-[var(--outline)] !text-[36px]">folder_open</span>
             <p class="text-sm font-bold text-[var(--on-surface)]">Nenhum edital analisado até o momento</p>
-            <p class="text-xs text-[var(--outline)]">Utilize o card de upload abaixo para enviar e gerar a análise do primeiro edital.</p>
+            <p class="text-xs text-[var(--outline)]">Utilize o botão abaixo ou o card de upload para enviar e gerar a análise do primeiro edital.</p>
+            <button
+              (click)="openUploadModal()"
+              class="btn-mesh px-4 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-md">
+              <span class="material-symbols-outlined !text-[16px]">cloud_upload</span>
+              <span>+ Enviar Primeiro Edital</span>
+            </button>
           </div>
         </ng-template>
       </div>
@@ -357,137 +372,30 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
               </h2>
               <span class="bg-[#e9ddff] dark:bg-[#5516be]/30 text-[#5516be] dark:text-[#d0bcff] text-[11px] font-bold px-2.5 py-1 rounded-full">Macro → Meso → Micro</span>
             </div>
-            <p class="text-xs text-[var(--on-surface-variant)] mb-5">
+            <p class="text-xs text-[var(--on-surface-variant)] mb-6">
               Faça upload do edital oficial. A IA aplicará Pareto 80/20 em 3 camadas gerando mapa de prioridades, cronograma adaptado ao seu tempo disponível, régua de corte e alertas de banca.
             </p>
 
-            <!-- Contexto do Candidato -->
-            <div class="rounded-2xl border border-[var(--outline-variant)] bg-[var(--surface-container-low)] dark:bg-[#1e232f] p-4 mb-4">
-              <p class="text-[11px] font-extrabold text-[#5516be] dark:text-[#d0bcff] uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                <span class="material-symbols-outlined !text-[15px]">person</span>
-                Contexto do Candidato
+            <!-- Card de Acionamento do Modal de Upload -->
+            <div (click)="openUploadModal()" class="neo-pressed rounded-2xl p-8 border-2 border-dashed border-[var(--outline-variant)] flex flex-col items-center justify-center text-center relative hover:border-[var(--primary)] transition-all cursor-pointer mb-4 group">
+              <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white flex items-center justify-center shadow-md mb-3 group-hover:scale-105 transition-transform">
+                <span class="material-symbols-outlined !text-[32px]">cloud_upload</span>
+              </div>
+              <p class="text-sm font-bold text-[var(--on-surface)]">
+                Clique para abrir o formulário de Upload
               </p>
-              <div class="space-y-2.5">
-
-                <!-- Título do Edital -->
-                <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
-                  <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">description</span>
-                  <input
-                    [(ngModel)]="editalTitle"
-                    type="text"
-                    placeholder="Edital para análise -(Ex: Concurso TCU 2026)"
-                    class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
-                </div>
-
-                <!-- Concurso Alvo -->
-                <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
-                  <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">emoji_events</span>
-                  <input
-                    [(ngModel)]="editalConcurso"
-                    type="text"
-                    placeholder="Concurso alvo (Ex: Receita Federal)"
-                    class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
-                </div>
-
-                <!-- Cargo -->
-                <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
-                  <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">badge</span>
-                  <input
-                    [(ngModel)]="editalCargo"
-                    type="text"
-                    placeholder="Cargo exatamente como está escrito no edital, dica: copie e cole do edital - (Ex: Auditor Fiscal da Receita Estadual)"
-                    class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
-                </div>
-
-                <!-- Data da prova -->
-                <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
-                  <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">event</span>
-                  <input
-                    [(ngModel)]="editalDataProva"
-                    type="date"
-                    [min]="today"
-                    placeholder="Data da prova *"
-                    class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
-                </div>
-
-                <!-- Disponibilidade: horas/dia + dias/semana -->
-                <div class="grid grid-cols-2 gap-2">
-                  <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">schedule</span>
-                    <input
-                      [(ngModel)]="editalHorasPorDia"
-                      type="number"
-                      min="0.5" max="24" step="0.5"
-                      placeholder="Horas/dia *"
-                      class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
-                  </div>
-                  <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">calendar_view_week</span>
-                    <input
-                      [(ngModel)]="editalDiasPorSemana"
-                      type="number"
-                      min="1" max="7" step="1"
-                      placeholder="Dias/semana *"
-                      class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
-                  </div>
-                </div>
-
-                <!-- Resumo dinâmico de disponibilidade -->
-                <div *ngIf="editalHorasPorDia && editalDiasPorSemana && editalDataProva" class="bg-[#e9ddff]/60 dark:bg-[#5516be]/20 rounded-xl px-3 py-2 flex items-center gap-2 text-[11px] font-semibold text-[#5516be] dark:text-[#d0bcff]">
-                  <span class="material-symbols-outlined !text-[15px]">insights</span>
-                  <span>{{ editalHorasPorDia }}h/dia × {{ editalDiasPorSemana }} dias = <strong>{{ editalHorasPorDia * editalDiasPorSemana }}h/semana</strong>
-                  &nbsp;|&nbsp; {{ semanasDisponiveis }} semanas até a prova
-                  &nbsp;|&nbsp; ~<strong>{{ editalTotalHoras }}h</strong> no total</span>
-                </div>
-
-              </div>
-            </div>
-
-            <!-- Modo de upload (Link / PDF) -->
-            <div class="flex gap-2 mb-3 bg-[var(--surface-container)] p-1 rounded-xl">
-              <button
-                type="button"
-                (click)="editalUploadMode = 'link'"
-                [ngClass]="editalUploadMode === 'link' ? 'bg-white dark:bg-[#32394f] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)] hover:text-[var(--on-surface)]'"
-                class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer">
-                Link do Edital
-              </button>
-              <button
-                type="button"
-                (click)="editalUploadMode = 'pdf'"
-                [ngClass]="editalUploadMode === 'pdf' ? 'bg-white dark:bg-[#32394f] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)] hover:text-[var(--on-surface)]'"
-                class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer">
-                Arquivo PDF
-              </button>
-            </div>
-
-            <div class="space-y-3 mb-4">
-              <div *ngIf="editalUploadMode === 'link'" class="neo-pressed rounded-xl p-3 flex items-center">
-                <span class="material-symbols-outlined text-[var(--primary)] mr-2">link</span>
-                <input
-                  [(ngModel)]="editalLink"
-                  type="text"
-                  placeholder="Cole aqui a URL do edital"
-                  class="w-full bg-transparent border-none outline-none text-sm px-2 text-[var(--on-surface)] placeholder:text-[var(--outline)]">
-              </div>
-
-              <div *ngIf="editalUploadMode === 'pdf'" class="neo-pressed rounded-2xl p-6 border-2 border-dashed border-[var(--outline-variant)] flex flex-col items-center justify-center text-center relative hover:border-[var(--secondary)] transition-colors cursor-pointer">
-                <span class="material-symbols-outlined !text-[40px] text-[var(--secondary)] mb-1">picture_as_pdf</span>
-                <p class="text-xs font-semibold text-[var(--on-surface)]">
-                  {{ selectedEditalFile ? selectedEditalFile.name : 'Selecionar Edital em PDF' }}
-                </p>
-                <input type="file" (change)="onEditalSelected($event)" accept="application/pdf" class="absolute inset-0 opacity-0 cursor-pointer">
-              </div>
+              <p class="text-xs text-[var(--outline)] mt-1">
+                Contexto do candidato, cargo, data e arquivo PDF ou link do edital
+              </p>
             </div>
           </div>
 
-          <button
-            (click)="uploadEdital()"
-            [disabled]="!isEditalFormValid || isUploadingEdital"
-            class="btn-mesh w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm mt-2 cursor-pointer"
+          <button 
+            (click)="openUploadModal()" 
+            class="btn-mesh w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm mt-4 cursor-pointer"
             style="background: linear-gradient(135deg, #6b38d4 0%, #8455ef 100%);">
-            <span class="material-symbols-outlined">donut_large</span>
-            <span>{{ isUploadingEdital ? 'Já confirmei seu Cargo! Gerando Análise Pareto 80/20... Por favor, aguarde.' : 'Gerar Análise Pareto 80/20' }}</span>
+            <span class="material-symbols-outlined">add_circle</span>
+            <span>Novo Upload de Edital</span>
           </button>
         </div>
 
@@ -1018,24 +926,39 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
           <div class="neo-raised rounded-3xl p-6 space-y-5">
             <div class="flex items-center justify-between flex-wrap gap-3">
               <div class="flex items-center gap-2.5">
-                <span class="material-symbols-outlined text-[var(--secondary)] !text-[24px]">timeline</span>
+                <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-[#8455ef] to-[#5516be] flex items-center justify-center text-white shadow-sm">
+                  <span class="material-symbols-outlined !text-[22px]">timeline</span>
+                </div>
                 <div>
                   <h4 class="text-sm font-extrabold text-[var(--on-surface)]">Questões por Ano — Tendência Histórica</h4>
-                  <p class="text-[11px] text-[var(--outline)]">Evolução do volume de questões extraídas ao longo dos anos por disciplina</p>
+                  <p class="text-[11px] text-[var(--outline)]">Evolução do volume de questões ao longo dos anos por disciplina e banca examinadora</p>
                 </div>
               </div>
 
-              <!-- Seletor de Disciplina e Contagem de Anos -->
+              <!-- Seletores Combinados e Contadores -->
               <div class="flex items-center gap-2 flex-wrap">
                 <!-- Dropdown de Disciplina -->
                 <div class="neo-pressed rounded-xl px-3 py-1.5 flex items-center gap-1.5 bg-[var(--surface-container-high)]/70 border border-[var(--outline-variant)]">
                   <span class="material-symbols-outlined text-[var(--primary)] !text-[16px]">school</span>
                   <select
                     [(ngModel)]="statsAnoSelectedDisciplina"
-                    class="bg-transparent text-xs font-extrabold text-[var(--on-surface)] outline-none border-none pr-1 cursor-pointer max-w-[210px] truncate">
+                    class="bg-transparent text-xs font-extrabold text-[var(--on-surface)] outline-none border-none pr-1 cursor-pointer max-w-[190px] truncate">
                     <option value="Todas" class="bg-[var(--card-bg)] text-[var(--on-surface)]">Todas as Disciplinas ({{ questions.length }})</option>
                     <option *ngFor="let disc of availableDisciplinas" [value]="disc" class="bg-[var(--card-bg)] text-[var(--on-surface)]">
                       {{ disc }} ({{ getDisciplinaTotalCount(disc) }})
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Dropdown de Banca -->
+                <div class="neo-pressed rounded-xl px-3 py-1.5 flex items-center gap-1.5 bg-[var(--surface-container-high)]/70 border border-[var(--outline-variant)]">
+                  <span class="material-symbols-outlined text-[var(--secondary)] !text-[16px]">account_balance</span>
+                  <select
+                    [(ngModel)]="statsAnoSelectedBanca"
+                    class="bg-transparent text-xs font-extrabold text-[var(--on-surface)] outline-none border-none pr-1 cursor-pointer max-w-[170px] truncate">
+                    <option value="Todas" class="bg-[var(--card-bg)] text-[var(--on-surface)]">Todas as Bancas ({{ questions.length }})</option>
+                    <option *ngFor="let b of availableBancas" [value]="b" class="bg-[var(--card-bg)] text-[var(--on-surface)]">
+                      {{ b }} ({{ getBancaTotalCount(b) }})
                     </option>
                   </select>
                 </div>
@@ -1046,31 +969,94 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
               </div>
             </div>
 
-            <!-- Chips de Disciplinas para Troca Rápida -->
-            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+            <!-- Chips de Filtros Rápidos: Disciplinas e Bancas -->
+            <div class="space-y-2 pt-1 border-t border-[var(--outline-variant)]/30">
+              <!-- Linha 1: Chips de Disciplinas -->
+              <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+                <span class="text-[10px] font-bold text-[var(--outline)] uppercase tracking-wider shrink-0 flex items-center gap-1 mr-1">
+                  <span class="material-symbols-outlined !text-[13px] text-[var(--primary)]">school</span>
+                  Disciplina:
+                </span>
+                <button
+                  type="button"
+                  (click)="statsAnoSelectedDisciplina = 'Todas'"
+                  [ngClass]="statsAnoSelectedDisciplina === 'Todas' ? 'bg-[var(--primary)] text-white shadow-sm font-black' : 'bg-[var(--surface-container)] text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-high)] font-semibold'"
+                  class="px-2.5 py-1 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 text-[11px] flex items-center gap-1">
+                  <span>Todas</span>
+                  <span class="opacity-80 text-[10px]">({{ questions.length }})</span>
+                </button>
+                <button
+                  *ngFor="let disc of availableDisciplinas.slice(0, 6)"
+                  type="button"
+                  (click)="statsAnoSelectedDisciplina = disc"
+                  [ngClass]="statsAnoSelectedDisciplina === disc ? 'bg-[var(--primary)] text-white shadow-sm font-black' : 'bg-[var(--surface-container)] text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-high)] font-semibold'"
+                  class="px-2.5 py-1 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 text-[11px] flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full shrink-0" [style.background]="getDisciplineColor(disc)"></span>
+                  <span>{{ disc }}</span>
+                  <span class="opacity-80 text-[10px]">({{ getDisciplinaTotalCount(disc) }})</span>
+                </button>
+              </div>
+
+              <!-- Linha 2: Chips de Bancas -->
+              <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+                <span class="text-[10px] font-bold text-[var(--outline)] uppercase tracking-wider shrink-0 flex items-center gap-1 mr-1">
+                  <span class="material-symbols-outlined !text-[13px] text-[var(--secondary)]">account_balance</span>
+                  Banca:
+                </span>
+                <button
+                  type="button"
+                  (click)="statsAnoSelectedBanca = 'Todas'"
+                  [ngClass]="statsAnoSelectedBanca === 'Todas' ? 'bg-[var(--secondary)] text-white shadow-sm font-black' : 'bg-[var(--surface-container)] text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-high)] font-semibold'"
+                  class="px-2.5 py-1 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 text-[11px] flex items-center gap-1">
+                  <span>Todas</span>
+                  <span class="opacity-80 text-[10px]">({{ questions.length }})</span>
+                </button>
+                <button
+                  *ngFor="let b of availableBancas.slice(0, 6)"
+                  type="button"
+                  (click)="statsAnoSelectedBanca = b"
+                  [ngClass]="statsAnoSelectedBanca === b ? 'bg-[var(--secondary)] text-white shadow-sm font-black' : 'bg-[var(--surface-container)] text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-high)] font-semibold'"
+                  class="px-2.5 py-1 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 text-[11px] flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full shrink-0" [style.background]="getBancaColor(b)"></span>
+                  <span>{{ b }}</span>
+                  <span class="opacity-80 text-[10px]">({{ getBancaTotalCount(b) }})</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Indicador de Filtros Ativos -->
+            <div *ngIf="statsAnoSelectedDisciplina !== 'Todas' || statsAnoSelectedBanca !== 'Todas'" class="flex items-center gap-2 text-xs flex-wrap bg-[var(--surface-container-low)]/80 p-2.5 rounded-2xl border border-[var(--outline-variant)]/40">
+              <span class="material-symbols-outlined text-[var(--primary)] !text-[16px]">filter_alt</span>
+              <span class="text-[11px] text-[var(--outline)] font-bold">Filtros ativos:</span>
+              <span *ngIf="statsAnoSelectedDisciplina !== 'Todas'" class="inline-flex items-center gap-1 bg-[var(--primary)]/15 text-[var(--primary)] px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold">
+                <span class="w-1.5 h-1.5 rounded-full" [style.background]="getDisciplineColor(statsAnoSelectedDisciplina)"></span>
+                {{ statsAnoSelectedDisciplina }}
+                <button type="button" (click)="statsAnoSelectedDisciplina = 'Todas'" class="hover:opacity-75 cursor-pointer ml-1 font-black">×</button>
+              </span>
+              <span *ngIf="statsAnoSelectedBanca !== 'Todas'" class="inline-flex items-center gap-1 bg-[var(--secondary)]/15 text-[var(--secondary)] px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold">
+                <span class="w-1.5 h-1.5 rounded-full" [style.background]="getBancaColor(statsAnoSelectedBanca)"></span>
+                {{ statsAnoSelectedBanca }}
+                <button type="button" (click)="statsAnoSelectedBanca = 'Todas'" class="hover:opacity-75 cursor-pointer ml-1 font-black">×</button>
+              </span>
               <button
                 type="button"
-                (click)="statsAnoSelectedDisciplina = 'Todas'"
-                [ngClass]="statsAnoSelectedDisciplina === 'Todas' ? 'bg-[var(--primary)] text-white shadow-sm font-black' : 'bg-[var(--surface-container)] text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-high)] font-semibold'"
-                class="px-2.5 py-1 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 text-[11px] flex items-center gap-1">
-                <span>Todas</span>
-                <span class="opacity-80 text-[10px]">({{ questions.length }})</span>
-              </button>
-              <button
-                *ngFor="let disc of availableDisciplinas.slice(0, 6)"
-                type="button"
-                (click)="statsAnoSelectedDisciplina = disc"
-                [ngClass]="statsAnoSelectedDisciplina === disc ? 'bg-[var(--primary)] text-white shadow-sm font-black' : 'bg-[var(--surface-container)] text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-high)] font-semibold'"
-                class="px-2.5 py-1 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 text-[11px] flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full shrink-0" [style.background]="getDisciplineColor(disc)"></span>
-                <span>{{ disc }}</span>
-                <span class="opacity-80 text-[10px]">({{ getDisciplinaTotalCount(disc) }})</span>
+                (click)="statsAnoSelectedDisciplina = 'Todas'; statsAnoSelectedBanca = 'Todas'"
+                class="ml-auto text-[11px] text-[var(--primary)] font-bold hover:underline cursor-pointer flex items-center gap-0.5">
+                <span class="material-symbols-outlined !text-[13px]">refresh</span>
+                Limpar filtros
               </button>
             </div>
 
+            <!-- Estado Vazio -->
             <div *ngIf="statsAnos.length === 0" class="neo-pressed rounded-2xl p-8 text-center">
               <span class="material-symbols-outlined text-[var(--outline)] !text-[36px]">timeline</span>
-              <p class="text-sm font-bold text-[var(--on-surface)] mt-2">Nenhuma questão encontrada para a disciplina selecionada</p>
+              <p class="text-sm font-bold text-[var(--on-surface)] mt-2">Nenhuma questão encontrada para a combinação de filtros selecionada</p>
+              <button
+                type="button"
+                (click)="statsAnoSelectedDisciplina = 'Todas'; statsAnoSelectedBanca = 'Todas'"
+                class="mt-3 inline-flex items-center gap-1 text-xs font-bold text-[var(--primary)] hover:underline">
+                Redefinir filtros
+              </button>
             </div>
 
             <!-- Gráfico de Barras Vertical por Ano -->
@@ -1080,11 +1066,11 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
                 <div
                   *ngFor="let item of statsAnos"
                   class="flex-1 flex flex-col items-center gap-1.5 group cursor-default min-w-0"
-                  [title]="item.ano + ': ' + item.count + ' questões' + (statsAnoSelectedDisciplina !== 'Todas' ? ' em ' + statsAnoSelectedDisciplina : '')"
+                  [title]="item.ano + ': ' + item.count + ' questões' + (statsAnoSelectedDisciplina !== 'Todas' ? ' em ' + statsAnoSelectedDisciplina : '') + (statsAnoSelectedBanca !== 'Todas' ? ' na ' + statsAnoSelectedBanca : '')"
                 >
                   <!-- Tooltip value -->
                   <div class="text-[10px] font-black opacity-80 group-hover:opacity-100 transition-opacity flex flex-col items-center">
-                    <span [style.color]="statsAnoSelectedDisciplina !== 'Todas' ? getDisciplineColor(statsAnoSelectedDisciplina) : 'var(--secondary)'">
+                    <span [style.color]="statsAnoSelectedDisciplina !== 'Todas' ? getDisciplineColor(statsAnoSelectedDisciplina) : (statsAnoSelectedBanca !== 'Todas' ? getBancaColor(statsAnoSelectedBanca) : 'var(--secondary)')">
                       {{ item.count }}
                     </span>
                   </div>
@@ -1093,7 +1079,9 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
                     class="w-full rounded-t-lg transition-all duration-700 ease-out hover:brightness-110"
                     [style.background]="statsAnoSelectedDisciplina !== 'Todas' 
                       ? 'linear-gradient(180deg, ' + getDisciplineColor(statsAnoSelectedDisciplina) + ' 0%, ' + getDisciplineColor(statsAnoSelectedDisciplina) + 'cc 100%)' 
-                      : 'linear-gradient(180deg, #8455ef 0%, #5516be 100%)'"
+                      : (statsAnoSelectedBanca !== 'Todas'
+                        ? 'linear-gradient(180deg, ' + getBancaColor(statsAnoSelectedBanca) + ' 0%, ' + getBancaColor(statsAnoSelectedBanca) + 'cc 100%)'
+                        : 'linear-gradient(180deg, #8455ef 0%, #5516be 100%)')"
                     [style.height]="(item.count / statsMaxAnoCount * 100) + '%'"
                     [style.min-height]="'6px'"
                   ></div>
@@ -1102,16 +1090,19 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
                 </div>
               </div>
 
-              <!-- Tabela de dados analítica por Ano e Disciplinas -->
+              <!-- Tabela de dados analítica por Ano, Disciplinas e Bancas -->
               <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs border-collapse min-w-[500px]">
+                <table class="w-full text-left text-xs border-collapse min-w-[650px]">
                   <thead>
                     <tr class="bg-[var(--surface-container)] text-[var(--on-surface-variant)] text-[11px] font-black uppercase tracking-wider border-b border-[var(--outline-variant)]">
                       <th class="py-2.5 px-4">Ano</th>
                       <th class="py-2.5 px-4">Questões</th>
-                      <th class="py-2.5 px-4">% do Total</th>
+                      <th class="py-2.5 px-4">% do Período</th>
                       <th class="py-2.5 px-4">
-                        {{ statsAnoSelectedDisciplina === 'Todas' ? 'Disciplinas em Destaque no Ano' : 'Distribuição da Disciplina' }}
+                        {{ statsAnoSelectedDisciplina === 'Todas' ? 'Disciplinas Cobradas no Ano' : 'Disciplina Selecionada' }}
+                      </th>
+                      <th class="py-2.5 px-4">
+                        {{ statsAnoSelectedBanca === 'Todas' ? 'Bancas Organizadoras no Ano' : 'Banca Selecionada' }}
                       </th>
                     </tr>
                   </thead>
@@ -1119,31 +1110,49 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
                     <tr *ngFor="let item of statsAnos" class="hover:bg-[var(--surface-container-high)] transition-colors">
                       <td class="py-2.5 px-4 font-extrabold text-[var(--on-surface)]">{{ item.ano }}</td>
                       <td class="py-2.5 px-4">
-                        <span class="font-black text-xs" [style.color]="statsAnoSelectedDisciplina !== 'Todas' ? getDisciplineColor(statsAnoSelectedDisciplina) : 'var(--secondary)'">
+                        <span class="font-black text-xs" [style.color]="statsAnoSelectedDisciplina !== 'Todas' ? getDisciplineColor(statsAnoSelectedDisciplina) : (statsAnoSelectedBanca !== 'Todas' ? getBancaColor(statsAnoSelectedBanca) : 'var(--secondary)')">
                           {{ item.count }}
                         </span>
                       </td>
                       <td class="py-2.5 px-4 text-[var(--on-surface-variant)] font-semibold">{{ item.percentage }}%</td>
+                      
+                      <!-- Coluna de Disciplinas no Ano -->
                       <td class="py-2.5 px-4">
-                        <!-- Se filtro 'Todas': Exibe badges das disciplinas cobradas no ano -->
                         <div *ngIf="statsAnoSelectedDisciplina === 'Todas'" class="flex items-center gap-1.5 flex-wrap">
                           <span
                             *ngFor="let disc of item.topDisciplinas"
-                            class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-[var(--surface-container-high)] text-[var(--on-surface)]"
-                            [title]="disc.name + ': ' + disc.count + ' questões'">
+                            (click)="statsAnoSelectedDisciplina = disc.name"
+                            class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-[var(--surface-container-high)] text-[var(--on-surface)] hover:scale-105 cursor-pointer transition-all"
+                            [title]="disc.name + ': ' + disc.count + ' questões (clique para filtrar)'">
                             <span class="w-2 h-2 rounded-full shrink-0" [style.background]="disc.color"></span>
                             <span class="truncate max-w-[130px]">{{ disc.name }}</span>
                             <strong class="text-[var(--primary)] font-extrabold ml-0.5">{{ disc.count }}</strong>
                           </span>
                         </div>
+                        <div *ngIf="statsAnoSelectedDisciplina !== 'Todas'" class="flex items-center gap-2">
+                          <span class="w-2.5 h-2.5 rounded-full shrink-0" [style.background]="getDisciplineColor(statsAnoSelectedDisciplina)"></span>
+                          <span class="font-bold text-[11px] text-[var(--on-surface)] truncate">{{ statsAnoSelectedDisciplina }}</span>
+                          <span class="text-[10px] text-[var(--outline)] font-semibold">({{ item.count }} questões)</span>
+                        </div>
+                      </td>
 
-                        <!-- Se disciplina única: Exibe barra de proporção -->
-                        <div *ngIf="statsAnoSelectedDisciplina !== 'Todas'" class="w-full max-w-[200px] bg-[var(--surface-container-high)] rounded-full h-2.5 overflow-hidden">
-                          <div
-                            class="h-2.5 rounded-full transition-all duration-700 ease-out"
-                            [style.background]="getDisciplineColor(statsAnoSelectedDisciplina)"
-                            [style.width]="item.percentage + '%'">
-                          </div>
+                      <!-- Coluna de Bancas no Ano -->
+                      <td class="py-2.5 px-4">
+                        <div *ngIf="statsAnoSelectedBanca === 'Todas'" class="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            *ngFor="let b of item.topBancas"
+                            (click)="statsAnoSelectedBanca = b.name"
+                            class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-[var(--surface-container-high)] text-[var(--on-surface)] hover:scale-105 cursor-pointer transition-all"
+                            [title]="b.name + ': ' + b.count + ' questões (clique para filtrar)'">
+                            <span class="w-2 h-2 rounded-full shrink-0" [style.background]="b.color"></span>
+                            <span class="truncate max-w-[100px]">{{ b.name }}</span>
+                            <strong class="text-[var(--secondary)] font-extrabold ml-0.5">{{ b.count }}</strong>
+                          </span>
+                        </div>
+                        <div *ngIf="statsAnoSelectedBanca !== 'Todas'" class="flex items-center gap-2">
+                          <span class="w-2.5 h-2.5 rounded-full shrink-0" [style.background]="getBancaColor(statsAnoSelectedBanca)"></span>
+                          <span class="font-bold text-[11px] text-[var(--on-surface)] truncate">{{ statsAnoSelectedBanca }}</span>
+                          <span class="text-[10px] text-[var(--outline)] font-semibold">({{ item.count }} questões)</span>
                         </div>
                       </td>
                     </tr>
@@ -1157,17 +1166,176 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
               <div class="neo-pressed rounded-2xl p-4 text-center bg-[var(--surface-container-low)]/60">
                 <p class="text-[11px] font-bold text-[var(--outline)] mb-1">Ano Mais Ativo</p>
                 <h5 class="text-lg font-black text-[var(--secondary)]">{{ statsTopAno?.ano || '—' }}</h5>
-                <p class="text-[10px] text-[var(--outline)]">{{ statsTopAno?.count }} questões {{ statsAnoSelectedDisciplina !== 'Todas' ? 'na disciplina' : '' }}</p>
+                <p class="text-[10px] text-[var(--outline)]">
+                  {{ statsTopAno?.count }} questões
+                  <span *ngIf="statsAnoSelectedDisciplina !== 'Todas'">em {{ statsAnoSelectedDisciplina }}</span>
+                  <span *ngIf="statsAnoSelectedBanca !== 'Todas'">na {{ statsAnoSelectedBanca }}</span>
+                </p>
               </div>
               <div class="neo-pressed rounded-2xl p-4 text-center bg-[var(--surface-container-low)]/60">
                 <p class="text-[11px] font-bold text-[var(--outline)] mb-1">Período Coberto</p>
-                <h5 class="text-base font-black text-[var(--on-surface)]">{{ statsAnos[0]?.ano }} – {{ statsAnos[statsAnos.length - 1]?.ano }}</h5>
+                <h5 class="text-base font-black text-[var(--on-surface)]">{{ statsAnos[0].ano }} – {{ statsAnos[statsAnos.length - 1].ano }}</h5>
                 <p class="text-[10px] text-[var(--outline)]">{{ statsAnos.length }} anos registrados</p>
               </div>
               <div class="neo-pressed rounded-2xl p-4 text-center bg-[var(--surface-container-low)]/60">
                 <p class="text-[11px] font-bold text-[var(--outline)] mb-1">Média por Ano</p>
                 <h5 class="text-lg font-black text-[var(--primary)]">{{ statsAvgPerYear }}</h5>
-                <p class="text-[10px] text-[var(--outline)]">questões/ano ({{ statsFilteredQuestionsForAno.length }} total)</p>
+                <p class="text-[10px] text-[var(--outline)]">questões/ano ({{ statsFilteredQuestionsForAno.length }} total no filtro)</p>
+              </div>
+            </div>
+
+            <!-- ============================================================= -->
+            <!-- SUB-SEÇÃO: Distribuição Analítica de Disciplinas por Banca    -->
+            <!-- ============================================================= -->
+            <div class="pt-5 border-t border-[var(--outline-variant)]/40 space-y-4">
+              <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-xl bg-[var(--primary)]/15 flex items-center justify-center text-[var(--primary)]">
+                    <span class="material-symbols-outlined !text-[20px]">hub</span>
+                  </div>
+                  <div>
+                    <h5 class="text-xs font-black uppercase tracking-wider text-[var(--on-surface)]">Disciplinas por Banca Examinadora</h5>
+                    <p class="text-[10px] text-[var(--outline)]">Relação e proporção de matérias aplicadas por cada organizadora</p>
+                  </div>
+                </div>
+
+                <!-- Seletor de visualização (Visão por Banca vs Bancas por Disciplina) -->
+                <div class="flex items-center gap-1 bg-[var(--surface-container)] p-1 rounded-xl text-xs font-bold border border-[var(--outline-variant)]/30">
+                  <button
+                    type="button"
+                    (click)="statsBancaViewMode = 'cards'"
+                    [ngClass]="statsBancaViewMode === 'cards' ? 'bg-[var(--card-bg)] text-[var(--primary)] shadow-sm font-black' : 'text-[var(--outline)] hover:text-[var(--on-surface)]'"
+                    class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 text-[11px] cursor-pointer">
+                    <span class="material-symbols-outlined !text-[14px]">account_balance</span>
+                    Visão por Banca
+                  </button>
+                  <button
+                    type="button"
+                    (click)="statsBancaViewMode = 'discipline'"
+                    [ngClass]="statsBancaViewMode === 'discipline' ? 'bg-[var(--card-bg)] text-[var(--primary)] shadow-sm font-black' : 'text-[var(--outline)] hover:text-[var(--on-surface)]'"
+                    class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 text-[11px] cursor-pointer">
+                    <span class="material-symbols-outlined !text-[14px]">school</span>
+                    Bancas por Disciplina
+                  </button>
+                </div>
+              </div>
+
+              <!-- MODO 1: Visão por Banca (Disciplinas de cada Banca) -->
+              <div *ngIf="statsBancaViewMode === 'cards'" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div
+                  *ngFor="let item of statsDisciplinasPorBanca"
+                  class="neo-pressed rounded-2xl p-4 space-y-3 bg-[var(--surface-container-low)]/50 border border-[var(--outline-variant)]/40 hover:border-[var(--primary)]/40 transition-all">
+                  <!-- Header da Banca -->
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                      <span class="w-3 h-3 rounded-full shrink-0" [style.background]="item.color"></span>
+                      <span class="text-xs font-black text-[var(--on-surface)]">{{ item.banca }}</span>
+                      <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[var(--surface-container-high)] text-[var(--outline)]">
+                        {{ item.percentageOfTotal }}% do banco
+                      </span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-black text-[var(--primary)]">{{ item.total }} questões</span>
+                      <button
+                        type="button"
+                        (click)="statsAnoSelectedBanca = (statsAnoSelectedBanca === item.banca ? 'Todas' : item.banca)"
+                        [title]="statsAnoSelectedBanca === item.banca ? 'Remover filtro de banca' : 'Filtrar tendência anual por esta banca'"
+                        class="p-1 rounded-lg hover:bg-[var(--surface-container-high)] text-[var(--outline)] hover:text-[var(--primary)] transition-all cursor-pointer">
+                        <span class="material-symbols-outlined !text-[16px]">
+                          {{ statsAnoSelectedBanca === item.banca ? 'filter_alt_off' : 'filter_alt' }}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Barra de Proporção Multi-Segmento por Disciplina -->
+                  <div class="w-full bg-[var(--surface-container-high)] rounded-full h-3 overflow-hidden flex" [title]="item.banca + ' - Distribuição'">
+                    <div
+                      *ngFor="let disc of item.disciplinas"
+                      class="h-3 transition-all duration-500 ease-out hover:brightness-110 cursor-pointer"
+                      [style.width]="disc.percentage + '%'"
+                      [style.background]="disc.color"
+                      [title]="disc.name + ': ' + disc.count + ' questões (' + disc.percentage + '%)'"
+                      (click)="statsAnoSelectedDisciplina = disc.name; statsAnoSelectedBanca = item.banca">
+                    </div>
+                  </div>
+
+                  <!-- Tags de Disciplinas da Banca -->
+                  <div class="flex items-center gap-1.5 flex-wrap pt-1">
+                    <span
+                      *ngFor="let disc of item.disciplinas.slice(0, 5)"
+                      (click)="statsAnoSelectedDisciplina = disc.name; statsAnoSelectedBanca = item.banca"
+                      class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-[var(--surface-container-high)] text-[var(--on-surface)] hover:brightness-95 cursor-pointer transition-all"
+                      [title]="'Clique para cruzar ' + disc.name + ' com ' + item.banca">
+                      <span class="w-2 h-2 rounded-full shrink-0" [style.background]="disc.color"></span>
+                      <span class="truncate max-w-[120px]">{{ disc.name }}</span>
+                      <strong class="text-[var(--primary)] font-extrabold ml-0.5">{{ disc.count }}</strong>
+                      <span class="text-[9px] text-[var(--outline)] opacity-80">({{ disc.percentage }}%)</span>
+                    </span>
+                    <span *ngIf="item.disciplinas.length > 5" class="text-[10px] text-[var(--outline)] font-bold px-1.5 py-0.5">
+                      +{{ item.disciplinas.length - 5 }} outras
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MODO 2: Bancas por Disciplina -->
+              <div *ngIf="statsBancaViewMode === 'discipline'" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div
+                  *ngFor="let item of statsBancasPorTodasDisciplinas"
+                  class="neo-pressed rounded-2xl p-4 space-y-3 bg-[var(--surface-container-low)]/50 border border-[var(--outline-variant)]/40 hover:border-[var(--secondary)]/40 transition-all">
+                  <!-- Header da Disciplina -->
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                      <span class="w-3 h-3 rounded-full shrink-0" [style.background]="item.color"></span>
+                      <span class="text-xs font-black text-[var(--on-surface)]">{{ item.disciplina }}</span>
+                      <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[var(--surface-container-high)] text-[var(--outline)]">
+                        {{ item.percentageOfTotal }}% do banco
+                      </span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-black text-[var(--secondary)]">{{ item.total }} questões</span>
+                      <button
+                        type="button"
+                        (click)="statsAnoSelectedDisciplina = (statsAnoSelectedDisciplina === item.disciplina ? 'Todas' : item.disciplina)"
+                        [title]="statsAnoSelectedDisciplina === item.disciplina ? 'Remover filtro de disciplina' : 'Filtrar tendência anual por esta disciplina'"
+                        class="p-1 rounded-lg hover:bg-[var(--surface-container-high)] text-[var(--outline)] hover:text-[var(--secondary)] transition-all cursor-pointer">
+                        <span class="material-symbols-outlined !text-[16px]">
+                          {{ statsAnoSelectedDisciplina === item.disciplina ? 'filter_alt_off' : 'filter_alt' }}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Proporção de Bancas que Cobram esta Disciplina -->
+                  <div class="w-full bg-[var(--surface-container-high)] rounded-full h-3 overflow-hidden flex" [title]="item.disciplina + ' - Distribuição por Banca'">
+                    <div
+                      *ngFor="let b of item.bancas"
+                      class="h-3 transition-all duration-500 ease-out hover:brightness-110 cursor-pointer"
+                      [style.width]="b.percentage + '%'"
+                      [style.background]="b.color"
+                      [title]="b.name + ': ' + b.count + ' questões (' + b.percentage + '%)'"
+                      (click)="statsAnoSelectedDisciplina = item.disciplina; statsAnoSelectedBanca = b.name">
+                    </div>
+                  </div>
+
+                  <!-- Tags de Bancas da Disciplina -->
+                  <div class="flex items-center gap-1.5 flex-wrap pt-1">
+                    <span
+                      *ngFor="let b of item.bancas.slice(0, 5)"
+                      (click)="statsAnoSelectedDisciplina = item.disciplina; statsAnoSelectedBanca = b.name"
+                      class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-[var(--surface-container-high)] text-[var(--on-surface)] hover:brightness-95 cursor-pointer transition-all"
+                      [title]="'Clique para cruzar ' + item.disciplina + ' com ' + b.name">
+                      <span class="w-2 h-2 rounded-full shrink-0" [style.background]="b.color"></span>
+                      <span class="truncate max-w-[120px]">{{ b.name }}</span>
+                      <strong class="text-[var(--secondary)] font-extrabold ml-0.5">{{ b.count }}</strong>
+                      <span class="text-[9px] text-[var(--outline)] opacity-80">({{ b.percentage }}%)</span>
+                    </span>
+                    <span *ngIf="item.bancas.length > 5" class="text-[10px] text-[var(--outline)] font-bold px-1.5 py-0.5">
+                      +{{ item.bancas.length - 5 }} outras
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1237,10 +1405,360 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
       </div>
     </div>
 
+    <!-- ===== MODAL DE UPLOAD DE EDITAL (ADMIN / PARETO 80/20) ===== -->
+    <div *ngIf="showUploadModal"
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+         style="background: rgba(10, 12, 20, 0.65); backdrop-filter: blur(8px);">
+      <div class="neo-raised rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden animate-fadeIn bg-white dark:bg-[#141927] border border-[var(--outline-variant)] my-auto flex flex-col max-h-[92vh]">
+
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between px-4 sm:px-6 pt-5 pb-4 border-b border-[var(--outline-variant)] bg-gradient-to-r from-purple-50/70 dark:from-[#1b2238] to-white dark:to-[#141927] shrink-0">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center shadow-md shrink-0 transition-all duration-300"
+                 [ngClass]="{
+                   'bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white': uploadStatus === 'idle' || uploadStatus === 'processing',
+                   'bg-gradient-to-tr from-emerald-500 to-teal-600 text-white': uploadStatus === 'completed',
+                   'bg-gradient-to-tr from-rose-500 to-red-600 text-white': uploadStatus === 'error'
+                 }">
+              <span class="material-symbols-outlined !text-[20px] sm:!text-[22px]"
+                    [ngClass]="{'animate-spin': uploadStatus === 'processing'}">
+                {{ uploadStatus === 'error' ? 'report_problem' : (uploadStatus === 'completed' ? 'task_alt' : (uploadStatus === 'processing' ? 'sync' : 'cloud_upload')) }}
+              </span>
+            </div>
+            <div>
+              <h2 class="text-sm sm:text-base font-extrabold text-[var(--on-surface)]">
+                {{ uploadStatus === 'idle' ? 'Upload do Edital' : (uploadStatus === 'error' ? 'Instabilidade no Serviço' : (uploadStatus === 'completed' ? 'Análise Concluída!' : 'Processando Edital com IA')) }}
+              </h2>
+              <p class="text-[10px] sm:text-[11px] font-semibold"
+                 [ngClass]="uploadStatus === 'error' ? 'text-red-500' : (uploadStatus === 'completed' ? 'text-emerald-500' : 'text-[var(--primary)]')">
+                {{ uploadStatus === 'idle' ? 'Análise Pareto 3 Camadas • Contexto do Candidato' : (uploadStatus === 'error' ? 'Serviço temporariamente instável' : (uploadStatus === 'completed' ? 'Redirecionando para o mapa de estudos...' : 'Princípio Pareto 80/20 • Extração Cognitiva')) }}
+              </p>
+            </div>
+          </div>
+          <button (click)="closeUploadModal()" [disabled]="uploadStatus === 'processing'"
+                  class="w-8 h-8 rounded-full neo-raised flex items-center justify-center text-[var(--on-surface-variant)] hover:text-red-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer"
+                  [title]="uploadStatus === 'processing' ? 'Aguarde o término do processamento' : 'Fechar'">
+            <span class="material-symbols-outlined !text-[18px]">close</span>
+          </button>
+        </div>
+
+        <!-- ================= MODO 1: FORMULÁRIO (uploadStatus === 'idle') ================= -->
+        <div *ngIf="uploadStatus === 'idle'" class="px-4 sm:px-6 py-4 sm:py-5 space-y-4 overflow-y-auto flex-1">
+
+          <p class="text-xs text-[var(--on-surface-variant)] leading-relaxed">
+            Faça upload do edital oficial. A IA aplicará Pareto 80/20 em 3 camadas gerando mapa de prioridades, cronograma adaptado ao tempo disponível, régua de corte e alertas de banca.
+          </p>
+
+          <!-- Contexto do Candidato -->
+          <div class="rounded-2xl border border-[var(--outline-variant)] bg-purple-50/40 dark:bg-white/[0.02] p-3 sm:p-4 space-y-3">
+            <p class="text-[11px] font-extrabold text-[var(--primary)] uppercase tracking-wider flex items-center gap-1.5">
+              <span class="material-symbols-outlined !text-[15px]">person</span>
+              Contexto do Candidato
+            </p>
+
+            <!-- Título do Edital -->
+            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-[var(--background)]">
+              <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">description</span>
+              <input
+                [(ngModel)]="editalTitle"
+                type="text"
+                placeholder="Edital para análise -(Ex: Concurso TCU 2026)"
+                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+            </div>
+
+            <!-- Concurso Alvo -->
+            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-[var(--background)]">
+              <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">emoji_events</span>
+              <input
+                [(ngModel)]="editalConcurso"
+                type="text"
+                placeholder="Concurso alvo (Ex: Receita Federal)"
+                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+            </div>
+
+            <!-- Cargo -->
+            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-[var(--background)]">
+              <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">badge</span>
+              <input
+                [(ngModel)]="editalCargo"
+                type="text"
+                placeholder="Cargo exatamente como está escrito no edital, dica: copie e cole do edital - (Ex: Auditor Fiscal da Receita Estadual) *"
+                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+            </div>
+
+            <!-- Data da prova -->
+            <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-[var(--background)]">
+              <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">event</span>
+              <input
+                [(ngModel)]="editalDataProva"
+                type="date"
+                [min]="today"
+                placeholder="Data da prova *"
+                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+            </div>
+
+            <!-- Disponibilidade: horas/dia + dias/semana -->
+            <div class="grid grid-cols-2 gap-2">
+              <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-[var(--background)]">
+                <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">schedule</span>
+                <input
+                  [(ngModel)]="editalHorasPorDia"
+                  type="number"
+                  min="0.5" max="24" step="0.5"
+                  placeholder="Horas/dia *"
+                  class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+              </div>
+              <div class="neo-pressed rounded-xl p-2.5 flex items-center gap-2 bg-[var(--background)]">
+                <span class="material-symbols-outlined text-[var(--primary)] !text-[18px] shrink-0">calendar_view_week</span>
+                <input
+                  [(ngModel)]="editalDiasPorSemana"
+                  type="number"
+                  min="1" max="7" step="1"
+                  placeholder="Dias/semana *"
+                  class="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+              </div>
+            </div>
+
+            <!-- Resumo dinâmico de disponibilidade -->
+            <div *ngIf="editalHorasPorDia && editalDiasPorSemana && editalDataProva" class="bg-purple-100/70 dark:bg-[#7c3aed]/20 rounded-xl px-3 py-2 flex items-center gap-2 text-[11px] font-semibold text-purple-800 dark:text-[#c084fc] border border-purple-200/60 dark:border-[#7c3aed]/30">
+              <span class="material-symbols-outlined !text-[15px]">insights</span>
+              <span>{{ editalHorasPorDia }}h/dia × {{ editalDiasPorSemana }} dias = <strong>{{ editalHorasPorDia * editalDiasPorSemana }}h/semana</strong>
+              &nbsp;|&nbsp; {{ semanasDisponiveis }} semanas até a prova
+              &nbsp;|&nbsp; ~<strong>{{ editalTotalHoras }}h</strong> no total</span>
+            </div>
+
+          </div>
+
+          <!-- Modo de upload (Link / PDF) -->
+          <div class="flex gap-2 bg-slate-100 dark:bg-white/5 p-1 rounded-xl">
+            <button
+              type="button"
+              (click)="editalUploadMode = 'link'"
+              [ngClass]="editalUploadMode === 'link' ? 'bg-white dark:bg-[#1e2438] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
+              class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer">
+              Link do Edital
+            </button>
+            <button
+              type="button"
+              (click)="editalUploadMode = 'pdf'"
+              [ngClass]="editalUploadMode === 'pdf' ? 'bg-white dark:bg-[#1e2438] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
+              class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer">
+              Arquivo PDF
+            </button>
+          </div>
+
+          <div class="space-y-3">
+            <div *ngIf="editalUploadMode === 'link'" class="neo-pressed rounded-xl p-3 flex items-center bg-[var(--background)]">
+              <span class="material-symbols-outlined text-[var(--primary)] mr-2 shrink-0">link</span>
+              <input
+                [(ngModel)]="editalLink"
+                type="text"
+                placeholder="Cole aqui a URL do edital"
+                class="w-full bg-transparent border-none outline-none text-xs sm:text-sm px-1 text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+            </div>
+
+            <div *ngIf="editalUploadMode === 'pdf'" class="neo-pressed rounded-2xl p-5 sm:p-6 border-2 border-dashed border-[var(--outline-variant)] flex flex-col items-center justify-center text-center relative hover:border-[var(--primary)] transition-colors cursor-pointer bg-[var(--background)]">
+              <span class="material-symbols-outlined !text-[36px] sm:!text-[40px] text-[var(--primary)] mb-1">picture_as_pdf</span>
+              <p class="text-xs font-semibold text-[var(--on-surface)] truncate max-w-xs">
+                {{ selectedEditalFile ? selectedEditalFile.name : 'Selecionar Edital em PDF' }}
+              </p>
+              <input type="file" (change)="onEditalSelected($event)" accept="application/pdf" class="absolute inset-0 opacity-0 cursor-pointer">
+            </div>
+          </div>
+
+          <!-- Toast Feedback no Modal -->
+          <div *ngIf="showUploadToast"
+               class="rounded-xl p-3 text-xs font-bold flex items-center gap-2 animate-fadeIn"
+               [ngClass]="uploadToastType === 'success' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30'">
+            <span class="material-symbols-outlined !text-[16px] shrink-0">
+              {{ uploadToastType === 'success' ? 'check_circle' : 'error' }}
+            </span>
+            <span>{{ uploadToastMsg }}</span>
+          </div>
+
+        </div>
+
+        <!-- ================= MODO 2: SIMULAÇÃO DE LOGS IA (uploadStatus !== 'idle') ================= -->
+        <div *ngIf="uploadStatus !== 'idle'" class="px-4 sm:px-6 py-4 sm:py-5 space-y-4 overflow-y-auto flex-1 animate-fadeIn">
+
+          <!-- Top Progress Card -->
+          <div class="rounded-2xl p-4 neo-pressed bg-[var(--background)] border border-[var(--outline-variant)] space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full"
+                      [ngClass]="uploadStatus === 'error' ? 'bg-red-500' : (uploadStatus === 'completed' ? 'bg-emerald-500' : 'bg-[#7c3aed] animate-ping')">
+                </span>
+                <span class="text-xs font-extrabold uppercase tracking-wider"
+                      [ngClass]="uploadStatus === 'error' ? 'text-red-500' : (uploadStatus === 'completed' ? 'text-emerald-500' : 'text-[var(--primary)]')">
+                  {{ uploadStatus === 'error' ? 'Processamento Interrompido' : (uploadStatus === 'completed' ? 'Processamento Finalizado' : 'Executando Análise Pareto 80/20') }}
+                </span>
+              </div>
+              <span class="text-sm font-black text-[var(--on-surface)]">{{ uploadProgress }}%</span>
+            </div>
+
+            <!-- Animated Bar -->
+            <div class="w-full h-2.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden relative">
+              <div class="h-full rounded-full transition-all duration-500 ease-out"
+                   [style.width.%]="uploadProgress"
+                   [ngClass]="uploadStatus === 'error' ? 'bg-gradient-to-r from-rose-500 to-red-600' : (uploadStatus === 'completed' ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-gradient-to-r from-[#5d3bf6] via-[#7c3aed] to-[#c084fc]')">
+              </div>
+            </div>
+
+            <p class="text-[11px] text-[var(--on-surface-variant)] flex items-center justify-between flex-wrap gap-1">
+              <span>Cargo Alvo: <strong class="text-[var(--on-surface)]">{{ editalCargo || 'Não informado' }}</strong></span>
+              <span *ngIf="editalConcurso" class="truncate max-w-[220px] text-right">Concurso: <strong class="text-[var(--on-surface)]">{{ editalConcurso }}</strong></span>
+            </p>
+          </div>
+
+          <!-- Alerta de Instabilidade em Caso de Erro -->
+          <div *ngIf="uploadStatus === 'error'"
+               class="rounded-2xl p-4 bg-red-500/10 border-2 border-red-500/30 dark:border-red-500/40 text-red-700 dark:text-red-300 flex items-start gap-3 animate-fadeIn">
+            <span class="material-symbols-outlined !text-[24px] text-red-500 shrink-0 mt-0.5">cloud_off</span>
+            <div class="space-y-1 text-xs">
+              <h4 class="font-extrabold text-red-600 dark:text-red-400 text-xs sm:text-sm">
+                Instabilidade no Serviço
+              </h4>
+              <p class="leading-relaxed">
+                {{ uploadErrorMessage || 'O serviço está passando por alguma instabilidade no momento. Por favor, tente novamente mais tarde.' }}
+              </p>
+              <p class="text-[11px] text-[var(--on-surface-variant)] pt-1">
+                Suas informações continuam salvas. Clique no botão abaixo para tentar novamente quando desejar.
+              </p>
+            </div>
+          </div>
+
+          <!-- Timeline / Terminal de Logs -->
+          <div class="rounded-2xl p-3.5 sm:p-4 bg-slate-900/95 dark:bg-[#0b0e17] text-slate-100 border border-purple-500/20 shadow-inner max-h-[300px] sm:max-h-[340px] overflow-y-auto space-y-2.5">
+            <div class="flex items-center justify-between pb-2 border-b border-white/10 text-[10px] font-mono text-slate-400">
+              <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full"
+                      [ngClass]="uploadStatus === 'error' ? 'bg-red-400' : (uploadStatus === 'completed' ? 'bg-emerald-400' : 'bg-purple-400 animate-ping')"></span>
+                <span>LOGS DE PROCESSAMENTO DA IA</span>
+              </span>
+              <span>PARETO ENGINE 80/20</span>
+            </div>
+
+            <div *ngFor="let step of analysisLogs; let i = index"
+                 class="p-2.5 rounded-xl transition-all duration-300 flex items-start gap-3"
+                 [ngClass]="{
+                   'bg-emerald-500/10 border border-emerald-500/30': step.status === 'completed',
+                   'bg-purple-500/15 border border-purple-500/40 shadow-sm': step.status === 'active',
+                   'bg-red-500/15 border border-red-500/40': step.status === 'error',
+                   'bg-white/[0.02] border border-white/5 opacity-50': step.status === 'pending'
+                 }">
+
+              <!-- Icon Circle -->
+              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 text-white transition-colors"
+                   [ngClass]="{
+                     'bg-emerald-500 shadow-md shadow-emerald-500/20': step.status === 'completed',
+                     'bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] shadow-md shadow-purple-500/30': step.status === 'active',
+                     'bg-red-500 shadow-md shadow-red-500/20': step.status === 'error',
+                     'bg-white/10 text-slate-400': step.status === 'pending'
+                   }">
+                <span class="material-symbols-outlined !text-[16px] sm:!text-[18px]"
+                      [ngClass]="{'animate-spin': step.status === 'active'}">
+                  {{ step.status === 'completed' ? 'check' : (step.status === 'error' ? 'close' : (step.status === 'active' ? 'sync' : step.icon)) }}
+                </span>
+              </div>
+
+              <!-- Log Details -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-1">
+                  <h4 class="text-xs font-bold truncate"
+                      [ngClass]="{
+                        'text-emerald-300': step.status === 'completed',
+                        'text-purple-300 font-extrabold': step.status === 'active',
+                        'text-red-300': step.status === 'error',
+                        'text-slate-400': step.status === 'pending'
+                      }">
+                    {{ step.title }}
+                  </h4>
+
+                  <!-- Status Badge -->
+                  <span class="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-mono shrink-0"
+                        [ngClass]="{
+                          'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30': step.status === 'completed',
+                          'bg-purple-500/30 text-purple-200 border border-purple-400/40 animate-pulse': step.status === 'active',
+                          'bg-red-500/20 text-red-300 border border-red-500/30': step.status === 'error',
+                          'bg-white/5 text-slate-500': step.status === 'pending'
+                        }">
+                    {{ step.status === 'completed' ? 'Concluído' : (step.status === 'active' ? 'Processando...' : (step.status === 'error' ? 'Falha' : 'Aguardando')) }}
+                  </span>
+                </div>
+
+                <p class="text-[11px] mt-0.5 leading-snug"
+                   [ngClass]="step.status === 'pending' ? 'text-slate-500' : 'text-slate-300'">
+                  {{ step.detail }}
+                </p>
+
+                <span *ngIf="step.time" class="text-[9px] font-mono text-slate-500 mt-1 block">
+                  {{ step.time }}
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-4 sm:px-6 pb-5 pt-3 border-t border-[var(--outline-variant)] shrink-0">
+          <!-- Footer when form is active -->
+          <div *ngIf="uploadStatus === 'idle'" class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button
+              (click)="closeUploadModal()"
+              [disabled]="isUploadingEdital"
+              class="w-full sm:flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold border border-[var(--outline-variant)] text-[var(--on-surface-variant)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors disabled:opacity-50 cursor-pointer">
+              Cancelar
+            </button>
+            <button
+              (click)="uploadEdital()"
+              [disabled]="!isEditalFormValid || isUploadingEdital"
+              class="w-full sm:flex-1 py-3 rounded-2xl font-bold btn-mesh flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50 cursor-pointer"
+              style="background: linear-gradient(135deg, #6b38d4 0%, #8455ef 100%);">
+              <span class="material-symbols-outlined !text-[18px]">auto_awesome</span>
+              <span>Analisar Edital Pareto 80/20</span>
+            </button>
+          </div>
+
+          <!-- Footer when processing -->
+          <div *ngIf="uploadStatus === 'processing'" class="flex items-center justify-between gap-3 py-1">
+            <div class="flex items-center gap-2 text-xs text-[var(--on-surface-variant)]">
+              <span class="w-2 h-2 rounded-full bg-[var(--primary)] animate-ping"></span>
+              <span>O edital está sendo processado por completo. Por favor, aguarde...</span>
+            </div>
+            <span class="text-xs font-bold text-[var(--primary)] shrink-0">{{ uploadProgress }}%</span>
+          </div>
+
+          <!-- Footer when completed -->
+          <div *ngIf="uploadStatus === 'completed'" class="flex items-center justify-center gap-2 py-1 text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-bold animate-fadeIn">
+            <span class="material-symbols-outlined !text-[18px]">check_circle</span>
+            <span>Estrutura concluída com sucesso! Redirecionando...</span>
+          </div>
+
+          <!-- Footer when error -->
+          <div *ngIf="uploadStatus === 'error'" class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button
+              (click)="closeUploadModal()"
+              class="w-full sm:w-1/3 py-2.5 rounded-xl text-xs sm:text-sm font-bold border border-[var(--outline-variant)] text-[var(--on-surface-variant)] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer">
+              Fechar
+            </button>
+            <button
+              (click)="retryUploadForm()"
+              class="w-full sm:flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer">
+              <span class="material-symbols-outlined !text-[18px]">refresh</span>
+              <span>Voltar e Tentar Novamente</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- Modal de Edição de Análise de Edital (Admin) -->
     <div *ngIf="showEditModal"
          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
-      <div class="neo-raised bg-[#f7f9fc] dark:bg-[#1e232a] text-[var(--on-surface)] rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+      <div class="neo-raised bg-white dark:bg-[#1e232a] text-[var(--on-surface)] rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         <!-- Modal Header -->
         <div class="px-6 py-5 border-b border-[var(--outline-variant)]/30 flex items-center justify-between">
           <div class="flex items-center gap-2.5">
@@ -1392,7 +1910,7 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
     <!-- Modal de Edição de Questão (Admin) -->
     <div *ngIf="showEditQuestionModal"
          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
-      <div class="neo-raised bg-[#f7f9fc] dark:bg-[#1e232a] text-[#191c1e] dark:text-[#f7f9fc] rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+      <div class="neo-raised bg-white dark:bg-[#1e232a] text-[#191c1e] dark:text-[#f7f9fc] rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
         <!-- Modal Header -->
         <div class="px-6 py-4 border-b border-[#e2e8f0] dark:border-[#2d3748] flex items-center justify-between bg-white dark:bg-[#151921]">
           <div class="flex items-center gap-2.5">
@@ -1920,6 +2438,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.disconnectLogStream();
+    this.clearUploadLogInterval();
+  }
+
+  private getCurrentTimeStr(): string {
+    const d = new Date();
+    return d.toTimeString().split(' ')[0];
   }
 
   // Campos do contexto do candidato
@@ -1938,6 +2462,179 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   isUploadingPdf = false;
   isUploadingEdital = false;
+
+  // ---- Modal de Upload de Edital (Admin) ----
+  showUploadModal = false;
+  showUploadToast = false;
+  uploadToastMsg = '';
+  uploadToastType: 'success' | 'error' = 'success';
+
+  // ---- Simulação de Logs de Processamento IA ----
+  uploadStatus: 'idle' | 'processing' | 'completed' | 'error' = 'idle';
+  uploadProgress = 0;
+  uploadLogInterval: any = null;
+  uploadErrorMessage = '';
+  analysisLogs: AnalysisLogStep[] = [];
+
+  openUploadModal() {
+    this.uploadStatus = 'idle';
+    this.isUploadingEdital = false;
+    this.uploadErrorMessage = '';
+    this.showUploadModal = true;
+    this.showUploadToast = false;
+  }
+
+  closeUploadModal() {
+    if (this.uploadStatus === 'processing') return;
+    this.clearUploadLogInterval();
+    this.uploadStatus = 'idle';
+    this.isUploadingEdital = false;
+    this.showUploadModal = false;
+    this.showUploadToast = false;
+  }
+
+  retryUploadForm() {
+    this.clearUploadLogInterval();
+    this.uploadStatus = 'idle';
+    this.isUploadingEdital = false;
+    this.uploadErrorMessage = '';
+  }
+
+  clearUploadLogInterval() {
+    if (this.uploadLogInterval) {
+      clearInterval(this.uploadLogInterval);
+      this.uploadLogInterval = null;
+    }
+  }
+
+  startUploadLogSimulation(cargo: string, concurso?: string, filenameOrLink?: string) {
+    this.clearUploadLogInterval();
+    this.uploadStatus = 'processing';
+    this.uploadProgress = 12;
+    this.uploadErrorMessage = '';
+
+    const displayCargo = cargo ? cargo.trim() : 'Cargo Alvo';
+    const displayConcurso = concurso ? ` • Concurso: ${concurso.trim()}` : '';
+    const displayDoc = filenameOrLink ? ` (${filenameOrLink})` : '';
+
+    this.analysisLogs = [
+      {
+        id: 'info',
+        icon: 'save',
+        title: 'Salvamos suas informações',
+        detail: `Contexto do concurso e perfil registrados com sucesso${displayConcurso}.`,
+        status: 'completed',
+        time: this.getCurrentTimeStr()
+      },
+      {
+        id: 'received',
+        icon: 'cloud_done',
+        title: 'Edital recebido',
+        detail: `Documento recebido e verificação de integridade aprovada${displayDoc}.`,
+        status: 'active',
+        time: this.getCurrentTimeStr()
+      },
+      {
+        id: 'cargo',
+        icon: 'badge',
+        title: 'Identificamos o seu cargo',
+        detail: `Foco de análise configurado para: "${displayCargo}".`,
+        status: 'pending'
+      },
+      {
+        id: 'sent_ai',
+        icon: 'psychology',
+        title: 'Enviado para análise',
+        detail: 'Conectando ao motor de inteligência artificial para extração e leitura detalhada.',
+        status: 'pending'
+      },
+      {
+        id: 'disciplinas',
+        icon: 'menu_book',
+        title: 'Mapeando Conteúdo Programático',
+        detail: 'Separando disciplinas básicas e específicas, tópicos e subtópicos com pesos.',
+        status: 'pending'
+      },
+      {
+        id: 'pareto',
+        icon: 'query_stats',
+        title: 'Aplicando Análise Pareto 80/20',
+        detail: 'Identificando o núcleo de 20% das matérias de maior incidência histórica.',
+        status: 'pending'
+      },
+      {
+        id: 'regua',
+        icon: 'balance',
+        title: 'Calibrando Régua de Corte e Pesos',
+        detail: 'Estimando pontuação de corte e critérios de desempate da banca examinadora.',
+        status: 'pending'
+      },
+      {
+        id: 'plano',
+        icon: 'auto_awesome',
+        title: 'Finalizando Plano Estratégico',
+        detail: 'Estruturando cronograma adaptativo de estudos e mapa de prioridades.',
+        status: 'pending'
+      }
+    ];
+
+    let currentStep = 1;
+    const progressTargets = [12, 25, 42, 58, 72, 85, 93, 97];
+
+    this.uploadLogInterval = setInterval(() => {
+      if (this.uploadStatus !== 'processing') {
+        this.clearUploadLogInterval();
+        return;
+      }
+
+      if (currentStep < this.analysisLogs.length - 1) {
+        this.analysisLogs[currentStep].status = 'completed';
+        this.analysisLogs[currentStep].time = this.getCurrentTimeStr();
+
+        currentStep++;
+        this.analysisLogs[currentStep].status = 'active';
+        this.analysisLogs[currentStep].time = this.getCurrentTimeStr();
+
+        this.uploadProgress = progressTargets[currentStep] || 95;
+      } else {
+        if (this.uploadProgress < 97) {
+          this.uploadProgress += 1;
+        }
+      }
+    }, 2200);
+  }
+
+  finishUploadSuccess(callback: () => void) {
+    this.clearUploadLogInterval();
+    this.uploadProgress = 100;
+    this.uploadStatus = 'completed';
+
+    this.analysisLogs.forEach(step => {
+      step.status = 'completed';
+      if (!step.time) step.time = this.getCurrentTimeStr();
+    });
+
+    setTimeout(() => {
+      this.uploadStatus = 'idle';
+      this.isUploadingEdital = false;
+      this.showUploadModal = false;
+      this.showUploadToast = false;
+      callback();
+    }, 1200);
+  }
+
+  handleUploadError(err?: any) {
+    this.clearUploadLogInterval();
+    this.isUploadingEdital = false;
+    this.uploadStatus = 'error';
+    this.uploadErrorMessage = 'O serviço está passando por alguma instabilidade no momento. Por favor, tente novamente mais tarde.';
+
+    const activeStep = this.analysisLogs.find(s => s.status === 'active');
+    if (activeStep) {
+      activeStep.status = 'error';
+      activeStep.time = this.getCurrentTimeStr();
+    }
+  }
 
   // Estado para envio de edital para usuário
   sendEditalOpenId: string | null = null;
@@ -2151,6 +2848,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   /** Disciplina selecionada para filtro do gráfico de tendência por ano */
   statsAnoSelectedDisciplina: string = 'Todas';
 
+  /** Banca selecionada para filtro do gráfico de tendência por ano */
+  statsAnoSelectedBanca: string = 'Todas';
+
+  /** Modo de visualização para a seção de correlação Disciplinas x Bancas */
+  statsBancaViewMode: 'cards' | 'discipline' = 'cards';
+
   /** Cores padronizadas por disciplina */
   private readonly disciplineColorMap: Record<string, string> = {
     'BANCO DE DADOS': '#0ea5e9',
@@ -2210,6 +2913,33 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     return palette[Math.abs(hash) % palette.length];
   }
 
+  getBancaColor(bancaName: string): string {
+    if (!bancaName) return '#0284c7';
+    const solidColors: Record<string, string> = {
+      'FGV': '#0284c7',
+      'CEBRASPE': '#059669',
+      'CESPE': '#059669',
+      'FCC': '#d97706',
+      'VUNESP': '#7c3aed',
+      'CESGRANRIO': '#dc2626',
+      'QUADRIX': '#db2777',
+      'IBFC': '#0891b2',
+      'AOCP': '#ea580c',
+      'INSTITUTO AOCP': '#ea580c',
+      'IDECAN': '#4f46e5',
+      'FUNDATEC': '#16a34a'
+    };
+    const key = bancaName.trim().toUpperCase();
+    if (solidColors[key]) return solidColors[key];
+
+    const fallbackPalette = ['#0284c7', '#059669', '#d97706', '#7c3aed', '#dc2626', '#db2777', '#0891b2', '#ea580c', '#4f46e5', '#16a34a', '#854d0e', '#0d9488'];
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) {
+      hash = key.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return fallbackPalette[Math.abs(hash) % fallbackPalette.length];
+  }
+
   getDisciplinaTotalCount(disciplina: string): number {
     if (!this.questions || this.questions.length === 0) return 0;
     const target = disciplina.trim().toUpperCase();
@@ -2219,13 +2949,27 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }).length;
   }
 
+  getBancaTotalCount(banca: string): number {
+    if (!this.questions || this.questions.length === 0) return 0;
+    const target = banca.trim().toUpperCase();
+    return this.questions.filter(q => {
+      const b = (q.banca || '').toString().trim().toUpperCase();
+      return b === target;
+    }).length;
+  }
+
   get statsFilteredQuestionsForAno(): any[] {
     if (!this.questions || this.questions.length === 0) return [];
-    if (this.statsAnoSelectedDisciplina === 'Todas') return this.questions;
-    const target = this.statsAnoSelectedDisciplina.trim().toUpperCase();
     return this.questions.filter(q => {
-      const d = (q.disciplina || q.subject || '').toString().trim().toUpperCase();
-      return d === target;
+      if (this.statsAnoSelectedDisciplina !== 'Todas') {
+        const d = (q.disciplina || q.subject || '').toString().trim().toUpperCase();
+        if (d !== this.statsAnoSelectedDisciplina.trim().toUpperCase()) return false;
+      }
+      if (this.statsAnoSelectedBanca !== 'Todas') {
+        const b = (q.banca || '').toString().trim().toUpperCase();
+        if (b !== this.statsAnoSelectedBanca.trim().toUpperCase()) return false;
+      }
+      return true;
     });
   }
 
@@ -2263,21 +3007,31 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       .sort((a, b) => b.count - a.count);
   }
 
-  /** Distribuição de questões por ano, filtrada por disciplina e com top disciplinas */
-  get statsAnos(): { ano: string | number; count: number; percentage: string; topDisciplinas: { name: string; count: number; color: string }[] }[] {
+  /** Distribuição de questões por ano, filtrada por disciplina e banca, com top disciplinas e top bancas */
+  get statsAnos(): {
+    ano: string | number;
+    count: number;
+    percentage: string;
+    topDisciplinas: { name: string; count: number; color: string }[];
+    topBancas: { name: string; count: number; color: string }[];
+  }[] {
     const list = this.statsFilteredQuestionsForAno;
     if (list.length === 0) return [];
-    const map = new Map<string, { total: number; discMap: Map<string, number> }>();
+    const map = new Map<string, { total: number; discMap: Map<string, number>; bancaMap: Map<string, number> }>();
     for (const q of list) {
       const ano = q.ano != null && q.ano !== '' ? String(q.ano).trim() : '';
       if (ano) {
         if (!map.has(ano)) {
-          map.set(ano, { total: 0, discMap: new Map<string, number>() });
+          map.set(ano, { total: 0, discMap: new Map<string, number>(), bancaMap: new Map<string, number>() });
         }
         const entry = map.get(ano)!;
         entry.total++;
         const d = (q.disciplina || q.subject || 'Geral').toString().trim();
         entry.discMap.set(d, (entry.discMap.get(d) || 0) + 1);
+        const b = (q.banca || 'Outras').toString().trim();
+        if (b) {
+          entry.bancaMap.set(b, (entry.bancaMap.get(b) || 0) + 1);
+        }
       }
     }
     const total = list.length;
@@ -2292,11 +3046,21 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             color: this.getDisciplineColor(name)
           }));
 
+        const topBancas = Array.from(data.bancaMap.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([name, count]) => ({
+            name,
+            count,
+            color: this.getBancaColor(name)
+          }));
+
         return {
           ano,
           count: data.total,
           percentage: total > 0 ? ((data.total / total) * 100).toFixed(1) : '0.0',
-          topDisciplinas
+          topDisciplinas,
+          topBancas
         };
       })
       .sort((a, b) => Number(a.ano) - Number(b.ano));
@@ -2319,6 +3083,120 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     if (this.statsAnos.length === 0) return '0';
     const total = this.statsAnos.reduce((sum, i) => sum + i.count, 0);
     return (total / this.statsAnos.length).toFixed(0);
+  }
+
+  /** Distribuição de disciplinas organizadas por Banca */
+  get statsDisciplinasPorBanca(): {
+    banca: string;
+    total: number;
+    color: string;
+    percentageOfTotal: string;
+    disciplinas: { name: string; count: number; percentage: string; color: string }[];
+  }[] {
+    if (!this.questions || this.questions.length === 0) return [];
+
+    const bancaMap = new Map<string, { total: number; discMap: Map<string, number> }>();
+
+    for (const q of this.questions) {
+      const b = (q.banca || '').toString().trim();
+      if (!b) continue;
+
+      if (!bancaMap.has(b)) {
+        bancaMap.set(b, { total: 0, discMap: new Map<string, number>() });
+      }
+      const entry = bancaMap.get(b)!;
+      entry.total++;
+
+      const d = (q.disciplina || q.subject || 'Outras').toString().trim();
+      entry.discMap.set(d, (entry.discMap.get(d) || 0) + 1);
+    }
+
+    const grandTotal = this.questions.length;
+
+    let result = Array.from(bancaMap.entries())
+      .map(([banca, data]) => {
+        const discList = Array.from(data.discMap.entries())
+          .map(([name, count]) => ({
+            name,
+            count,
+            percentage: data.total > 0 ? ((count / data.total) * 100).toFixed(1) : '0.0',
+            color: this.getDisciplineColor(name)
+          }))
+          .sort((a, b) => b.count - a.count);
+
+        return {
+          banca,
+          total: data.total,
+          color: this.getBancaColor(banca),
+          percentageOfTotal: grandTotal > 0 ? ((data.total / grandTotal) * 100).toFixed(1) : '0.0',
+          disciplinas: discList
+        };
+      })
+      .sort((a, b) => b.total - a.total);
+
+    if (this.statsAnoSelectedBanca !== 'Todas') {
+      const targetBanca = this.statsAnoSelectedBanca.trim().toUpperCase();
+      result = result.filter(r => r.banca.trim().toUpperCase() === targetBanca);
+    }
+
+    return result;
+  }
+
+  /** Distribuição de bancas organizadas por Disciplina */
+  get statsBancasPorTodasDisciplinas(): {
+    disciplina: string;
+    total: number;
+    color: string;
+    percentageOfTotal: string;
+    bancas: { name: string; count: number; percentage: string; color: string }[];
+  }[] {
+    if (!this.questions || this.questions.length === 0) return [];
+
+    const discMap = new Map<string, { total: number; bancaMap: Map<string, number> }>();
+
+    for (const q of this.questions) {
+      const d = (q.disciplina || q.subject || 'Outras').toString().trim();
+      if (!d) continue;
+
+      if (!discMap.has(d)) {
+        discMap.set(d, { total: 0, bancaMap: new Map<string, number>() });
+      }
+      const entry = discMap.get(d)!;
+      entry.total++;
+
+      const b = (q.banca || 'Não Informada').toString().trim();
+      entry.bancaMap.set(b, (entry.bancaMap.get(b) || 0) + 1);
+    }
+
+    const grandTotal = this.questions.length;
+
+    let result = Array.from(discMap.entries())
+      .map(([disciplina, data]) => {
+        const bancasList = Array.from(data.bancaMap.entries())
+          .map(([name, count]) => ({
+            name,
+            count,
+            percentage: data.total > 0 ? ((count / data.total) * 100).toFixed(1) : '0.0',
+            color: this.getBancaColor(name)
+          }))
+          .sort((a, b) => b.count - a.count);
+
+        return {
+          disciplina,
+          total: data.total,
+          color: this.getDisciplineColor(disciplina),
+          percentageOfTotal: grandTotal > 0 ? ((data.total / grandTotal) * 100).toFixed(1) : '0.0',
+          bancas: bancasList
+        };
+      })
+      .sort((a, b) => b.total - a.total);
+
+    if (this.statsAnoSelectedDisciplina !== 'Todas') {
+      const targetDisc = this.statsAnoSelectedDisciplina.trim().toUpperCase();
+      result = result.filter(r => r.disciplina.trim().toUpperCase() === targetDisc);
+    }
+
+    return result;
   }
 
   get promptQualityJson(): string {
@@ -2409,27 +3287,34 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       diasPorSemana: this.editalDiasPorSemana ?? undefined,
     };
 
+    const docName = this.editalUploadMode === 'pdf' && this.selectedEditalFile
+      ? this.selectedEditalFile.name
+      : (this.editalLink ? 'Link Web' : undefined);
+
+    this.startUploadLogSimulation(this.editalCargo, this.editalConcurso, docName);
+
     this.apiService
       .uploadEdital(fileToUpload, title, linkToSend, this.user?.id || 'usr-1', userContext)
       .subscribe({
         next: (res: any) => {
-          this.isUploadingEdital = false;
-          this.selectedEditalFile = null;
-          this.editalTitle = '';
-          this.editalLink = '';
-          this.editalCargo = '';
-          this.editalConcurso = '';
-          this.editalDataProva = '';
-          this.editalHorasPorDia = null;
-          this.editalDiasPorSemana = null;
-          this.loadDashboardData();
-          const newId = res?.data?.id || res?.id;
-          if (newId) {
-            this.router.navigate(['/disciplinas', newId]);
-          }
+          this.finishUploadSuccess(() => {
+            this.selectedEditalFile = null;
+            this.editalTitle = '';
+            this.editalLink = '';
+            this.editalCargo = '';
+            this.editalConcurso = '';
+            this.editalDataProva = '';
+            this.editalHorasPorDia = null;
+            this.editalDiasPorSemana = null;
+            this.loadDashboardData();
+            const newId = res?.data?.id || res?.id;
+            if (newId) {
+              this.router.navigate(['/disciplinas', newId]);
+            }
+          });
         },
-        error: () => {
-          this.isUploadingEdital = false;
+        error: (err: any) => {
+          this.handleUploadError(err);
         },
       });
   }

@@ -46,6 +46,20 @@ export interface NormalizedOption {
             <span class="material-symbols-outlined !text-[13px]">star</span>
             <span>Qualidade: {{ question.quality_metrics.overall_quality_score }}/10</span>
           </span>
+
+          <!-- Status Badge: Resolvida (Correta) -->
+          <span *ngIf="isResolved && !isWrong"
+                class="bg-[#f0fdf4] dark:bg-[#002819] border border-[#bbf7d0] dark:border-[#005236] text-[#16a34a] dark:text-[#4ade80] text-[11px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 animate-fadeIn">
+            <span class="material-symbols-outlined !text-[13px]">check_circle</span>
+            <span>Resolvida</span>
+          </span>
+
+          <!-- Status Badge: Resolvida (Errada) -->
+          <span *ngIf="isWrong"
+                class="bg-[#fef2f2] dark:bg-[#320005] border border-[#fecaca] dark:border-[#7f1d1d] text-[#dc2626] dark:text-[#f87171] text-[11px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 animate-fadeIn">
+            <span class="material-symbols-outlined !text-[13px]">cancel</span>
+            <span>Errada</span>
+          </span>
         </div>
 
         <!-- Admin Action Buttons Toolbar -->
@@ -205,6 +219,10 @@ export class QuestionCardComponent implements OnInit, OnChanges {
   @Input() index?: number;
   @Input() isAdmin: boolean = false;
   @Input() defaultSelectedOption?: string;
+  /** Indica que o usuário já respondeu esta questão (em sessão anterior ou atual) */
+  @Input() isResolved: boolean = false;
+  /** Indica que o usuário respondeu esta questão e errou */
+  @Input() isWrong: boolean = false;
 
   @Output() answerSubmitted = new EventEmitter<{ questionId: string; selectedOption: string; isCorrect: boolean }>();
   @Output() toggleRelease = new EventEmitter<any>();

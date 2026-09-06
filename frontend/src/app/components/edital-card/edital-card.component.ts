@@ -10,7 +10,7 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
   template: `
-    <div class="bg-[#f8fafd] dark:bg-[#0f1220] rounded-3xl p-4 sm:p-6 flex flex-col justify-between border-2 border-indigo-200/80 hover:border-indigo-400 dark:border-[var(--primary)]/30 dark:hover:border-[var(--primary)]/70 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full relative overflow-hidden group text-[var(--on-surface)]">
+    <div class="bg-white dark:bg-[#0f1220] rounded-3xl p-4 sm:p-6 flex flex-col justify-between border-2 border-indigo-200/80 hover:border-indigo-400 dark:border-[var(--primary)]/30 dark:hover:border-[var(--primary)]/70 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full relative overflow-hidden group text-[var(--on-surface)]">
       
       <!-- Top Accent Bar: Identificador Meu Edital -->
       <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[var(--primary)] via-[var(--secondary)] to-[#38bdf8]"></div>

@@ -1,5 +1,6 @@
 import {
   Component,
+  OnInit,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   OnDestroy,
@@ -11,9 +12,12 @@ import {
   ElementRef,
   HostListener,
   inject,
+  effect,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { Router } from "@angular/router";
 import { ThemeService } from "../../services/theme.service";
+import { SupabaseService } from "../../services/supabase.service";
 import {
   Chart,
   BarController, BarElement, CategoryScale, LinearScale,
@@ -77,11 +81,12 @@ interface StatItem { name: string; count: number; pct: number; }
           <div class="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-[#f59e0b]/10 blur-2xl pointer-events-none"></div>
           <div class="flex items-center gap-2">
             <span class="material-symbols-outlined !text-[20px] text-[#f59e0b]">schedule</span>
-            <span class="text-[10px] font-semibold text-[var(--on-surface-variant)] uppercase tracking-wide">Horas / Semana</span>
+            <span class="text-[10px] font-semibold text-[var(--on-surface-variant)] uppercase tracking-wide">Horas Estudadas</span>
           </div>
-          <div class="text-3xl font-black text-[var(--on-surface)]">{{ _cache.totalHorasSemanais }}h</div>
+          <div class="text-3xl font-black text-[var(--on-surface)]">{{ _cache.totalHorasEstudoFormatted }}</div>
           <div class="text-[11px] text-[var(--on-surface-variant)] font-medium">
-            <span class="text-[#f59e0b] font-bold">{{ editais.length }}</span> editais configurados
+            <span class="text-[#f59e0b] font-bold">{{ _cache.totalSessoes }}</span> sessões registradas
+            <span *ngIf="_cache.horasSemanaMin > 0" class="text-[var(--on-surface-variant)] font-normal"> ({{ _cache.horasSemanaFormatted }} esta semana)</span>
           </div>
         </div>
 
@@ -212,23 +217,42 @@ interface StatItem { name: string; count: number; pct: number; }
       <!-- Row 3: Horas de Estudo + Progresso por Edital lado a lado -->
       <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <div class="neo-raised rounded-2xl p-5 sm:p-6 bg-[var(--card-bg)] border border-[var(--outline-variant)]">
-          <div class="flex items-center gap-2 mb-5">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#f59e0b] to-[#d97706] flex items-center justify-center shrink-0">
-              <span class="material-symbols-outlined !text-[16px] text-white">schedule</span>
+          <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#f59e0b] to-[#d97706] flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined !text-[16px] text-white">schedule</span>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-[var(--on-surface)]">Horas de Estudo</h3>
+                <p class="text-[11px] text-[var(--on-surface-variant)]">Tempo registrado via Pomodoro por edital</p>
+              </div>
             </div>
-            <div>
-              <h3 class="text-sm font-bold text-[var(--on-surface)]">Horas de Estudo</h3>
-              <p class="text-[11px] text-[var(--on-surface-variant)]">Horas semanais por edital</p>
-            </div>
+            <button
+              (click)="goToPomodoro()"
+              class="px-2.5 py-1 rounded-xl bg-[var(--surface-container-high)] hover:bg-[var(--primary)]/15 text-[var(--on-surface-variant)] hover:text-[var(--primary)] text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-[var(--outline-variant)]/60"
+              title="Abrir Pomodoro • Banco de Horas">
+              <span class="text-xs">🍅</span>
+              <span>Pomodoro</span>
+            </button>
           </div>
-          <div *ngIf="_cache.horas.length > 0; else semCronograma" class="relative" style="height:210px">
+          <div *ngIf="_cache.horas.length > 0; else semSessoes" class="relative" style="height:210px">
             <canvas #horasChart></canvas>
           </div>
-          <ng-template #semCronograma>
-            <div class="flex flex-col items-center justify-center gap-2 text-center" style="height:210px">
-              <span class="material-symbols-outlined !text-[40px] text-[var(--outline)]">schedule</span>
-              <p class="text-sm font-semibold text-[var(--on-surface-variant)]">Nenhum cronograma configurado</p>
-              <p class="text-[11px] text-[var(--outline)]">Defina horas de estudo em Meus Editais</p>
+          <ng-template #semSessoes>
+            <div class="flex flex-col items-center justify-center gap-2.5 text-center" style="height:210px">
+              <div class="w-12 h-12 rounded-2xl bg-[#f59e0b]/10 flex items-center justify-center">
+                <span class="material-symbols-outlined !text-[28px] text-[#f59e0b]">timer</span>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-[var(--on-surface-variant)]">Nenhuma sessão registrada</p>
+                <p class="text-[11px] text-[var(--outline)] max-w-xs mt-0.5">Utilize o cronômetro Pomodoro para registrar suas horas de estudo por edital.</p>
+              </div>
+              <button
+                (click)="goToPomodoro()"
+                class="mt-1 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#f59e0b]/20 hover:scale-105 active:scale-95 transition-all cursor-pointer">
+                <span class="text-sm">🍅</span>
+                <span>Iniciar Pomodoro</span>
+              </button>
             </div>
           </ng-template>
         </div>
@@ -309,11 +333,12 @@ interface StatItem { name: string; count: number; pct: number; }
     </div>
   `,
 })
-export class StatsDashboardComponent implements AfterViewInit, OnChanges, OnDestroy {
+export class StatsDashboardComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy {
   @Input() isAdmin = false;
   @Input() questions: any[] = [];
   @Input() editais: any[] = [];
   @Input() userSchedules: Record<string, any> = {};
+  @Input() studySessions: any[] = [];
   @Input() editalProgressMap: Record<string, { percentage: number; completed: number; total: number }> = {};
   @Input() selectedAnswers: Record<string, string> = {};
   @Input() sessionAnswers: Record<string, { selectedOption: string; isCorrect: boolean; disciplina: string }> = {};
@@ -324,6 +349,8 @@ export class StatsDashboardComponent implements AfterViewInit, OnChanges, OnDest
   @ViewChild("acertoChart") acertoChartRef!: ElementRef<HTMLCanvasElement>;
 
   public themeService = inject(ThemeService);
+  private supabaseService = inject(SupabaseService);
+  private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
 
   private chartDisciplina?: Chart;
@@ -349,12 +376,16 @@ export class StatsDashboardComponent implements AfterViewInit, OnChanges, OnDest
     acertosCount: 0,
     acertosPct: 0,
     totalHorasSemanais: 0,
+    totalHorasEstudoFormatted: '0h',
+    totalSessoes: 0,
+    horasSemanaMin: 0,
+    horasSemanaFormatted: '0h',
     avgProgresso: 0,
     disciplinas: [] as StatItem[],
     bancas: [] as StatItem[],
     anos: [] as { year: string; count: number }[],
     assuntos: [] as StatItem[],
-    horas: [] as { label: string; horas: number }[],
+    horas: [] as { label: string; horas: number; formatted: string; min: number }[],
     progresso: [] as { label: string; pct: number; completed: number; total: number }[],
   };
 
@@ -460,9 +491,41 @@ export class StatsDashboardComponent implements AfterViewInit, OnChanges, OnDest
     return "#ef4444";
   }
 
-  private get isDark() { return this.themeService.isDark(); }
-  private get gridColor() { return this.isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"; }
-  private get labelColor() { return this.isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.55)"; }
+  constructor() {
+    effect(() => {
+      // Reage automaticamente a mudanças de tema (dark <-> light)
+      const _ = this.themeService.theme();
+      this.updateChartDefaults();
+      if (this.viewReady) {
+        setTimeout(() => this.buildAllCharts(), 60);
+      }
+    });
+  }
+
+  private get isDark(): boolean {
+    if (typeof document !== 'undefined') {
+      const docTheme = document.documentElement.getAttribute('data-theme');
+      if (docTheme) return docTheme === 'dark';
+      return document.documentElement.classList.contains('dark');
+    }
+    return this.themeService.isDark();
+  }
+
+  private get gridColor(): string {
+    return this.isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(15, 23, 42, 0.08)";
+  }
+
+  private get labelColor(): string {
+    // Modo Claro: #0f172a (preto/slate escuro, 100% legível)
+    // Modo Escuro: #f1f5f9 (branco/slate contrastado)
+    return this.isDark ? "#f1f5f9" : "#0f172a";
+  }
+
+  private updateChartDefaults() {
+    Chart.defaults.color = this.labelColor;
+    Chart.defaults.borderColor = this.gridColor;
+    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+  }
 
   @HostListener('document:click')
   onDocumentClick() {
@@ -472,13 +535,39 @@ export class StatsDashboardComponent implements AfterViewInit, OnChanges, OnDest
     }
   }
 
+  async ngOnInit() {
+    if (!this.studySessions || this.studySessions.length === 0) {
+      await this.loadStudySessions();
+    }
+  }
+
+  async loadStudySessions() {
+    try {
+      const sessions = await this.supabaseService.getStudySessions({ limite: 500 });
+      if (sessions && sessions.length > 0) {
+        this.studySessions = sessions;
+        this.computeCache();
+        if (this.viewReady) {
+          this.buildHorasChart();
+        }
+        this.cdr.markForCheck();
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar sessões de estudo no dashboard:', e);
+    }
+  }
+
+  goToPomodoro() {
+    this.router.navigate(['/pomodoro']);
+  }
+
   ngAfterViewInit() {
     this.viewReady = true;
     this.scheduleUpdate();
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    const relevant = changes["questions"] || changes["userSchedules"] || changes["editais"] || changes["editalProgressMap"] || changes["selectedAnswers"] || changes["sessionAnswers"] || changes["accuracyByDisciplina"];
+    const relevant = changes["questions"] || changes["userSchedules"] || changes["editais"] || changes["editalProgressMap"] || changes["selectedAnswers"] || changes["sessionAnswers"] || changes["accuracyByDisciplina"] || changes["studySessions"];
     if (relevant) {
       this.scheduleUpdate();
     }
@@ -632,12 +721,74 @@ export class StatsDashboardComponent implements AfterViewInit, OnChanges, OnDest
       .sort((a, b) => Number(a[0]) - Number(b[0]))
       .map(([year, count]) => ({ year, count }));
 
-    // Horas
-    const horas = this.editais.map(ed => {
-      const s = this.userSchedules[ed.id];
-      if (!s?.horas_por_dia || !s?.dias_por_semana) return null;
-      return { label: ed.cargo || ed.concurso || ed.title || "Edital", horas: s.horas_por_dia * s.dias_por_semana };
-    }).filter(Boolean) as { label: string; horas: number }[];
+    // ── Banco de Horas Pomodoro (Sessões Reais de Estudo) ──
+    const editalMinMap = new Map<string, number>();
+    let totalMinGeral = 0;
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    let semanaMin = 0;
+
+    for (const s of (this.studySessions || [])) {
+      const min = Number(s.duracao_min) || 0;
+      totalMinGeral += min;
+
+      if (s.started_at && new Date(s.started_at) >= sevenDaysAgo) {
+        semanaMin += min;
+      }
+
+      const key = s.edital_id || (s.disciplina ? `disc_${s.disciplina}` : 'geral');
+      editalMinMap.set(key, (editalMinMap.get(key) || 0) + min);
+    }
+
+    const horas: { label: string; horas: number; formatted: string; min: number }[] = [];
+
+    // Editais cadastrados que possuem minutos estudados
+    for (const ed of this.editais) {
+      const min = editalMinMap.get(ed.id) || 0;
+      if (min > 0) {
+        horas.push({
+          label: ed.cargo || ed.concurso || ed.title || "Edital",
+          horas: Number((min / 60).toFixed(1)),
+          formatted: this.formatHorasMin(min),
+          min,
+        });
+      }
+    }
+
+    // Sessões por disciplina ou geral (sem edital vinculado)
+    for (const [key, min] of editalMinMap.entries()) {
+      if (key.startsWith('disc_')) {
+        const disc = key.replace('disc_', '');
+        horas.push({
+          label: disc,
+          horas: Number((min / 60).toFixed(1)),
+          formatted: this.formatHorasMin(min),
+          min,
+        });
+      } else if (key === 'geral' && min > 0) {
+        horas.push({
+          label: 'Estudo Geral',
+          horas: Number((min / 60).toFixed(1)),
+          formatted: this.formatHorasMin(min),
+          min,
+        });
+      }
+    }
+
+    // Ordena pelo maior tempo estudado
+    horas.sort((a, b) => b.min - a.min);
+
+    const totalH = Math.floor(totalMinGeral / 60);
+    const totalM = totalMinGeral % 60;
+    const totalHorasEstudoFormatted = totalMinGeral === 0
+      ? '0h'
+      : (totalH > 0 ? (totalM > 0 ? `${totalH}h ${totalM}m` : `${totalH}h`) : `${totalM}min`);
+
+    const semH = Math.floor(semanaMin / 60);
+    const semM = semanaMin % 60;
+    const horasSemanaFormatted = semanaMin === 0
+      ? '0h'
+      : (semH > 0 ? (semM > 0 ? `${semH}h ${semM}m` : `${semH}h`) : `${semM}min`);
 
     // Progresso
     const progresso = this.editais.map(ed => {
@@ -695,6 +846,10 @@ export class StatsDashboardComponent implements AfterViewInit, OnChanges, OnDest
       acertosCount: totalCorretas,
       acertosPct,
       totalHorasSemanais: totalHoras,
+      totalHorasEstudoFormatted,
+      totalSessoes: (this.studySessions || []).length,
+      horasSemanaMin: semanaMin,
+      horasSemanaFormatted,
       avgProgresso,
       disciplinas,
       bancas,
@@ -786,6 +941,7 @@ export class StatsDashboardComponent implements AfterViewInit, OnChanges, OnDest
   }
 
   buildAllCharts() {
+    this.updateChartDefaults();
     // Renderiza primeiro o gráfico de Acerto por Disciplina no topo
     if (this.effectiveAccuracyByDisciplina.length) this.buildAcertoChart();
     setTimeout(() => this.buildDisciplinaChart(), 30);
@@ -810,7 +966,7 @@ export class StatsDashboardComponent implements AfterViewInit, OnChanges, OnDest
     this.chartDisciplina = new Chart(ctx, {
       type: "bar",
       data: {
-        labels: data.map(d => d.name),
+        labels: data.map(d => d.name.length > 22 ? d.name.slice(0, 20) + '…' : d.name),
         datasets: [{
           data: data.map(d => d.count),
           backgroundColor: bgColors,
@@ -827,6 +983,7 @@ export class StatsDashboardComponent implements AfterViewInit, OnChanges, OnDest
           legend: { display: false },
           tooltip: {
             callbacks: {
+              title: (items) => data[items[0]?.dataIndex]?.name || '',
               label: (c) => {
                 const item = data[c.dataIndex];
                 return ` ${c.parsed.x} questões (${item.pct}%)`;
@@ -837,15 +994,30 @@ export class StatsDashboardComponent implements AfterViewInit, OnChanges, OnDest
         scales: {
           x: {
             grid: { color: this.gridColor },
-            ticks: { color: this.labelColor, font: { size: 10 } },
+            ticks: {
+              color: this.labelColor,
+              font: { size: 10, weight: 600, family: "'Plus Jakarta Sans', sans-serif" },
+            },
           },
           y: {
             grid: { display: false },
-            ticks: { color: this.labelColor, font: { size: 10 } },
+            ticks: {
+              color: this.labelColor,
+              font: { size: 11, weight: 700, family: "'Plus Jakarta Sans', sans-serif" },
+              autoSkip: false,
+            },
           },
         },
       },
     });
+  }
+
+  formatHorasMin(totalMin: number): string {
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    if (h === 0) return `${m}min`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${String(m).padStart(2, '0')}min`;
   }
 
   private buildHorasChart() {
@@ -855,20 +1027,52 @@ export class StatsDashboardComponent implements AfterViewInit, OnChanges, OnDest
     if (!data.length) return;
     const ctx = this.horasChartRef.nativeElement.getContext("2d")!;
     const grad = ctx.createLinearGradient(0, 0, 0, 200);
-    grad.addColorStop(0, "#f59e0b"); grad.addColorStop(1, "#f59e0b44");
+    grad.addColorStop(0, "#f59e0b"); grad.addColorStop(1, "#f59e0b33");
     this.chartHoras = new Chart(ctx, {
       type: "bar",
       data: {
-        labels: data.map(d => d.label.length > 14 ? d.label.slice(0, 12) + "..." : d.label),
-        datasets: [{ label: "h/semana", data: data.map(d => d.horas), backgroundColor: grad, borderRadius: 8, borderSkipped: false }],
+        labels: data.map(d => d.label.length > 18 ? d.label.slice(0, 16) + "…" : d.label),
+        datasets: [{
+          label: "Horas Estudadas",
+          data: data.map(d => d.horas),
+          backgroundColor: grad,
+          borderColor: "#f59e0b",
+          borderWidth: 1.5,
+          borderRadius: 8,
+          borderSkipped: false,
+          maxBarThickness: 48,
+        }],
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: true,
+        maintainAspectRatio: false,
         animation: { duration: 600 },
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.parsed.y}h / semana` } } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (items) => data[items[0]?.dataIndex]?.label || '',
+              label: (c) => ` Tempo Estudado: ${data[c.dataIndex]?.formatted || c.parsed.y + 'h'}`
+            }
+          }
+        },
         scales: {
-          x: { grid: { display: false }, ticks: { color: this.labelColor, font: { size: 10 } } },
-          y: { grid: { color: this.gridColor }, ticks: { color: this.labelColor, font: { size: 10 }, stepSize: 2 }, beginAtZero: true },
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: this.labelColor,
+              font: { size: 11, weight: 700, family: "'Plus Jakarta Sans', sans-serif" },
+            }
+          },
+          y: {
+            grid: { color: this.gridColor },
+            ticks: {
+              color: this.labelColor,
+              font: { size: 10, weight: 600, family: "'Plus Jakarta Sans', sans-serif" },
+              callback: (v) => `${v}h`
+            },
+            beginAtZero: true
+          },
         },
       },
     });
@@ -886,7 +1090,7 @@ export class StatsDashboardComponent implements AfterViewInit, OnChanges, OnDest
     this.chartAcerto = new Chart(this.acertoChartRef.nativeElement, {
       type: "bar",
       data: {
-        labels: data.map(d => d.disciplina.length > 20 ? d.disciplina.slice(0, 18) + "..." : d.disciplina),
+        labels: data.map(d => d.disciplina.length > 20 ? d.disciplina.slice(0, 18) + "…" : d.disciplina),
         datasets: [{
           data: data.map(d => d.pct),
           backgroundColor: barColors,
@@ -919,7 +1123,7 @@ export class StatsDashboardComponent implements AfterViewInit, OnChanges, OnDest
             grid: { display: false },
             ticks: {
               color: this.labelColor,
-              font: { size: 10, weight: 600 },
+              font: { size: 10, weight: 600, family: "'Plus Jakarta Sans', sans-serif" },
               maxRotation: 30,
               minRotation: 0,
             },
@@ -930,7 +1134,7 @@ export class StatsDashboardComponent implements AfterViewInit, OnChanges, OnDest
             grid: { color: this.gridColor },
             ticks: {
               color: this.labelColor,
-              font: { size: 10 },
+              font: { size: 10, weight: 600, family: "'Plus Jakarta Sans', sans-serif" },
               stepSize: 20,
               callback: (v) => `${v}%`,
             },

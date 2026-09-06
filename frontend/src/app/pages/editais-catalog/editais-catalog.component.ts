@@ -97,7 +97,7 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
       <div *ngIf="!loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         <div
           *ngFor="let ed of filteredEditais"
-          class="rounded-3xl p-6 bg-[#f8fafd] dark:bg-[#0f1220] border transition-all duration-300 flex flex-col justify-between gap-3.5 relative overflow-hidden text-slate-800 dark:text-white group"
+          class="rounded-3xl p-6 bg-white dark:bg-[#0f1220] border transition-all duration-300 flex flex-col justify-between gap-3.5 relative overflow-hidden text-slate-800 dark:text-white group"
           [ngClass]="isAlreadyAdded(ed.id)
             ? 'border-2 border-indigo-500/60 dark:border-[#7c3aed] shadow-lg shadow-indigo-500/10'
             : 'border-slate-200/90 dark:border-[#1f253d] shadow-sm hover:shadow-xl dark:shadow-xl hover:border-indigo-400/60 dark:hover:border-[#7c3aed]/50 hover:-translate-y-1'">

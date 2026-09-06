@@ -1,14 +1,14 @@
 ---
 name: Vibrant Neomorphic System
 colors:
-  surface: '#f7f9fc'
-  surface-dim: '#d8dadd'
-  surface-bright: '#f7f9fc'
+  surface: '#ffffff'
+  surface-dim: '#dedede'
+  surface-bright: '#ffffff'
   surface-container-lowest: '#ffffff'
-  surface-container-low: '#f2f4f7'
-  surface-container: '#eceef1'
-  surface-container-high: '#e6e8eb'
-  surface-container-highest: '#e0e3e6'
+  surface-container-low: '#ededed'
+  surface-container: '#e5e5e5'
+  surface-container-high: '#dedede'
+  surface-container-highest: '#d6d6d6'
   on-surface: '#191c1e'
   on-surface-variant: '#464556'
   inverse-surface: '#2d3133'
@@ -45,9 +45,9 @@ colors:
   tertiary-fixed-dim: '#4edea3'
   on-tertiary-fixed: '#002113'
   on-tertiary-fixed-variant: '#005236'
-  background: '#f7f9fc'
+  background: '#f6f6f6'
   on-background: '#191c1e'
-  surface-variant: '#e0e3e6'
+  surface-variant: '#e5e5e5'
 typography:
   display-lg:
     fontFamily: Plus Jakarta Sans

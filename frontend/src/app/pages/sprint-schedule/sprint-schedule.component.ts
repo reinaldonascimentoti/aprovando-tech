@@ -1,9 +1,10 @@
 import { Component, OnInit, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, ActivatedRoute } from '@angular/router';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService, UserProfile } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
+import { SupabaseService } from '../../services/supabase.service';
 import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
 
 @Component({
@@ -97,6 +98,53 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
             <div class="w-3 h-3 rounded-sm bg-[#e65100]"></div>
             <span class="text-[11px] font-bold text-[var(--on-surface-variant)]">Revisão Espaçada</span>
           </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <!-- BANCO DE HORAS DE ESTUDO                                  -->
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <div class="neo-raised rounded-3xl p-5 md:p-6 mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <h2 class="text-sm font-extrabold text-[var(--on-surface)] flex items-center gap-2">
+            <span class="material-symbols-outlined !text-[18px] text-[var(--primary)]">schedule</span>
+            Horas de Estudo — {{ edital?.title | slice:0:30 }}{{ (edital?.title?.length || 0) > 30 ? '…' : '' }}
+          </h2>
+          <button (click)="openPomodoro()" class="btn-mesh px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0">
+            <span class="text-base">🍅</span>
+            Iniciar Pomodoro
+          </button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 mb-4">
+          <div class="neo-pressed rounded-2xl p-3 text-center">
+            <div class="text-xl font-black text-[var(--primary)]">{{ formatHorasMin(studyMinTotal) }}</div>
+            <div class="text-[10px] font-bold text-[var(--on-surface-variant)] mt-0.5">Total Estudado</div>
+          </div>
+          <div class="neo-pressed rounded-2xl p-3 text-center">
+            <div class="text-xl font-black text-[var(--tertiary-container)]">{{ formatHorasMin(studyMinWeek) }}</div>
+            <div class="text-[10px] font-bold text-[var(--on-surface-variant)] mt-0.5">Esta Semana</div>
+          </div>
+          <div class="neo-pressed rounded-2xl p-3 text-center">
+            <div class="text-xl font-black text-[var(--secondary)]">{{ studySessions }}</div>
+            <div class="text-[10px] font-bold text-[var(--on-surface-variant)] mt-0.5">Sessões</div>
+          </div>
+        </div>
+
+        <!-- Weekly mini chart -->
+        <div *ngIf="studyMinTotal > 0" class="flex items-end gap-1 h-10 mb-1">
+          <div *ngFor="let day of studyWeeklyChart" class="flex-1 flex flex-col items-center gap-0.5">
+            <div class="w-full rounded-t transition-all duration-500"
+              [style.height.%]="day.heightPct"
+              [style.min-height.px]="day.total > 0 ? 3 : 1"
+              [style.background]="day.isToday ? '#433fe5' : 'var(--surface-container-highest)'"
+              [title]="day.label + ': ' + formatHorasMin(day.total)">
+            </div>
+            <span class="text-[8px] font-bold text-[var(--on-surface-variant)]" [class.text-[var(--primary)]]="day.isToday">{{ day.short }}</span>
+          </div>
+        </div>
+        <div *ngIf="studyMinTotal === 0" class="text-center py-2">
+          <p class="text-xs text-[var(--on-surface-variant)]">Nenhuma hora registrada para este edital ainda. Use o Pomodoro! 🍅</p>
         </div>
       </div>
 
@@ -275,6 +323,7 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
 })
 export class SprintScheduleComponent implements OnInit {
   public themeService = inject(ThemeService);
+  private supabaseService = inject(SupabaseService);
   @Input() editalId = 'ed-1';
   edital: any = null;
   paretoData: any = null;
@@ -283,10 +332,17 @@ export class SprintScheduleComponent implements OnInit {
   user: UserProfile | null = null;
   completedBlocos = new Set<string>();
 
+  // Study hours
+  studyMinTotal = 0;
+  studyMinWeek = 0;
+  studySessions = 0;
+  studyWeeklyChart: { label: string; short: string; total: number; heightPct: number; isToday: boolean }[] = [];
+
   constructor(
     private route: ActivatedRoute,
     private apiService: ApiService,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -296,6 +352,54 @@ export class SprintScheduleComponent implements OnInit {
       this.editalId = idFromRoute;
     }
     this.loadEditalSprints();
+    this.loadStudyHours();
+  }
+
+  async loadStudyHours() {
+    const [sessions, weekly] = await Promise.all([
+      this.supabaseService.getStudySessions({ editalId: this.editalId }),
+      this.supabaseService.getWeeklyStudyHours(),
+    ]);
+    this.studySessions = sessions.length;
+    this.studyMinTotal = sessions.reduce((s, r) => s + r.duracao_min, 0);
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - 6);
+    weekStart.setHours(0, 0, 0, 0);
+    this.studyMinWeek = sessions
+      .filter(s => new Date(s.started_at) >= weekStart)
+      .reduce((sum, s) => sum + s.duracao_min, 0);
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const chart = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const found = weekly.find(w => w.day_date === dateStr);
+      chart.push({
+        label: d.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric' }),
+        short: dayNames[d.getDay()],
+        total: found?.total_min || 0,
+        heightPct: 0,
+        isToday: dateStr === todayStr,
+      });
+    }
+    const maxMin = Math.max(...chart.map(d => d.total), 1);
+    chart.forEach(d => d.heightPct = Math.round((d.total / maxMin) * 100));
+    this.studyWeeklyChart = chart;
+  }
+
+  formatHorasMin(totalMin: number): string {
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    if (h === 0) return `${m}min`;
+    if (m === 0) return `${h}h`;
+    return `${h}h${String(m).padStart(2, '0')}min`;
+  }
+
+  openPomodoro() {
+    this.router.navigate(['/pomodoro', this.editalId]);
   }
 
   loadEditalSprints() {

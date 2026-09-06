@@ -8,6 +8,7 @@ import { SprintScheduleComponent } from './pages/sprint-schedule/sprint-schedule
 import { DisciplinesSheetComponent } from './pages/disciplines-sheet/disciplines-sheet.component';
 import { EditaisCatalogComponent } from './pages/editais-catalog/editais-catalog.component';
 import { AuthCallbackComponent } from './pages/auth-callback/auth-callback.component';
+import { PomodoroComponent } from './pages/pomodoro/pomodoro.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent, pathMatch: 'full' },
@@ -19,7 +20,12 @@ export const routes: Routes = [
   { path: 'sprints/:id', component: SprintScheduleComponent },
   { path: 'disciplinas/:id', component: DisciplinesSheetComponent },
   { path: 'editais-catalog', component: EditaisCatalogComponent },
+  { path: 'pomodoro', component: PomodoroComponent },
+  { path: 'pomodoro/:editalId', component: PomodoroComponent },
   { path: '**', redirectTo: '' }
 ];
+
+
+
 
 

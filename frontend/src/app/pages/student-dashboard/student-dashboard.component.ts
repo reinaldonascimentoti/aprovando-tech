@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -12,6 +12,15 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
 import { UserProfileComponent } from '../../components/user-profile/user-profile.component';
 import { StatsDashboardComponent } from '../../components/stats-dashboard/stats-dashboard.component';
 import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
+
+export interface AnalysisLogStep {
+  id: string;
+  icon: string;
+  title: string;
+  detail: string;
+  status: 'pending' | 'active' | 'completed' | 'error';
+  time?: string;
+}
 
 @Component({
   selector: 'app-student-dashboard',
@@ -53,6 +62,12 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
           <button (click)="themeService.toggle()" class="btn-neo px-3 sm:px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shrink-0 text-[var(--on-surface)] transition-all cursor-pointer" [title]="themeService.isDark() ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'">
             <span class="material-symbols-outlined !text-[16px] text-[var(--primary)]">{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</span>
             <span>{{ themeService.isDark() ? 'Claro' : 'Escuro' }}</span>
+          </button>
+
+          <!-- Botão Pomodoro -->
+          <button (click)="navigateToPomodoro()" class="btn-mesh px-3 sm:px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0" title="Timer Pomodoro • Banco de Horas">
+            <span class="text-sm">🍅</span>
+            <span class="hidden sm:inline">Pomodoro</span>
           </button>
 
           <!-- Botão Voltar para o Dashboard (Visível ao navegar em Questões) -->
@@ -165,13 +180,21 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
             </button>
 
             <button
-              (click)="activeTab = 'estatisticas'"
+              (click)="activeTab = 'estatisticas'; loadStudySessions()"
               [class.border-b-2]="activeTab === 'estatisticas'"
               [class.border-[var(--primary)]]="activeTab === 'estatisticas'"
               [class.text-[var(--primary)]]="activeTab === 'estatisticas'"
               class="pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs sm:text-sm font-bold text-[var(--on-surface-variant)] hover:text-[var(--primary)] transition-colors flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 cursor-pointer">
               <span class="material-symbols-outlined !text-[18px] sm:!text-[20px]">bar_chart</span>
               <span>6. Estatísticas</span>
+            </button>
+
+            <!-- Pomodoro Tab -->
+            <button
+              (click)="navigateToPomodoro()"
+              class="pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs sm:text-sm font-bold text-[var(--primary)] hover:opacity-80 transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 cursor-pointer">
+              <span class="text-base">🍅</span>
+              <span>Pomodoro</span>
             </button>
           </div>
 
@@ -201,6 +224,7 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
           [questions]="questions"
           [editais]="editais"
           [userSchedules]="userSchedules"
+          [studySessions]="studySessions"
           [editalProgressMap]="editalProgressMap"
           [selectedAnswers]="selectedAnswers"
           [sessionAnswers]="sessionAnswers"
@@ -220,10 +244,6 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
               </div>
               <h2 class="text-base font-black text-[var(--on-surface)]">Meus Editais <span class="text-[var(--primary)] text-sm">({{ editais.length }})</span></h2>
             </div>
-            <button (click)="openUploadModal()" class="btn-neo px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 text-[var(--secondary)] hover:opacity-80 transition-all cursor-pointer">
-              <span class="material-symbols-outlined !text-[16px]">cloud_upload</span>
-              <span class="hidden sm:inline">+ Enviar Edital</span>
-            </button>
           </div>
 
           <!-- Editais Cards List (Full Width) -->
@@ -280,7 +300,7 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
             <div *ngIf="!loadingRecentEditais" class="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div
                 *ngFor="let ed of recentEditais"
-                class="rounded-3xl p-6 bg-[#f8fafd] dark:bg-[#0f1220] border border-slate-200/90 dark:border-[#1f253d] shadow-sm hover:shadow-xl dark:shadow-xl hover:border-indigo-400/60 dark:hover:border-[#7c3aed]/50 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between gap-3.5 relative overflow-hidden text-slate-800 dark:text-white group">
+                class="rounded-3xl p-6 bg-white dark:bg-[#0f1220] border border-slate-200/90 dark:border-[#1f253d] shadow-sm hover:shadow-xl dark:shadow-xl hover:border-indigo-400/60 dark:hover:border-[#7c3aed]/50 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between gap-3.5 relative overflow-hidden text-slate-800 dark:text-white group">
                 
                 <!-- Glow Line Top -->
                 <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500/70 dark:via-[#7c3aed]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -1053,11 +1073,54 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
             </div>
           </div>
 
+          <!-- Filtro de Status: Todas / Resolvidas / Erradas -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
+              <span class="material-symbols-outlined !text-[14px]">filter_list</span>
+              Status:
+            </span>
+            <!-- Todas -->
+            <button
+              (click)="questionStatusFilter = 'all'; onFilterChange()"
+              [ngClass]="questionStatusFilter === 'all'
+                ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
+                : 'bg-[var(--background)] text-[var(--on-surface-variant)] border-[var(--outline-variant)] hover:border-[var(--primary)] hover:text-[var(--primary)]'"
+              class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer">
+              <span class="material-symbols-outlined !text-[14px]">list</span>
+              <span>Todas</span>
+              <span class="font-extrabold opacity-70">({{ questions.length }})</span>
+            </button>
+            <!-- Resolvidas -->
+            <button
+              (click)="questionStatusFilter = 'resolved'; onFilterChange()"
+              [ngClass]="questionStatusFilter === 'resolved'
+                ? 'bg-[#16a34a] text-white border-[#16a34a]'
+                : 'bg-[var(--background)] text-[var(--on-surface-variant)] border-[var(--outline-variant)] hover:border-[#16a34a] hover:text-[#16a34a]'"
+              class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer">
+              <span class="material-symbols-outlined !text-[14px]">check_circle</span>
+              <span>Resolvidas</span>
+              <span class="font-extrabold opacity-70">({{ resolvedCount + wrongCount }})</span>
+            </button>
+            <!-- Erradas -->
+            <button
+              (click)="questionStatusFilter = 'wrong'; onFilterChange()"
+              [ngClass]="questionStatusFilter === 'wrong'
+                ? 'bg-[#dc2626] text-white border-[#dc2626]'
+                : 'bg-[var(--background)] text-[var(--on-surface-variant)] border-[var(--outline-variant)] hover:border-[#dc2626] hover:text-[#dc2626]'"
+              class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer">
+              <span class="material-symbols-outlined !text-[14px]">cancel</span>
+              <span>Erradas</span>
+              <span class="font-extrabold opacity-70">({{ wrongCount }})</span>
+            </button>
+          </div>
+
           <div class="flex flex-col gap-4 sm:gap-5">
             <app-question-card 
               *ngFor="let q of paginatedQuestions; let i = index" 
               [question]="q" 
               [index]="(questionsCurrentPage - 1) * questionsPageSize + i"
+              [isResolved]="isQuestionResolved(q)"
+              [isWrong]="isQuestionWrong(q)"
               (answerSubmitted)="onAnswerSubmitted($event)">
             </app-question-card>
 
@@ -1249,21 +1312,36 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
         <!-- Modal Header -->
         <div class="flex items-center justify-between px-4 sm:px-6 pt-5 pb-4 border-b border-[var(--outline-variant)] bg-gradient-to-r from-purple-50/70 dark:from-[#1b2238] to-white dark:to-[#141927] shrink-0">
           <div class="flex items-center gap-3">
-            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white flex items-center justify-center shadow-md shrink-0">
-              <span class="material-symbols-outlined !text-[20px] sm:!text-[22px]">cloud_upload</span>
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center shadow-md shrink-0 transition-all duration-300"
+                 [ngClass]="{
+                   'bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white': uploadStatus === 'idle' || uploadStatus === 'processing',
+                   'bg-gradient-to-tr from-emerald-500 to-teal-600 text-white': uploadStatus === 'completed',
+                   'bg-gradient-to-tr from-rose-500 to-red-600 text-white': uploadStatus === 'error'
+                 }">
+              <span class="material-symbols-outlined !text-[20px] sm:!text-[22px]"
+                    [ngClass]="{'animate-spin': uploadStatus === 'processing'}">
+                {{ uploadStatus === 'error' ? 'report_problem' : (uploadStatus === 'completed' ? 'task_alt' : (uploadStatus === 'processing' ? 'sync' : 'cloud_upload')) }}
+              </span>
             </div>
             <div>
-              <h2 class="text-sm sm:text-base font-extrabold text-[var(--on-surface)]">Upload do Edital</h2>
-              <p class="text-[10px] sm:text-[11px] font-semibold text-[var(--primary)]">Informações para o Seu Plano Estratégico</p>
+              <h2 class="text-sm sm:text-base font-extrabold text-[var(--on-surface)]">
+                {{ uploadStatus === 'idle' ? 'Upload do Edital' : (uploadStatus === 'error' ? 'Instabilidade no Serviço' : (uploadStatus === 'completed' ? 'Análise Concluída!' : 'Processando Edital com IA')) }}
+              </h2>
+              <p class="text-[10px] sm:text-[11px] font-semibold"
+                 [ngClass]="uploadStatus === 'error' ? 'text-red-500' : (uploadStatus === 'completed' ? 'text-emerald-500' : 'text-[var(--primary)]')">
+                {{ uploadStatus === 'idle' ? 'Informações para o Seu Plano Estratégico' : (uploadStatus === 'error' ? 'Serviço temporariamente instável' : (uploadStatus === 'completed' ? 'Redirecionando para o mapa de estudos...' : 'Princípio Pareto 80/20 • Extração Cognitiva')) }}
+              </p>
             </div>
           </div>
-          <button (click)="closeUploadModal()" [disabled]="isSubmitting" class="w-8 h-8 rounded-full neo-raised flex items-center justify-center text-[var(--on-surface-variant)] hover:text-red-500 transition-colors disabled:opacity-50 shrink-0">
+          <button (click)="closeUploadModal()" [disabled]="uploadStatus === 'processing'"
+                  class="w-8 h-8 rounded-full neo-raised flex items-center justify-center text-[var(--on-surface-variant)] hover:text-red-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                  [title]="uploadStatus === 'processing' ? 'Aguarde o término do processamento' : 'Fechar'">
             <span class="material-symbols-outlined !text-[18px]">close</span>
           </button>
         </div>
 
-        <!-- Modal Body -->
-        <div class="px-4 sm:px-6 py-4 sm:py-5 space-y-4 overflow-y-auto flex-1">
+        <!-- ================= MODO 1: FORMULÁRIO (uploadStatus === 'idle') ================= -->
+        <div *ngIf="uploadStatus === 'idle'" class="px-4 sm:px-6 py-4 sm:py-5 space-y-4 overflow-y-auto flex-1">
 
           <p class="text-xs text-[var(--on-surface-variant)] leading-relaxed">
             Preencha os dados do seu concurso e edital. A IA aplicará o princípio de Pareto 80/20 para gerar seu mapa de prioridades, régua de corte e cronograma personalizado.
@@ -1374,21 +1452,177 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
 
         </div>
 
+        <!-- ================= MODO 2: SIMULAÇÃO DE LOGS IA (uploadStatus !== 'idle') ================= -->
+        <div *ngIf="uploadStatus !== 'idle'" class="px-4 sm:px-6 py-4 sm:py-5 space-y-4 overflow-y-auto flex-1 animate-fadeIn">
+
+          <!-- Top Progress Card -->
+          <div class="rounded-2xl p-4 neo-pressed bg-[var(--background)] border border-[var(--outline-variant)] space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full"
+                      [ngClass]="uploadStatus === 'error' ? 'bg-red-500' : (uploadStatus === 'completed' ? 'bg-emerald-500' : 'bg-[#7c3aed] animate-ping')">
+                </span>
+                <span class="text-xs font-extrabold uppercase tracking-wider"
+                      [ngClass]="uploadStatus === 'error' ? 'text-red-500' : (uploadStatus === 'completed' ? 'text-emerald-500' : 'text-[var(--primary)]')">
+                  {{ uploadStatus === 'error' ? 'Processamento Interrompido' : (uploadStatus === 'completed' ? 'Processamento Finalizado' : 'Executando Análise Pareto 80/20') }}
+                </span>
+              </div>
+              <span class="text-sm font-black text-[var(--on-surface)]">{{ uploadProgress }}%</span>
+            </div>
+
+            <!-- Animated Bar -->
+            <div class="w-full h-2.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden relative">
+              <div class="h-full rounded-full transition-all duration-500 ease-out"
+                   [style.width.%]="uploadProgress"
+                   [ngClass]="uploadStatus === 'error' ? 'bg-gradient-to-r from-rose-500 to-red-600' : (uploadStatus === 'completed' ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-gradient-to-r from-[#5d3bf6] via-[#7c3aed] to-[#c084fc]')">
+              </div>
+            </div>
+
+            <p class="text-[11px] text-[var(--on-surface-variant)] flex items-center justify-between flex-wrap gap-1">
+              <span>Cargo Alvo: <strong class="text-[var(--on-surface)]">{{ editalCargo || 'Não informado' }}</strong></span>
+              <span *ngIf="editalConcurso" class="truncate max-w-[220px] text-right">Concurso: <strong class="text-[var(--on-surface)]">{{ editalConcurso }}</strong></span>
+            </p>
+          </div>
+
+          <!-- Alerta de Instabilidade em Caso de Erro -->
+          <div *ngIf="uploadStatus === 'error'"
+               class="rounded-2xl p-4 bg-red-500/10 border-2 border-red-500/30 dark:border-red-500/40 text-red-700 dark:text-red-300 flex items-start gap-3 animate-fadeIn">
+            <span class="material-symbols-outlined !text-[24px] text-red-500 shrink-0 mt-0.5">cloud_off</span>
+            <div class="space-y-1 text-xs">
+              <h4 class="font-extrabold text-red-600 dark:text-red-400 text-xs sm:text-sm">
+                Instabilidade no Serviço
+              </h4>
+              <p class="leading-relaxed">
+                {{ uploadErrorMessage || 'O serviço está passando por alguma instabilidade no momento. Por favor, tente novamente mais tarde.' }}
+              </p>
+              <p class="text-[11px] text-[var(--on-surface-variant)] pt-1">
+                Suas informações continuam salvas. Clique no botão abaixo para tentar novamente quando desejar.
+              </p>
+            </div>
+          </div>
+
+          <!-- Timeline / Terminal de Logs -->
+          <div class="rounded-2xl p-3.5 sm:p-4 bg-slate-900/95 dark:bg-[#0b0e17] text-slate-100 border border-purple-500/20 shadow-inner max-h-[300px] sm:max-h-[340px] overflow-y-auto space-y-2.5">
+            <div class="flex items-center justify-between pb-2 border-b border-white/10 text-[10px] font-mono text-slate-400">
+              <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full"
+                      [ngClass]="uploadStatus === 'error' ? 'bg-red-400' : (uploadStatus === 'completed' ? 'bg-emerald-400' : 'bg-purple-400 animate-ping')"></span>
+                <span>LOGS DE PROCESSAMENTO DA IA</span>
+              </span>
+              <span>PARETO ENGINE 80/20</span>
+            </div>
+
+            <div *ngFor="let step of analysisLogs; let i = index"
+                 class="p-2.5 rounded-xl transition-all duration-300 flex items-start gap-3"
+                 [ngClass]="{
+                   'bg-emerald-500/10 border border-emerald-500/30': step.status === 'completed',
+                   'bg-purple-500/15 border border-purple-500/40 shadow-sm': step.status === 'active',
+                   'bg-red-500/15 border border-red-500/40': step.status === 'error',
+                   'bg-white/[0.02] border border-white/5 opacity-50': step.status === 'pending'
+                 }">
+
+              <!-- Icon Circle -->
+              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 text-white transition-colors"
+                   [ngClass]="{
+                     'bg-emerald-500 shadow-md shadow-emerald-500/20': step.status === 'completed',
+                     'bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] shadow-md shadow-purple-500/30': step.status === 'active',
+                     'bg-red-500 shadow-md shadow-red-500/20': step.status === 'error',
+                     'bg-white/10 text-slate-400': step.status === 'pending'
+                   }">
+                <span class="material-symbols-outlined !text-[16px] sm:!text-[18px]"
+                      [ngClass]="{'animate-spin': step.status === 'active'}">
+                  {{ step.status === 'completed' ? 'check' : (step.status === 'error' ? 'close' : (step.status === 'active' ? 'sync' : step.icon)) }}
+                </span>
+              </div>
+
+              <!-- Log Details -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-1">
+                  <h4 class="text-xs font-bold truncate"
+                      [ngClass]="{
+                        'text-emerald-300': step.status === 'completed',
+                        'text-purple-300 font-extrabold': step.status === 'active',
+                        'text-red-300': step.status === 'error',
+                        'text-slate-400': step.status === 'pending'
+                      }">
+                    {{ step.title }}
+                  </h4>
+
+                  <!-- Status Badge -->
+                  <span class="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-mono shrink-0"
+                        [ngClass]="{
+                          'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30': step.status === 'completed',
+                          'bg-purple-500/30 text-purple-200 border border-purple-400/40 animate-pulse': step.status === 'active',
+                          'bg-red-500/20 text-red-300 border border-red-500/30': step.status === 'error',
+                          'bg-white/5 text-slate-500': step.status === 'pending'
+                        }">
+                    {{ step.status === 'completed' ? 'Concluído' : (step.status === 'active' ? 'Processando...' : (step.status === 'error' ? 'Falha' : 'Aguardando')) }}
+                  </span>
+                </div>
+
+                <p class="text-[11px] mt-0.5 leading-snug"
+                   [ngClass]="step.status === 'pending' ? 'text-slate-500' : 'text-slate-300'">
+                  {{ step.detail }}
+                </p>
+
+                <span *ngIf="step.time" class="text-[9px] font-mono text-slate-500 mt-1 block">
+                  {{ step.time }}
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
         <!-- Modal Footer -->
-        <div class="px-4 sm:px-6 pb-5 pt-3 border-t border-[var(--outline-variant)] flex flex-col sm:flex-row gap-2 sm:gap-3 shrink-0">
-          <button
-            (click)="closeUploadModal()"
-            [disabled]="isSubmitting"
-            class="w-full sm:flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold border border-[var(--outline-variant)] text-[var(--on-surface-variant)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors disabled:opacity-50">
-            Cancelar
-          </button>
-          <button
-            (click)="submitEdital()"
-            [disabled]="!isEditalFormValid || isSubmitting"
-            class="w-full sm:flex-1 py-3 rounded-2xl font-bold btn-mesh flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50">
-            <span class="material-symbols-outlined !text-[18px]">auto_awesome</span>
-            <span>{{ isSubmitting ? 'Gerando Análise Pareto...' : 'Analisar Edital Pareto 80/20' }}</span>
-          </button>
+        <div class="px-4 sm:px-6 pb-5 pt-3 border-t border-[var(--outline-variant)] shrink-0">
+          <!-- Footer when form is active -->
+          <div *ngIf="uploadStatus === 'idle'" class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button
+              (click)="closeUploadModal()"
+              [disabled]="isSubmitting"
+              class="w-full sm:flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold border border-[var(--outline-variant)] text-[var(--on-surface-variant)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors disabled:opacity-50">
+              Cancelar
+            </button>
+            <button
+              (click)="submitEdital()"
+              [disabled]="!isEditalFormValid || isSubmitting"
+              class="w-full sm:flex-1 py-3 rounded-2xl font-bold btn-mesh flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50">
+              <span class="material-symbols-outlined !text-[18px]">auto_awesome</span>
+              <span>Analisar Edital Pareto 80/20</span>
+            </button>
+          </div>
+
+          <!-- Footer when processing -->
+          <div *ngIf="uploadStatus === 'processing'" class="flex items-center justify-between gap-3 py-1">
+            <div class="flex items-center gap-2 text-xs text-[var(--on-surface-variant)]">
+              <span class="w-2 h-2 rounded-full bg-[var(--primary)] animate-ping"></span>
+              <span>O edital está sendo processado por completo. Por favor, aguarde...</span>
+            </div>
+            <span class="text-xs font-bold text-[var(--primary)] shrink-0">{{ uploadProgress }}%</span>
+          </div>
+
+          <!-- Footer when completed -->
+          <div *ngIf="uploadStatus === 'completed'" class="flex items-center justify-center gap-2 py-1 text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-bold animate-fadeIn">
+            <span class="material-symbols-outlined !text-[18px]">check_circle</span>
+            <span>Estrutura concluída com sucesso! Redirecionando...</span>
+          </div>
+
+          <!-- Footer when error -->
+          <div *ngIf="uploadStatus === 'error'" class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button
+              (click)="closeUploadModal()"
+              class="w-full sm:w-1/3 py-2.5 rounded-xl text-xs sm:text-sm font-bold border border-[var(--outline-variant)] text-[var(--on-surface-variant)] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">
+              Fechar
+            </button>
+            <button
+              (click)="retryUploadForm()"
+              class="w-full sm:flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white flex items-center justify-center gap-2 shadow-md transition-all">
+              <span class="material-symbols-outlined !text-[18px]">refresh</span>
+              <span>Voltar e Tentar Novamente</span>
+            </button>
+          </div>
         </div>
 
       </div>
@@ -1511,7 +1745,7 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
 
   `
 })
-export class StudentDashboardComponent implements OnInit {
+export class StudentDashboardComponent implements OnInit, OnDestroy {
   public themeService = inject(ThemeService);
   user: UserProfile | null = null;
   editais: any[] = [];
@@ -1540,6 +1774,13 @@ export class StudentDashboardComponent implements OnInit {
   // ---- Upload Modal state ----
   showUploadModal = false;
 
+  // ---- Simulação de Logs de Processamento IA ----
+  uploadStatus: 'idle' | 'processing' | 'completed' | 'error' = 'idle';
+  uploadProgress = 0;
+  uploadLogInterval: any = null;
+  uploadErrorMessage = '';
+  analysisLogs: AnalysisLogStep[] = [];
+
   // ---- Upload form ----
   editalTitle = '';
   editalLink = '';
@@ -1562,6 +1803,10 @@ export class StudentDashboardComponent implements OnInit {
   questionsPageSize = 10;
   selectedAnswers: { [key: string]: string } = {};
   sessionAnswers: Record<string, { selectedOption: string; isCorrect: boolean; disciplina: string }> = {};
+  /** Filtro de status: 'all' | 'resolved' | 'wrong' */
+  questionStatusFilter: 'all' | 'resolved' | 'wrong' = 'all';
+  /** Mapa de respostas do usuário: question_id → { isCorrect } (carregado do Supabase + sessão) */
+  userAnswerMap: Record<string, { isCorrect: boolean }> = {};
 
   // ---- Toast (upload) ----
   uploadToastMsg = '';
@@ -1597,6 +1842,9 @@ export class StudentDashboardComponent implements OnInit {
   // ---- Acerto por Disciplina (persistido no Supabase) ----
   accuracyByDisciplina: { disciplina: string; total: number; corretas: number; pct: number }[] = [];
 
+  // ---- Sessões de Estudo Pomodoro (Banco de Horas) ----
+  studySessions: any[] = [];
+
   // ---- Email verification banner ----
   emailBannerDismissed = false;
   isResendingVerify = false;
@@ -1618,12 +1866,24 @@ export class StudentDashboardComponent implements OnInit {
     this.loadData();
     this.loadRecentEditais();
     this.loadAccuracyStats();
+    this.loadUserAnswerMap();
+    this.loadStudySessions();
 
     this.supabaseService.session$.subscribe(session => {
       if (session?.user) {
         this.loadAccuracyStats();
+        this.loadUserAnswerMap();
+        this.loadStudySessions();
       }
     });
+  }
+
+  async loadStudySessions() {
+    try {
+      this.studySessions = await this.supabaseService.getStudySessions({ limite: 500 });
+    } catch (e) {
+      console.warn('Erro ao carregar sessões de estudo Pomodoro:', e);
+    }
   }
 
   async resendVerificationEmail() {
@@ -1672,6 +1932,20 @@ export class StudentDashboardComponent implements OnInit {
 
   async loadAccuracyStats() {
     this.accuracyByDisciplina = await this.supabaseService.getAccuracyByDisciplina();
+  }
+
+  /**
+   * Carrega do Supabase o mapa de questões já respondidas pelo usuário.
+   * Mescla com os dados da sessão atual (sessionAnswers) para garantir consistência.
+   */
+  async loadUserAnswerMap() {
+    const supabaseMap = await this.supabaseService.getUserAnswerMap();
+    // Mescla: Supabase é a base, session sobrescreve (mais recente)
+    const merged: Record<string, { isCorrect: boolean }> = { ...supabaseMap };
+    for (const [id, ans] of Object.entries(this.sessionAnswers)) {
+      merged[id] = { isCorrect: ans.isCorrect };
+    }
+    this.userAnswerMap = merged;
   }
 
   loadData() {
@@ -1851,6 +2125,10 @@ export class StudentDashboardComponent implements OnInit {
     this.router.navigate(['/editais-catalog']);
   }
 
+  navigateToPomodoro() {
+    this.router.navigate(['/pomodoro']);
+  }
+
   // ---- Helper methods for Recent Editais Model ----
   getEditalOrgao(ed: any): string {
     if (ed.orgao) return ed.orgao;
@@ -2023,6 +2301,7 @@ export class StudentDashboardComponent implements OnInit {
     this.selectedOrgao = '';
     this.filterCargo = '';
     this.filterAssunto = '';
+    this.questionStatusFilter = 'all';
     this.questionsCurrentPage = 1;
   }
 
@@ -2034,7 +2313,8 @@ export class StudentDashboardComponent implements OnInit {
       this.selectedAno ||
       this.selectedOrgao ||
       this.filterCargo?.trim() ||
-      this.filterAssunto?.trim()
+      this.filterAssunto?.trim() ||
+      this.questionStatusFilter !== 'all'
     );
   }
 
@@ -2089,6 +2369,17 @@ export class StudentDashboardComponent implements OnInit {
     if (!this.questions || this.questions.length === 0) return [];
 
     return this.questions.filter(q => {
+      // 0. Filtro de status (Resolvidas / Erradas)
+      if (this.questionStatusFilter !== 'all') {
+        const qId = String(q.id_qc || q.id || q.codigo || '');
+        const answerEntry = this.userAnswerMap[qId];
+        if (this.questionStatusFilter === 'resolved') {
+          if (!answerEntry) return false; // não respondida
+        } else if (this.questionStatusFilter === 'wrong') {
+          if (!answerEntry || answerEntry.isCorrect) return false; // não respondida ou correta
+        }
+      }
+
       // 1. Disciplina (Select)
       if (this.selectedDisciplina) {
         const disc = (q.disciplina || q.subject || '').toString().toLowerCase();
@@ -2145,6 +2436,27 @@ export class StudentDashboardComponent implements OnInit {
     });
   }
 
+  /** Número de questões resolvidas (acertadas) */
+  get resolvedCount(): number {
+    return Object.values(this.userAnswerMap).filter(a => a.isCorrect).length;
+  }
+
+  /** Número de questões respondidas e erradas */
+  get wrongCount(): number {
+    return Object.values(this.userAnswerMap).filter(a => !a.isCorrect).length;
+  }
+
+  /** Helpers para binding nos cards */
+  isQuestionResolved(q: any): boolean {
+    const qId = String(q.id_qc || q.id || q.codigo || '');
+    return qId in this.userAnswerMap;
+  }
+
+  isQuestionWrong(q: any): boolean {
+    const qId = String(q.id_qc || q.id || q.codigo || '');
+    return qId in this.userAnswerMap && !this.userAnswerMap[qId].isCorrect;
+  }
+
   get paginatedQuestions() {
     const start = (this.questionsCurrentPage - 1) * this.questionsPageSize;
     return this.filteredQuestions.slice(start, start + this.questionsPageSize);
@@ -2176,14 +2488,172 @@ export class StudentDashboardComponent implements OnInit {
     return 0; // agora calculado via user_schedules
   }
 
+  ngOnDestroy(): void {
+    this.clearUploadLogInterval();
+  }
+
+  private getCurrentTimeStr(): string {
+    const d = new Date();
+    return d.toTimeString().split(' ')[0];
+  }
+
   openUploadModal() {
+    this.uploadStatus = 'idle';
+    this.isSubmitting = false;
+    this.uploadErrorMessage = '';
     this.showUploadModal = true;
+    this.showUploadToast = false;
   }
 
   closeUploadModal() {
-    if (!this.isSubmitting) {
+    if (this.uploadStatus === 'processing') return;
+    this.clearUploadLogInterval();
+    this.uploadStatus = 'idle';
+    this.isSubmitting = false;
+    this.showUploadModal = false;
+    this.showUploadToast = false;
+  }
+
+  retryUploadForm() {
+    this.clearUploadLogInterval();
+    this.uploadStatus = 'idle';
+    this.isSubmitting = false;
+    this.uploadErrorMessage = '';
+  }
+
+  clearUploadLogInterval() {
+    if (this.uploadLogInterval) {
+      clearInterval(this.uploadLogInterval);
+      this.uploadLogInterval = null;
+    }
+  }
+
+  startUploadLogSimulation(cargo: string, concurso?: string, filenameOrLink?: string) {
+    this.clearUploadLogInterval();
+    this.uploadStatus = 'processing';
+    this.uploadProgress = 12;
+    this.uploadErrorMessage = '';
+
+    const displayCargo = cargo ? cargo.trim() : 'Cargo Alvo';
+    const displayConcurso = concurso ? ` • Concurso: ${concurso.trim()}` : '';
+    const displayDoc = filenameOrLink ? ` (${filenameOrLink})` : '';
+
+    this.analysisLogs = [
+      {
+        id: 'info',
+        icon: 'save',
+        title: 'Salvamos suas informações',
+        detail: `Contexto do concurso e perfil do candidato registrados com sucesso${displayConcurso}.`,
+        status: 'completed',
+        time: this.getCurrentTimeStr()
+      },
+      {
+        id: 'received',
+        icon: 'cloud_done',
+        title: 'Edital recebido',
+        detail: `Documento recebido e verificação de integridade aprovada${displayDoc}.`,
+        status: 'active',
+        time: this.getCurrentTimeStr()
+      },
+      {
+        id: 'cargo',
+        icon: 'badge',
+        title: 'Identificamos o seu cargo',
+        detail: `Foco de análise configurado para: "${displayCargo}".`,
+        status: 'pending'
+      },
+      {
+        id: 'sent_ai',
+        icon: 'psychology',
+        title: 'Enviado para análise',
+        detail: 'Conectando ao motor de inteligência artificial para extração e leitura detalhada.',
+        status: 'pending'
+      },
+      {
+        id: 'disciplinas',
+        icon: 'menu_book',
+        title: 'Mapeando Conteúdo Programático',
+        detail: 'Separando disciplinas básicas e específicas, tópicos e subtópicos com pesos.',
+        status: 'pending'
+      },
+      {
+        id: 'pareto',
+        icon: 'query_stats',
+        title: 'Aplicando Análise Pareto 80/20',
+        detail: 'Identificando o núcleo de 20% das matérias de maior incidência histórica.',
+        status: 'pending'
+      },
+      {
+        id: 'regua',
+        icon: 'balance',
+        title: 'Calibrando Régua de Corte e Pesos',
+        detail: 'Estimando pontuação de corte e critérios de desempate da banca examinadora.',
+        status: 'pending'
+      },
+      {
+        id: 'plano',
+        icon: 'auto_awesome',
+        title: 'Finalizando Plano Estratégico',
+        detail: 'Estruturando cronograma adaptativo de estudos e mapa de prioridades.',
+        status: 'pending'
+      }
+    ];
+
+    let currentStep = 1;
+    const progressTargets = [12, 25, 42, 58, 72, 85, 93, 97];
+
+    this.uploadLogInterval = setInterval(() => {
+      if (this.uploadStatus !== 'processing') {
+        this.clearUploadLogInterval();
+        return;
+      }
+
+      if (currentStep < this.analysisLogs.length - 1) {
+        this.analysisLogs[currentStep].status = 'completed';
+        this.analysisLogs[currentStep].time = this.getCurrentTimeStr();
+
+        currentStep++;
+        this.analysisLogs[currentStep].status = 'active';
+        this.analysisLogs[currentStep].time = this.getCurrentTimeStr();
+
+        this.uploadProgress = progressTargets[currentStep] || 95;
+      } else {
+        if (this.uploadProgress < 97) {
+          this.uploadProgress += 1;
+        }
+      }
+    }, 2200);
+  }
+
+  finishUploadSuccess(callback: () => void) {
+    this.clearUploadLogInterval();
+    this.uploadProgress = 100;
+    this.uploadStatus = 'completed';
+
+    this.analysisLogs.forEach(step => {
+      step.status = 'completed';
+      if (!step.time) step.time = this.getCurrentTimeStr();
+    });
+
+    setTimeout(() => {
+      this.uploadStatus = 'idle';
+      this.isSubmitting = false;
       this.showUploadModal = false;
       this.showUploadToast = false;
+      callback();
+    }, 1200);
+  }
+
+  handleUploadError(err?: any) {
+    this.clearUploadLogInterval();
+    this.isSubmitting = false;
+    this.uploadStatus = 'error';
+    this.uploadErrorMessage = 'O serviço está passando por alguma instabilidade no momento. Por favor, tente novamente mais tarde.';
+
+    const activeStep = this.analysisLogs.find(s => s.status === 'active');
+    if (activeStep) {
+      activeStep.status = 'error';
+      activeStep.time = this.getCurrentTimeStr();
     }
   }
 
@@ -2217,35 +2687,32 @@ export class StudentDashboardComponent implements OnInit {
       dataProva: this.editalDataProva || undefined,
     };
 
-    this.uploadToastMsg = 'Já confirmei seu Cargo no edital! Enviando para Análise Pareto 80/20 Recursiva e Cronograma de Estudos... Por favor, aguarde alguns instantes.';
-    this.uploadToastType = 'success';
-    this.showUploadToast = true;
+    const docName = this.editalUploadMode === 'pdf' && this.selectedFile
+      ? this.selectedFile.name
+      : (this.editalLink ? 'Link Web' : undefined);
+
+    this.startUploadLogSimulation(this.editalCargo, this.editalConcurso, docName);
 
     this.apiService.uploadEdital(fileToUpload, title, linkToSend, this.user?.id || 'usr-2', userContext).subscribe({
       next: (res: any) => {
-        this.isSubmitting = false;
-        this.showUploadModal = false;
-        this.showUploadToast = false;
-        this.selectedFile = null;
-        this.editalLink = '';
-        this.editalTitle = '';
-        this.editalCargo = '';
-        this.editalConcurso = '';
-        this.editalDataProva = '';
-        this.loadData();
-        this.activeTab = 'editais';
+        this.finishUploadSuccess(() => {
+          this.selectedFile = null;
+          this.editalLink = '';
+          this.editalTitle = '';
+          this.editalCargo = '';
+          this.editalConcurso = '';
+          this.editalDataProva = '';
+          this.loadData();
+          this.activeTab = 'editais';
 
-        const newId = res?.data?.id || res?.id;
-        if (newId) {
-          this.router.navigate(['/disciplinas', newId]);
-        }
+          const newId = res?.data?.id || res?.id;
+          if (newId) {
+            this.router.navigate(['/disciplinas', newId]);
+          }
+        });
       },
       error: (err) => {
-        this.isSubmitting = false;
-        this.uploadToastMsg = 'Erro ao processar o edital. Tente novamente.';
-        this.uploadToastType = 'error';
-        this.showUploadToast = true;
-        setTimeout(() => { this.showUploadToast = false; }, 5000);
+        this.handleUploadError(err);
       }
     });
   }
@@ -2378,6 +2845,11 @@ export class StudentDashboardComponent implements OnInit {
         isCorrect: event.isCorrect,
         disciplina
       }
+    };
+    // Atualiza o mapa de respostas imediatamente (sem esperar o Supabase)
+    this.userAnswerMap = {
+      ...this.userAnswerMap,
+      [eventIdStr]: { isCorrect: event.isCorrect }
     };
     this.saveAnswersToStorage();
 

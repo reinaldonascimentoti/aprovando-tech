@@ -336,6 +336,143 @@ export class SupabaseService implements OnDestroy {
     }
   }
 
+  /**
+   * Busca todas as respostas do usuário atual como um mapa { question_id → { isCorrect } }.
+   * Usado para pré-popular marcações de questões resolvidas/erradas entre sessões.
+   */
+  async getUserAnswerMap(): Promise<Record<string, { isCorrect: boolean }>> {
+    const user = this.currentUser;
+    if (!user) return {};
+    try {
+      const { data, error } = await this.supabase
+        .from('user_question_answers')
+        .select('question_id, is_correct')
+        .eq('user_id', user.id);
+
+      if (error || !data) return {};
+
+      const map: Record<string, { isCorrect: boolean }> = {};
+      for (const row of data) {
+        map[String(row.question_id)] = { isCorrect: !!row.is_correct };
+      }
+      return map;
+    } catch (e) {
+      console.error('Erro ao buscar mapa de respostas do usuário:', e);
+      return {};
+    }
+  }
+
+  // ----------------------------------------------------------------
+  // STUDY SESSIONS — Banco de Horas Pomodoro
+  // ----------------------------------------------------------------
+
+  /** Salva uma sessão de estudo (pomodoro concluído ou adição manual) */
+  async saveStudySession(session: {
+    editalId?: string | null;
+    disciplina?: string | null;
+    duracaoMin: number;
+    tipo: 'pomodoro' | 'manual';
+    notas?: string | null;
+    startedAt?: string;
+  }): Promise<void> {
+    const user = this.currentUser;
+    if (!user) return;
+    try {
+      const { error } = await this.supabase.from('study_sessions').insert({
+        user_id: user.id,
+        edital_id: session.editalId || null,
+        disciplina: session.disciplina || null,
+        duracao_min: session.duracaoMin,
+        tipo: session.tipo,
+        notas: session.notas || null,
+        started_at: session.startedAt || new Date().toISOString(),
+      });
+      if (error) console.error('Erro ao salvar sessão de estudo:', error);
+    } catch (e) {
+      console.error('Exceção ao salvar sessão de estudo:', e);
+    }
+  }
+
+  /** Busca sessões de estudo do usuário com filtros opcionais */
+  async getStudySessions(opts?: {
+    editalId?: string;
+    desde?: Date;
+    limite?: number;
+  }): Promise<{
+    id: string;
+    edital_id: string | null;
+    disciplina: string | null;
+    duracao_min: number;
+    tipo: string;
+    notas: string | null;
+    started_at: string;
+  }[]> {
+    const user = this.currentUser;
+    if (!user) return [];
+    try {
+      let query = this.supabase
+        .from('study_sessions')
+        .select('id, edital_id, disciplina, duracao_min, tipo, notas, started_at')
+        .eq('user_id', user.id)
+        .order('started_at', { ascending: false });
+
+      if (opts?.editalId) query = query.eq('edital_id', opts.editalId);
+      if (opts?.desde) query = query.gte('started_at', opts.desde.toISOString());
+      if (opts?.limite) query = query.limit(opts.limite);
+
+      const { data, error } = await query;
+      if (error) { console.error('Erro ao buscar sessões:', error); return []; }
+      return data || [];
+    } catch (e) {
+      console.error('Exceção ao buscar sessões:', e);
+      return [];
+    }
+  }
+
+  /** Horas de estudo por dia nos últimos 7 dias via RPC */
+  async getWeeklyStudyHours(): Promise<{ day_date: string; total_min: number }[]> {
+    const user = this.currentUser;
+    if (!user) return [];
+    try {
+      const { data, error } = await this.supabase.rpc('get_weekly_study_hours');
+      if (error) { console.error('Erro ao buscar horas semanais:', error); return []; }
+      return (data || []).map((r: any) => ({ day_date: r.day_date, total_min: Number(r.total_min) }));
+    } catch (e) {
+      console.error('Exceção ao buscar horas semanais:', e);
+      return [];
+    }
+  }
+
+  /** Horas de estudo agrupadas por edital via RPC */
+  async getStudyHoursByEdital(): Promise<{ edital_id: string; total_min: number }[]> {
+    const user = this.currentUser;
+    if (!user) return [];
+    try {
+      const { data, error } = await this.supabase.rpc('get_study_hours_by_edital');
+      if (error) { console.error('Erro ao buscar horas por edital:', error); return []; }
+      return (data || []).map((r: any) => ({ edital_id: r.edital_id, total_min: Number(r.total_min) }));
+    } catch (e) {
+      console.error('Exceção ao buscar horas por edital:', e);
+      return [];
+    }
+  }
+
+  /** Deleta uma sessão de estudo pelo id */
+  async deleteStudySession(sessionId: string): Promise<void> {
+    const user = this.currentUser;
+    if (!user) return;
+    try {
+      const { error } = await this.supabase
+        .from('study_sessions')
+        .delete()
+        .eq('id', sessionId)
+        .eq('user_id', user.id);
+      if (error) console.error('Erro ao deletar sessão:', error);
+    } catch (e) {
+      console.error('Exceção ao deletar sessão:', e);
+    }
+  }
+
   ngOnDestroy() {
     this.supabase.auth.onAuthStateChange(() => {});
   }
