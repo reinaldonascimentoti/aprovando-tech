@@ -17,25 +17,35 @@ async function bootstrap() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-  // Configuração de CORS dinâmica baseada no ambiente
-  let allowedOrigins: boolean | string | string[] | RegExp = true;
-  if (corsOriginEnv) {
-    if (corsOriginEnv.includes(',')) {
-      allowedOrigins = corsOriginEnv.split(',').map((o) => o.trim());
-    } else if (corsOriginEnv === '*') {
-      allowedOrigins = true;
-    } else {
-      allowedOrigins = corsOriginEnv;
-    }
-  } else if (nodeEnv === 'production') {
-    // Em produção, se não definido explicitamente, pode receber array de origens ou permitir com log de aviso
-    logger.warn('CORS_ORIGIN não definido em ambiente de produção. Usando padrão restrito.');
-    allowedOrigins = ['https://aprovandotech.com.br', 'https://app.aprovandotech.com.br'];
-  }
-
+  // Configuração de CORS dinâmica e robusta
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Permite requisições sem header origin (ex: healthchecks internos, server-to-server, curl)
+      if (!origin) return callback(null, true);
+
+      // Se CORS_ORIGIN for '*' ou bater com domínios autorizados
+      if (
+        corsOriginEnv === '*' ||
+        origin.includes('linkpc.net') ||
+        origin.includes('aprovandotech') ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1')
+      ) {
+        return callback(null, true);
+      }
+
+      if (corsOriginEnv) {
+        const allowedList = corsOriginEnv.split(',').map((o) => o.trim());
+        if (allowedList.includes(origin)) {
+          return callback(null, true);
+        }
+      }
+
+      logger.warn(`CORS bloqueou requisição da origem: ${origin}`);
+      return callback(null, false);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Range'],
     credentials: true,
   });
 
