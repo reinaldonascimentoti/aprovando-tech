@@ -2,7 +2,7 @@ export const environment = {
   production: true,
   supabaseUrl: 'https://eclvgwqpalgaotwqjgpq.supabase.co',
   supabaseAnonKey: 'sb_publishable_2VPXiZunqCItwh9vaZAgiw_kYeJjNMX',
-  apiUrl: 'http://oaldynjnt6cu5vgtpun6vaky.159.112.183.174.sslip.io/api',
+  apiUrl: 'http://api.aprovandotech.linkpc.net/api',
   firebaseConfig: {
     apiKey: "AIzaSyCOVyz9BNOyXVlx2Sn5N6fy5zFD7ZnJ23E",
     authDomain: "aprovandotech.firebaseapp.com",
