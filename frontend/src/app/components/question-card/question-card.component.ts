@@ -116,9 +116,11 @@ export interface NormalizedOption {
           <span class="text-[#475569] dark:text-[#94a3b8]">Órgão:</span>
           <span class="text-[#433fe5] dark:text-[#818cf8] font-medium ml-1 hover:underline cursor-pointer">{{ question?.orgao || 'Prefeitura' }}</span>
         </div>
-        <div class="min-w-0 max-w-full">
+        <div class="w-full sm:w-auto min-w-0 max-w-full break-words leading-snug">
           <span class="text-[#475569] dark:text-[#94a3b8]">Prova:</span>
-          <span class="text-[#433fe5] dark:text-[#818cf8] font-medium ml-1 hover:underline cursor-pointer truncate inline-block align-bottom max-w-[450px]">
+          <span 
+            [title]="provaText"
+            class="text-[#433fe5] dark:text-[#818cf8] font-medium ml-1 hover:underline cursor-pointer break-words">
             {{ provaText }}
           </span>
         </div>
