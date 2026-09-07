@@ -97,13 +97,17 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
       <div *ngIf="!loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         <div
           *ngFor="let ed of filteredEditais"
-          class="rounded-3xl p-6 bg-white dark:bg-[#0f1220] border transition-all duration-300 flex flex-col justify-between gap-3.5 relative overflow-hidden text-slate-800 dark:text-white group"
+          class="rounded-3xl p-6 border transition-all duration-300 flex flex-col justify-between gap-3.5 relative overflow-hidden text-slate-800 dark:text-white group"
           [ngClass]="isAlreadyAdded(ed.id)
-            ? 'border-2 border-indigo-500/60 dark:border-[#7c3aed] shadow-lg shadow-indigo-500/10'
-            : 'border-slate-200/90 dark:border-[#1f253d] shadow-sm hover:shadow-xl dark:shadow-xl hover:border-indigo-400/60 dark:hover:border-[#7c3aed]/50 hover:-translate-y-1'">
+            ? 'bg-gradient-to-br from-[#f6f5ff] via-[#f9f8ff] to-[#edf0fe] dark:bg-gradient-to-br dark:from-[#13162d] dark:via-[#161a37] dark:to-[#1a1b3f] border-2 border-indigo-300/80 hover:border-indigo-500 dark:border-indigo-500/40 dark:hover:border-indigo-400/80 shadow-md shadow-indigo-500/5'
+            : 'bg-white dark:bg-[#0f1220] border-slate-200/90 dark:border-[#1f253d] shadow-sm hover:shadow-xl dark:shadow-xl hover:border-indigo-400/60 dark:hover:border-[#7c3aed]/50 hover:-translate-y-1'">
+
+          <!-- Ambient Glows: Identificação sutil de edital do usuário -->
+          <div *ngIf="isAlreadyAdded(ed.id)" class="absolute -right-12 -top-12 w-36 h-36 bg-indigo-500/10 dark:bg-indigo-500/15 rounded-full blur-2xl pointer-events-none"></div>
+          <div *ngIf="isAlreadyAdded(ed.id)" class="absolute -left-12 -bottom-12 w-36 h-36 bg-purple-500/10 dark:bg-purple-500/15 rounded-full blur-2xl pointer-events-none"></div>
 
           <!-- Top Accent Bar: Highlight for user's own editais -->
-          <div *ngIf="isAlreadyAdded(ed.id)" class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#5d3bf6] via-[#7c3aed] to-[#38bdf8]"></div>
+          <div *ngIf="isAlreadyAdded(ed.id)" class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#5d3bf6] via-[#7c3aed] to-[#38bdf8]"></div>
           <div *ngIf="!isAlreadyAdded(ed.id)" class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500/70 dark:via-[#7c3aed]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
           <!-- Row 1: Orgao Badge & Status -->

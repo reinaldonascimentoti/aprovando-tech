@@ -10,12 +10,16 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
   template: `
-    <div class="bg-white dark:bg-[#0f1220] rounded-3xl p-4 sm:p-6 flex flex-col justify-between border-2 border-indigo-200/80 hover:border-indigo-400 dark:border-[var(--primary)]/30 dark:hover:border-[var(--primary)]/70 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full relative overflow-hidden group text-[var(--on-surface)]">
+    <div class="bg-gradient-to-br from-[#f6f5ff] via-[#f9f8ff] to-[#edf0fe] dark:bg-gradient-to-br dark:from-[#13162d] dark:via-[#161a37] dark:to-[#1a1b3f] rounded-3xl p-4 sm:p-6 flex flex-col justify-between border-2 border-indigo-300/80 hover:border-indigo-500 dark:border-indigo-500/40 dark:hover:border-indigo-400/80 shadow-md shadow-indigo-500/5 hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 h-full relative overflow-hidden group text-[var(--on-surface)]">
       
-      <!-- Top Accent Bar: Identificador Meu Edital -->
-      <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[var(--primary)] via-[var(--secondary)] to-[#38bdf8]"></div>
+      <!-- Ambient Glows: Identificação sutil de edital do usuário -->
+      <div class="absolute -right-12 -top-12 w-40 h-40 bg-indigo-500/10 dark:bg-indigo-500/15 rounded-full blur-2xl pointer-events-none"></div>
+      <div class="absolute -left-12 -bottom-12 w-40 h-40 bg-purple-500/10 dark:bg-purple-500/15 rounded-full blur-2xl pointer-events-none"></div>
 
-      <div>
+      <!-- Top Accent Bar: Identificador Meu Edital -->
+      <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[var(--primary)] via-[var(--secondary)] to-[#38bdf8]"></div>
+
+      <div class="relative z-10">
         <!-- Top Badges Row -->
         <div class="flex items-center justify-between gap-2 mb-3.5 flex-wrap">
           <div class="flex items-center gap-2 flex-wrap">
@@ -54,7 +58,7 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
         </p>
 
         <!-- Progress Bar -->
-        <div class="space-y-1.5 mb-4 sm:mb-5 bg-white dark:bg-[#161c2e] p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 dark:border-[var(--outline-variant)]/60">
+        <div class="space-y-1.5 mb-4 sm:mb-5 bg-white/90 dark:bg-[#0f1220]/75 backdrop-blur-xs p-3 sm:p-3.5 rounded-2xl border border-indigo-100/90 dark:border-indigo-500/20 shadow-xs">
           <div class="flex justify-between items-center text-xs sm:text-[13px] font-bold">
             <span class="text-[var(--on-surface-variant)] flex items-center gap-1.5 text-xs sm:text-[13px]">
               <span class="material-symbols-outlined !text-[16px] text-[var(--primary)]">checklist_rtl</span>
@@ -62,7 +66,7 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
             </span>
             <span class="text-[var(--primary)] font-black text-xs sm:text-[13px]">{{ progressPercentage }}%</span>
           </div>
-          <div class="w-full h-2.5 bg-[var(--surface-container-high)] rounded-full overflow-hidden p-0.5">
+          <div class="w-full h-2.5 bg-indigo-100/70 dark:bg-[var(--surface-container-high)] rounded-full overflow-hidden p-0.5">
             <div class="h-full bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] rounded-full transition-all duration-300"
                  [style.width.%]="progressPercentage"></div>
           </div>
@@ -70,8 +74,8 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
       </div>
 
       <!-- Action Buttons Row (Responsive Grid on Mobile, Flex on Desktop) -->
-      <div class="pt-3 border-t border-[var(--outline-variant)]/40 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-        <div class="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto flex-1">
+      <div class="pt-3 border-t border-[var(--outline-variant)]/40 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-2.5">
+        <div class="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 w-full sm:w-auto flex-1">
           <a [routerLink]="['/disciplinas', edital.id]"
              class="btn-mesh py-2.5 px-3 rounded-xl text-xs sm:text-[13px] font-extrabold flex items-center justify-center gap-1.5 text-center"
              title="Mapa Geral das Disciplinas (Tabela Completa)">
