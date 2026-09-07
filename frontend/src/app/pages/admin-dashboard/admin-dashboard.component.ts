@@ -9,11 +9,12 @@ import { EditalCardComponent } from '../../components/edital-card/edital-card.co
 import { QuestionCardComponent } from '../../components/question-card/question-card.component';
 import { PaginationComponent } from '../../components/pagination/pagination.component';
 import { AnalysisLogStep } from '../student-dashboard/student-dashboard.component';
+import { MultiSelectFilterComponent } from '../../components/multi-select-filter/multi-select-filter.component';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, EditalCardComponent, QuestionCardComponent, PaginationComponent],
+  imports: [CommonModule, FormsModule, RouterModule, EditalCardComponent, QuestionCardComponent, PaginationComponent, MultiSelectFilterComponent],
   template: `
     <div class="min-h-screen bg-[var(--background)] text-[var(--on-surface)] transition-colors duration-300 p-4 md:p-8">
       <!-- Top Navigation Bar -->
@@ -539,100 +540,66 @@ import { AnalysisLogStep } from '../student-dashboard/student-dashboard.componen
               </div>
             </div>
 
-            <!-- Selects: Disciplina, Banca, Ano, Órgão -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <!-- Filtros Acumulativos: Disciplina, Banca, Ano, Órgão, Cargo -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
               <!-- Disciplina -->
-              <div class="space-y-1">
-                <label class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
-                  <span class="material-symbols-outlined !text-[14px]">menu_book</span>
-                  Disciplina
-                </label>
-                <div class="neo-pressed rounded-xl px-3 py-2 flex items-center bg-[var(--background)]">
-                  <select 
-                    [(ngModel)]="selectedDisciplina" 
-                    (ngModelChange)="onFilterChange()"
-                    class="border-none outline-none text-xs w-full text-[var(--on-surface)] cursor-pointer font-medium bg-transparent">
-                    <option value="">Todas as Disciplinas</option>
-                    <option *ngFor="let disc of availableDisciplinas" [value]="disc">{{ disc }}</option>
-                  </select>
-                </div>
-              </div>
+              <app-multi-select-filter
+                label="Disciplina"
+                icon="menu_book"
+                placeholder="Todas as Disciplinas"
+                [options]="availableDisciplinas"
+                [(selected)]="selectedDisciplinas"
+                (filterChange)="onFilterChange()">
+              </app-multi-select-filter>
 
               <!-- Banca -->
-              <div class="space-y-1">
-                <label class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
-                  <span class="material-symbols-outlined !text-[14px]">account_balance</span>
-                  Banca
-                </label>
-                <div class="neo-pressed rounded-xl px-3 py-2 flex items-center bg-[var(--background)]">
-                  <select 
-                    [(ngModel)]="selectedBanca" 
-                    (ngModelChange)="onFilterChange()"
-                    class="border-none outline-none text-xs w-full text-[var(--on-surface)] cursor-pointer font-medium bg-transparent">
-                    <option value="">Todas as Bancas</option>
-                    <option *ngFor="let banca of availableBancas" [value]="banca">{{ banca }}</option>
-                  </select>
-                </div>
-              </div>
+              <app-multi-select-filter
+                label="Banca"
+                icon="account_balance"
+                placeholder="Todas as Bancas"
+                [options]="availableBancas"
+                [(selected)]="selectedBancas"
+                (filterChange)="onFilterChange()">
+              </app-multi-select-filter>
 
               <!-- Ano -->
-              <div class="space-y-1">
-                <label class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
-                  <span class="material-symbols-outlined !text-[14px]">calendar_today</span>
-                  Ano
-                </label>
-                <div class="neo-pressed rounded-xl px-3 py-2 flex items-center bg-[var(--background)]">
-                  <select 
-                    [(ngModel)]="selectedAno" 
-                    (ngModelChange)="onFilterChange()"
-                    class="border-none outline-none text-xs w-full text-[var(--on-surface)] cursor-pointer font-medium bg-transparent">
-                    <option value="">Todos os Anos</option>
-                    <option *ngFor="let ano of availableAnos" [value]="ano">{{ ano }}</option>
-                  </select>
-                </div>
-              </div>
+              <app-multi-select-filter
+                label="Ano"
+                icon="calendar_today"
+                placeholder="Todos os Anos"
+                [options]="availableAnos"
+                [(selected)]="selectedAnos"
+                (filterChange)="onFilterChange()">
+              </app-multi-select-filter>
 
               <!-- Órgão -->
-              <div class="space-y-1">
-                <label class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
-                  <span class="material-symbols-outlined !text-[14px]">domain</span>
-                  Órgão
-                </label>
-                <div class="neo-pressed rounded-xl px-3 py-2 flex items-center bg-[var(--background)]">
-                  <select 
-                    [(ngModel)]="selectedOrgao" 
-                    (ngModelChange)="onFilterChange()"
-                    class="border-none outline-none text-xs w-full text-[var(--on-surface)] cursor-pointer font-medium bg-transparent">
-                    <option value="">Todos os Órgãos</option>
-                    <option *ngFor="let orgao of availableOrgaos" [value]="orgao">{{ orgao }}</option>
-                  </select>
-                </div>
-              </div>
+              <app-multi-select-filter
+                label="Órgão"
+                icon="domain"
+                placeholder="Todos os Órgãos"
+                [options]="availableOrgaos"
+                [(selected)]="selectedOrgaos"
+                (filterChange)="onFilterChange()">
+              </app-multi-select-filter>
+
+              <!-- Cargo -->
+              <app-multi-select-filter
+                label="Cargo"
+                icon="badge"
+                placeholder="Todos os Cargos"
+                [options]="availableCargos"
+                [allowCustom]="true"
+                [(selected)]="selectedCargos"
+                (filterChange)="onFilterChange()">
+              </app-multi-select-filter>
             </div>
 
-            <!-- Inputs de Texto: Cargo, Assunto, Keyword -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
-              <!-- Cargo (Input texto) -->
-              <div class="space-y-1">
-                <label class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
-                  <span class="material-symbols-outlined !text-[14px]">badge</span>
-                  Cargo
-                </label>
-                <div class="neo-pressed rounded-xl px-3 py-2 flex items-center gap-2 bg-[var(--background)]">
-                  <span class="material-symbols-outlined text-[var(--outline)] !text-[16px]">work</span>
-                  <input 
-                    type="text"
-                    [(ngModel)]="filterCargo" 
-                    (ngModelChange)="onFilterChange()"
-                    placeholder="Digite o termo do cargo..."
-                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--outline)]">
-                </div>
-              </div>
-
+            <!-- Inputs de Texto: Assunto e Termo no Enunciado -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
               <!-- Assunto (Input texto) -->
               <div class="space-y-1">
                 <label class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
-                  <span class="material-symbols-outlined !text-[14px]">label</span>
+                  <span class="material-symbols-outlined !text-[14px]">topic</span>
                   Assunto
                 </label>
                 <div class="neo-pressed rounded-xl px-3 py-2 flex items-center gap-2 bg-[var(--background)]">
@@ -643,6 +610,11 @@ import { AnalysisLogStep } from '../student-dashboard/student-dashboard.componen
                     (ngModelChange)="onFilterChange()"
                     placeholder="Digite o termo do assunto..."
                     class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+                  <button 
+                    *ngIf="filterAssunto" 
+                    type="button" 
+                    (click)="filterAssunto = ''; onFilterChange()" 
+                    class="text-[var(--outline)] hover:text-[var(--on-surface)] text-xs cursor-pointer">✕</button>
                 </div>
               </div>
 
@@ -660,8 +632,55 @@ import { AnalysisLogStep } from '../student-dashboard/student-dashboard.componen
                     (ngModelChange)="onFilterChange()"
                     placeholder="Buscar palavra-chave..."
                     class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+                  <button 
+                    *ngIf="searchSubject" 
+                    type="button" 
+                    (click)="searchSubject = ''; onFilterChange()" 
+                    class="text-[var(--outline)] hover:text-[var(--on-surface)] text-xs cursor-pointer">✕</button>
                 </div>
               </div>
+            </div>
+
+            <!-- Chips de Filtros Ativos -->
+            <div *ngIf="hasActiveFilterChips" class="flex items-center gap-1.5 flex-wrap pt-2.5 border-t border-[var(--outline-variant)]/20">
+              <span class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1 mr-1">
+                <span class="material-symbols-outlined !text-[14px] text-[var(--primary)]">filter_alt</span>
+                Filtros ativos:
+              </span>
+
+              <span *ngFor="let d of selectedDisciplinas" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20">
+                <span class="opacity-70 text-[10px]">Disciplina:</span>
+                <strong class="font-bold">{{ d }}</strong>
+                <button type="button" (click)="removeFilterItem('disciplina', d)" class="hover:opacity-75 cursor-pointer ml-0.5 font-bold">✕</button>
+              </span>
+
+              <span *ngFor="let b of selectedBancas" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                <span class="opacity-70 text-[10px]">Banca:</span>
+                <strong class="font-bold">{{ b }}</strong>
+                <button type="button" (click)="removeFilterItem('banca', b)" class="hover:opacity-75 cursor-pointer ml-0.5 font-bold">✕</button>
+              </span>
+
+              <span *ngFor="let a of selectedAnos" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                <span class="opacity-70 text-[10px]">Ano:</span>
+                <strong class="font-bold">{{ a }}</strong>
+                <button type="button" (click)="removeFilterItem('ano', a)" class="hover:opacity-75 cursor-pointer ml-0.5 font-bold">✕</button>
+              </span>
+
+              <span *ngFor="let o of selectedOrgaos" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <span class="opacity-70 text-[10px]">Órgão:</span>
+                <strong class="font-bold">{{ o }}</strong>
+                <button type="button" (click)="removeFilterItem('orgao', o)" class="hover:opacity-75 cursor-pointer ml-0.5 font-bold">✕</button>
+              </span>
+
+              <span *ngFor="let c of selectedCargos" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                <span class="opacity-70 text-[10px]">Cargo:</span>
+                <strong class="font-bold">{{ c }}</strong>
+                <button type="button" (click)="removeFilterItem('cargo', c)" class="hover:opacity-75 cursor-pointer ml-0.5 font-bold">✕</button>
+              </span>
+
+              <button type="button" (click)="clearFilters()" class="text-[11px] font-bold text-red-500 hover:underline cursor-pointer ml-2">
+                Limpar todos
+              </button>
             </div>
           </div>
 
@@ -1628,7 +1647,7 @@ import { AnalysisLogStep } from '../student-dashboard/student-dashboard.componen
           </div>
 
           <!-- Timeline / Terminal de Logs -->
-          <div class="rounded-2xl p-3.5 sm:p-4 bg-slate-900/95 dark:bg-[#0b0e17] text-slate-100 border border-purple-500/20 shadow-inner max-h-[300px] sm:max-h-[340px] overflow-y-auto space-y-2.5">
+          <div id="edital-logs-container" class="rounded-2xl p-3.5 sm:p-4 bg-slate-900/95 dark:bg-[#0b0e17] text-slate-100 border border-purple-500/20 shadow-inner max-h-[300px] sm:max-h-[340px] overflow-y-auto space-y-2.5 scroll-smooth">
             <div class="flex items-center justify-between pb-2 border-b border-white/10 text-[10px] font-mono text-slate-400">
               <span class="flex items-center gap-1.5">
                 <span class="w-1.5 h-1.5 rounded-full"
@@ -1639,6 +1658,9 @@ import { AnalysisLogStep } from '../student-dashboard/student-dashboard.componen
             </div>
 
             <div *ngFor="let step of analysisLogs; let i = index"
+                 [id]="'edital-log-step-' + i"
+                 [attr.data-active]="step.status === 'active'"
+                 [attr.data-status]="step.status"
                  class="p-2.5 rounded-xl transition-all duration-300 flex items-start gap-3"
                  [ngClass]="{
                    'bg-emerald-500/10 border border-emerald-500/30': step.status === 'completed',
@@ -2107,14 +2129,30 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   questionsCurrentPage: number = 1;
   questionsPageSize: number = 10;
 
-  // Question search filters
+  // Question search filters (Acumulativos / Múltipla Seleção)
   searchSubject = '';
-  selectedDisciplina = '';
-  selectedBanca = '';
-  selectedAno = '';
-  selectedOrgao = '';
-  filterCargo = '';
+  selectedDisciplinas: string[] = [];
+  selectedBancas: string[] = [];
+  selectedAnos: (number | string)[] = [];
+  selectedOrgaos: string[] = [];
+  selectedCargos: string[] = [];
   filterAssunto = '';
+
+  // Getters/setters para compatibilidade legada
+  get selectedDisciplina(): string { return this.selectedDisciplinas[0] || ''; }
+  set selectedDisciplina(val: string) { this.selectedDisciplinas = val ? [val] : []; }
+
+  get selectedBanca(): string { return this.selectedBancas[0] || ''; }
+  set selectedBanca(val: string) { this.selectedBancas = val ? [val] : []; }
+
+  get selectedAno(): string { return this.selectedAnos[0] ? String(this.selectedAnos[0]) : ''; }
+  set selectedAno(val: string) { this.selectedAnos = val ? [val] : []; }
+
+  get selectedOrgao(): string { return this.selectedOrgaos[0] || ''; }
+  set selectedOrgao(val: string) { this.selectedOrgaos = val ? [val] : []; }
+
+  get filterCargo(): string { return this.selectedCargos[0] || ''; }
+  set filterCargo(val: string) { this.selectedCargos = val ? [val] : []; }
 
   // Edit Question Modal state
   showEditQuestionModal: boolean = false;
@@ -2156,25 +2194,50 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   clearFilters() {
     this.searchSubject = '';
-    this.selectedDisciplina = '';
-    this.selectedBanca = '';
-    this.selectedAno = '';
-    this.selectedOrgao = '';
-    this.filterCargo = '';
+    this.selectedDisciplinas = [];
+    this.selectedBancas = [];
+    this.selectedAnos = [];
+    this.selectedOrgaos = [];
+    this.selectedCargos = [];
     this.filterAssunto = '';
     this.questionsCurrentPage = 1;
   }
 
   get hasActiveFilters(): boolean {
     return !!(
-      this.searchSubject ||
-      this.selectedDisciplina ||
-      this.selectedBanca ||
-      this.selectedAno ||
-      this.selectedOrgao ||
-      this.filterCargo?.trim() ||
+      this.searchSubject?.trim() ||
+      this.selectedDisciplinas.length > 0 ||
+      this.selectedBancas.length > 0 ||
+      this.selectedAnos.length > 0 ||
+      this.selectedOrgaos.length > 0 ||
+      this.selectedCargos.length > 0 ||
       this.filterAssunto?.trim()
     );
+  }
+
+  get hasActiveFilterChips(): boolean {
+    return (
+      this.selectedDisciplinas.length > 0 ||
+      this.selectedBancas.length > 0 ||
+      this.selectedAnos.length > 0 ||
+      this.selectedOrgaos.length > 0 ||
+      this.selectedCargos.length > 0
+    );
+  }
+
+  removeFilterItem(type: 'disciplina' | 'banca' | 'ano' | 'orgao' | 'cargo', value: string | number) {
+    if (type === 'disciplina') {
+      this.selectedDisciplinas = this.selectedDisciplinas.filter(item => item !== value);
+    } else if (type === 'banca') {
+      this.selectedBancas = this.selectedBancas.filter(item => item !== value);
+    } else if (type === 'ano') {
+      this.selectedAnos = this.selectedAnos.filter(item => String(item) !== String(value));
+    } else if (type === 'orgao') {
+      this.selectedOrgaos = this.selectedOrgaos.filter(item => item !== value);
+    } else if (type === 'cargo') {
+      this.selectedCargos = this.selectedCargos.filter(item => item !== value);
+    }
+    this.onFilterChange();
   }
 
   get availableDisciplinas(): string[] {
@@ -2186,7 +2249,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         set.add(val.trim());
       }
     }
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }
 
   get availableBancas(): string[] {
@@ -2198,7 +2261,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         set.add(val.trim());
       }
     }
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }
 
   get availableAnos(): (number | string)[] {
@@ -2206,7 +2269,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const set = new Set<number | string>();
     for (const q of this.questions) {
       if (q.ano != null && q.ano !== '') {
-        set.add(q.ano);
+        set.add(String(q.ano).trim());
       }
     }
     return Array.from(set).sort((a, b) => Number(b) - Number(a));
@@ -2221,40 +2284,61 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         set.add(val.trim());
       }
     }
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }
+
+  get availableCargos(): string[] {
+    if (!this.questions) return [];
+    const set = new Set<string>();
+    for (const q of this.questions) {
+      const val = q.cargo;
+      if (val && typeof val === 'string' && val.trim()) {
+        set.add(val.trim());
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }
 
   get filteredQuestions(): any[] {
     if (!this.questions || this.questions.length === 0) return [];
 
     return this.questions.filter(q => {
-      // 1. Disciplina
-      if (this.selectedDisciplina) {
-        const disc = (q.disciplina || q.subject || '').toString().toLowerCase();
-        if (disc !== this.selectedDisciplina.toLowerCase()) return false;
+      // 1. Disciplina (Múltipla Seleção Acumulativa)
+      if (this.selectedDisciplinas && this.selectedDisciplinas.length > 0) {
+        const disc = (q.disciplina || q.subject || '').toString().toLowerCase().trim();
+        const match = this.selectedDisciplinas.some(d => String(d).toLowerCase().trim() === disc);
+        if (!match) return false;
       }
 
-      // 2. Banca
-      if (this.selectedBanca) {
-        const banca = (q.banca || '').toString().toLowerCase();
-        if (banca !== this.selectedBanca.toLowerCase()) return false;
+      // 2. Banca (Múltipla Seleção Acumulativa)
+      if (this.selectedBancas && this.selectedBancas.length > 0) {
+        const banca = (q.banca || '').toString().toLowerCase().trim();
+        const match = this.selectedBancas.some(b => String(b).toLowerCase().trim() === banca);
+        if (!match) return false;
       }
 
-      // 3. Ano
-      if (this.selectedAno) {
-        if (String(q.ano) !== String(this.selectedAno)) return false;
+      // 3. Ano (Múltipla Seleção Acumulativa)
+      if (this.selectedAnos && this.selectedAnos.length > 0) {
+        const anoStr = String(q.ano || '').trim();
+        const match = this.selectedAnos.some(a => String(a).trim() === anoStr);
+        if (!match) return false;
       }
 
-      // 4. Órgão
-      if (this.selectedOrgao) {
-        const orgao = (q.orgao || '').toString().toLowerCase();
-        if (orgao !== this.selectedOrgao.toLowerCase()) return false;
+      // 4. Órgão (Múltipla Seleção Acumulativa)
+      if (this.selectedOrgaos && this.selectedOrgaos.length > 0) {
+        const orgao = (q.orgao || '').toString().toLowerCase().trim();
+        const match = this.selectedOrgaos.some(o => String(o).toLowerCase().trim() === orgao);
+        if (!match) return false;
       }
 
-      // 5. Cargo (Input de texto)
-      if (this.filterCargo && this.filterCargo.trim() !== '') {
-        const cargo = (q.cargo || '').toString().toLowerCase();
-        if (!cargo.includes(this.filterCargo.trim().toLowerCase())) return false;
+      // 5. Cargo (Múltipla Seleção Acumulativa)
+      if (this.selectedCargos && this.selectedCargos.length > 0) {
+        const cargo = (q.cargo || '').toString().toLowerCase().trim();
+        const match = this.selectedCargos.some(c => {
+          const target = String(c).toLowerCase().trim();
+          return cargo === target || cargo.includes(target) || target.includes(cargo);
+        });
+        if (!match) return false;
       }
 
       // 6. Assunto (Input de texto)
@@ -2502,6 +2586,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   clearUploadLogInterval() {
     if (this.uploadLogInterval) {
+      clearTimeout(this.uploadLogInterval);
       clearInterval(this.uploadLogInterval);
       this.uploadLogInterval = null;
     }
@@ -2552,21 +2637,21 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         id: 'disciplinas',
         icon: 'menu_book',
         title: 'Mapeando Conteúdo Programático',
-        detail: 'Separando disciplinas básicas e específicas, tópicos e subtópicos com pesos.',
+        detail: 'Separação de disciplinas, tópicos e subtópicos.',
         status: 'pending'
       },
       {
         id: 'pareto',
         icon: 'query_stats',
         title: 'Aplicando Análise Pareto 80/20',
-        detail: 'Identificando o núcleo de 20% das matérias de maior incidência histórica.',
+        detail: 'Identificação do núcleo de maior incidência histórica.',
         status: 'pending'
       },
       {
         id: 'regua',
         icon: 'balance',
         title: 'Calibrando Régua de Corte e Pesos',
-        detail: 'Estimando pontuação de corte e critérios de desempate da banca examinadora.',
+        detail: 'Conteúdos que podem ser deixados para o final do cronograma.',
         status: 'pending'
       },
       {
@@ -2581,27 +2666,92 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     let currentStep = 1;
     const progressTargets = [12, 25, 42, 58, 72, 85, 93, 97];
 
-    this.uploadLogInterval = setInterval(() => {
+    // Tempos customizados por etapa (ms) - etapas cognitivas mais demoradas
+    const stepDurations = [
+      0,     // 0: info (inicia concluído)
+      3200,  // 1: Edital recebido
+      3200,  // 2: Cargo identificado
+      3500,  // 3: Enviado para análise IA
+      10500, // 4: Mapeando Conteúdo Programático (10.5s)
+      10500, // 5: Aplicando Análise Pareto 80/20 (10.5s)
+      8500,  // 6: Calibrando Régua de Corte e Pesos (8.5s)
+      6000   // 7: Finalizando Plano Estratégico
+    ];
+
+    // Mantém no topo inicialmente para os primeiros logs ficarem visíveis
+    setTimeout(() => {
+      const container = document.getElementById('edital-logs-container');
+      if (container) {
+        container.scrollTop = 0;
+      }
+      this.scrollActiveLogToCenter(1);
+    }, 60);
+
+    const runStep = () => {
       if (this.uploadStatus !== 'processing') {
         this.clearUploadLogInterval();
         return;
       }
 
-      if (currentStep < this.analysisLogs.length - 1) {
-        this.analysisLogs[currentStep].status = 'completed';
-        this.analysisLogs[currentStep].time = this.getCurrentTimeStr();
+      const nextDuration = stepDurations[currentStep] || 4000;
 
-        currentStep++;
-        this.analysisLogs[currentStep].status = 'active';
-        this.analysisLogs[currentStep].time = this.getCurrentTimeStr();
+      this.uploadLogInterval = setTimeout(() => {
+        if (this.uploadStatus !== 'processing') return;
 
-        this.uploadProgress = progressTargets[currentStep] || 95;
-      } else {
-        if (this.uploadProgress < 97) {
-          this.uploadProgress += 1;
+        if (currentStep < this.analysisLogs.length - 1) {
+          this.analysisLogs[currentStep].status = 'completed';
+          this.analysisLogs[currentStep].time = this.getCurrentTimeStr();
+
+          currentStep++;
+          this.analysisLogs[currentStep].status = 'active';
+          this.analysisLogs[currentStep].time = this.getCurrentTimeStr();
+
+          this.uploadProgress = progressTargets[currentStep] || 95;
+          this.scrollActiveLogToCenter(currentStep);
+
+          runStep();
+        } else {
+          // No último passo, continua ajustando levemente a barra enquanto a IA conclui
+          if (this.uploadProgress < 98) {
+            this.uploadProgress += 1;
+          }
+          this.uploadLogInterval = setTimeout(runStep, 2500);
         }
+      }, nextDuration);
+    };
+
+    runStep();
+  }
+
+  scrollActiveLogToCenter(stepIndex?: number) {
+    setTimeout(() => {
+      const container = document.getElementById('edital-logs-container');
+      if (!container) return;
+
+      let targetEl: HTMLElement | null = null;
+      if (typeof stepIndex === 'number') {
+        targetEl = document.getElementById('edital-log-step-' + stepIndex);
       }
-    }, 2200);
+      if (!targetEl) {
+        targetEl = container.querySelector('[data-active="true"], [data-status="error"]') as HTMLElement;
+      }
+      if (!targetEl) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = targetEl.getBoundingClientRect();
+
+      const relativeTop = targetRect.top - containerRect.top;
+      const targetCenter = relativeTop + (targetRect.height / 2);
+      const containerCenter = container.clientHeight / 2;
+      const delta = targetCenter - containerCenter;
+
+      const targetScrollTop = Math.max(0, container.scrollTop + delta);
+
+      container.scrollTo({
+        top: targetScrollTop,
+        behavior: 'smooth'
+      });
+    }, 80);
   }
 
   finishUploadSuccess(callback: () => void) {
@@ -2613,6 +2763,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       step.status = 'completed';
       if (!step.time) step.time = this.getCurrentTimeStr();
     });
+    this.scrollActiveLogToCenter(this.analysisLogs.length - 1);
 
     setTimeout(() => {
       this.uploadStatus = 'idle';
@@ -2634,6 +2785,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       activeStep.status = 'error';
       activeStep.time = this.getCurrentTimeStr();
     }
+    this.scrollActiveLogToCenter();
   }
 
   // Estado para envio de edital para usuário

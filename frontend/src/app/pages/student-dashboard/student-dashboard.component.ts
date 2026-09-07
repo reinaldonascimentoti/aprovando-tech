@@ -12,6 +12,8 @@ import { PaginationComponent } from '../../components/pagination/pagination.comp
 import { UserProfileComponent } from '../../components/user-profile/user-profile.component';
 import { StatsDashboardComponent } from '../../components/stats-dashboard/stats-dashboard.component';
 import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
+import { ParetoAnalysisModalComponent } from '../../components/pareto-analysis-modal/pareto-analysis-modal.component';
+import { MultiSelectFilterComponent } from '../../components/multi-select-filter/multi-select-filter.component';
 
 export interface AnalysisLogStep {
   id: string;
@@ -25,12 +27,13 @@ export interface AnalysisLogStep {
 @Component({
   selector: 'app-student-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, EditalCardComponent, QuestionCardComponent, PaginationComponent, UserProfileComponent, StatsDashboardComponent],
+  imports: [CommonModule, FormsModule, RouterModule, EditalCardComponent, QuestionCardComponent, PaginationComponent, UserProfileComponent, StatsDashboardComponent, ParetoAnalysisModalComponent, MultiSelectFilterComponent],
   template: `
     <div class="min-h-screen bg-[var(--background)] text-[var(--on-surface)] transition-colors duration-300 p-3 sm:p-6 md:p-8">
       <!-- Top Navigation Bar -->
-      <header class="neo-raised rounded-2xl p-3.5 sm:p-5 mb-6 md:mb-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
-        <div class="flex items-center gap-3 shrink-0">
+      <header class="neo-raised rounded-2xl p-3.5 sm:p-5 mb-6 md:mb-8 flex flex-wrap xl:flex-nowrap items-center justify-between gap-3 sm:gap-4">
+        <!-- Title & Icon -->
+        <div class="flex items-center gap-3 shrink-0 order-1">
           <div class="w-10 h-10 sm:w-12 sm:h-12 neo-raised rounded-xl flex items-center justify-center text-[var(--primary)] shrink-0">
             <span class="material-symbols-outlined !text-[24px] sm:!text-[28px] filled">
               {{ activeTab === 'questions' ? 'quiz' : 'school' }}
@@ -47,49 +50,48 @@ export interface AnalysisLogStep {
         </div>
 
         <!-- Centralized Welcome & Motivation Message -->
-        <div class="text-center flex-1 my-1 sm:my-0 px-2">
-          <p class="text-xs sm:text-sm font-semibold text-[var(--on-surface-variant)] leading-tight">
-            Bem-vindo, <strong class="text-[var(--primary)]">{{ user?.full_name || 'reinaldodrive123' }}</strong>.
-          </p>
-          <p class="text-xs sm:text-sm font-extrabold text-[var(--primary)] mt-1 flex items-center justify-center gap-1">
-            <span>Você está no caminho da aprovação!</span>
-            <span class="material-symbols-outlined !text-[18px]">rocket_launch</span>
-          </p>
+        <div class="text-center w-full xl:w-auto xl:flex-1 order-2 sm:order-3 xl:order-2 my-1 sm:my-0 sm:pt-2.5 xl:pt-0 px-2 sm:border-t xl:border-t-0 border-[var(--outline-variant)]/20">
+          <div class="flex flex-col sm:flex-row xl:flex-col items-center justify-center gap-0.5 sm:gap-2 xl:gap-0.5">
+            <p class="text-xs sm:text-sm font-semibold text-[var(--on-surface-variant)] leading-tight whitespace-normal sm:whitespace-nowrap">
+              Bem-vindo, <strong class="text-[var(--primary)]">{{ user?.full_name || 'reinaldodrive123' }}</strong>.
+            </p>
+            <span class="hidden sm:inline xl:hidden text-[var(--on-surface-variant)]/40 font-bold">•</span>
+            <p class="text-xs sm:text-sm font-extrabold text-[var(--primary)] flex items-center justify-center gap-1 leading-tight whitespace-normal sm:whitespace-nowrap">
+              <span>Você está no caminho da aprovação!</span>
+              <span class="material-symbols-outlined !text-[18px]">rocket_launch</span>
+            </p>
+          </div>
         </div>
 
-        <div class="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-[var(--outline-variant)]/30 shrink-0">
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto order-3 sm:order-2 xl:order-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-[var(--outline-variant)]/30 shrink-0">
           <!-- Botão Modo Dark/Claro -->
-          <button (click)="themeService.toggle()" class="btn-neo px-3 sm:px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shrink-0 text-[var(--on-surface)] transition-all cursor-pointer" [title]="themeService.isDark() ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'">
+          <button (click)="themeService.toggle()" class="btn-neo px-2.5 sm:px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shrink-0 text-[var(--on-surface)] transition-all cursor-pointer" [title]="themeService.isDark() ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'">
             <span class="material-symbols-outlined !text-[16px] text-[var(--primary)]">{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</span>
             <span>{{ themeService.isDark() ? 'Claro' : 'Escuro' }}</span>
-          </button>
-
-          <!-- Botão Pomodoro -->
-          <button (click)="navigateToPomodoro()" class="btn-mesh px-3 sm:px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0" title="Timer Pomodoro • Banco de Horas">
-            <span class="text-sm">🍅</span>
-            <span class="hidden sm:inline">Pomodoro</span>
           </button>
 
           <!-- Botão Voltar para o Dashboard (Visível ao navegar em Questões) -->
           <button 
             *ngIf="activeTab === 'questions'" 
             (click)="activeTab = 'editais'" 
-            class="btn-neo px-3 sm:px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 text-[var(--primary)] hover:bg-[var(--primary)]/10 transition-all cursor-pointer">
+            class="btn-neo px-2.5 sm:px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 text-[var(--primary)] hover:bg-[var(--primary)]/10 transition-all cursor-pointer">
             <span class="material-symbols-outlined !text-[16px]">arrow_back</span>
-            <span>Voltar ao Dashboard</span>
+            <span class="hidden md:inline">Voltar ao Dashboard</span>
+            <span class="md:hidden">Voltar</span>
           </button>
 
           <!-- Botão Meu Perfil -->
           <button
             (click)="activeTab = 'perfil'"
             [class.text-[var(--primary)]]="activeTab === 'perfil'"
-            class="btn-neo px-3 sm:px-4 py-2 rounded-xl text-xs flex items-center gap-1 shrink-0 text-[var(--on-surface-variant)] hover:text-[var(--primary)] transition-all cursor-pointer">
+            class="btn-neo px-2.5 sm:px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shrink-0 text-[var(--on-surface-variant)] hover:text-[var(--primary)] transition-all cursor-pointer">
             <span class="material-symbols-outlined !text-[16px]">account_circle</span>
             <span class="hidden sm:inline">Meu Perfil</span>
           </button>
 
           <!-- Botão Sair da Aplicação -->
-          <button (click)="logout()" class="btn-neo px-3 sm:px-4 py-2 rounded-xl text-xs flex items-center gap-1 shrink-0 text-[var(--on-surface)]">
+          <button (click)="logout()" class="btn-neo px-2.5 sm:px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shrink-0 text-[var(--on-surface)]">
             <span class="material-symbols-outlined !text-[16px]">logout</span>
             <span>Sair</span>
           </button>
@@ -128,80 +130,161 @@ export interface AnalysisLogStep {
         </div>
       </div>
 
-      <!-- Linha 1: Navigation Tabs Bar (Oculto no modo Questões) -->
-      <div *ngIf="activeTab !== 'questions'" class="neo-raised rounded-3xl p-3 sm:p-4 md:p-6 mb-6 md:mb-8 bg-[var(--card-bg)] shadow-lg border border-[var(--outline-variant)]">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--outline-variant)]/40 pb-2">
-          <div class="flex items-center gap-1 sm:gap-3 overflow-x-auto no-scrollbar w-full pb-1 sm:pb-0">
+      <!-- Linha 1: Navigation Tabs Bar (Padrão Modern Pill & Squircles) -->
+      <div *ngIf="activeTab !== 'questions'" class="rounded-3xl p-2.5 sm:p-3.5 mb-6 md:mb-8 bg-white dark:bg-[var(--card-bg)] shadow-sm border border-slate-100 dark:border-[var(--outline-variant)]/40 transition-colors">
+        <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3 sm:gap-4">
+          <div class="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar w-full py-1">
+            <!-- 1. Edital Tab -->
             <button 
+              type="button"
               (click)="activeTab = 'editais'"
-              [class.border-b-2]="activeTab === 'editais'"
-              [class.border-[var(--primary)]]="activeTab === 'editais'"
-              [class.text-[var(--primary)]]="activeTab === 'editais'"
-              class="pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs sm:text-sm font-bold text-[var(--on-surface-variant)] transition-colors flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0">
-              <span class="material-symbols-outlined !text-[18px] sm:!text-[20px]">folder_special</span>
-              <span>1. Meus Editais ({{ editais.length }})</span>
+              [ngClass]="activeTab === 'editais' ? 
+                'bg-[#eeebff] dark:bg-[#523bf6]/20 border border-[#ddd6fe] dark:border-[#523bf6]/40 rounded-[22px] sm:rounded-3xl p-1.5 sm:p-2 pr-4 sm:pr-5 shadow-xs' : 
+                'p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent'"
+              class="flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
+              <div 
+                [ngClass]="activeTab === 'editais' ? 
+                  'bg-[#523bf6] text-white shadow-md shadow-[#523bf6]/30' : 
+                  'bg-[#f3f0ff] dark:bg-purple-950/40 text-[#523bf6] dark:text-purple-300 group-hover:scale-105'"
+                class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform">
+                <span class="material-symbols-outlined !text-[22px] sm:!text-[24px]">description</span>
+              </div>
+              <div class="flex flex-col justify-center">
+                <span 
+                  [ngClass]="activeTab === 'editais' ? 'font-extrabold text-[#2e1d74] dark:text-purple-200' : 'font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#523bf6]'"
+                  class="text-sm sm:text-[15px] tracking-tight leading-tight whitespace-nowrap transition-colors">
+                  Meu Edital
+                </span>
+                <span *ngIf="activeTab === 'editais'" class="text-xs font-semibold text-[#6f5ccf] dark:text-purple-300 leading-tight whitespace-nowrap">
+                  Organize seus editais
+                </span>
+              </div>
             </button>
 
+            <!-- 2. Mapa de Disciplinas Tab -->
             <button 
-              (click)="activeTab = 'cronogramas'"
-              [class.border-b-2]="activeTab === 'cronogramas'"
-              [class.border-[var(--primary)]]="activeTab === 'cronogramas'"
-              [class.text-[var(--primary)]]="activeTab === 'cronogramas'"
-              class="pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs sm:text-sm font-bold text-[var(--on-surface-variant)] transition-colors flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0">
-              <span class="material-symbols-outlined !text-[18px] sm:!text-[20px]">calendar_month</span>
-              <span>2. Cronogramas</span>
-            </button>
-
-            <button 
+              type="button"
               (click)="activeTab = 'mapa'"
-              [class.border-b-2]="activeTab === 'mapa'"
-              [class.border-[var(--primary)]]="activeTab === 'mapa'"
-              [class.text-[var(--primary)]]="activeTab === 'mapa'"
-              class="pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs sm:text-sm font-bold text-[var(--on-surface-variant)] transition-colors flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0">
-              <span class="material-symbols-outlined !text-[18px] sm:!text-[20px]">map</span>
-              <span>3. Mapa de Disciplinas</span>
+              [ngClass]="activeTab === 'mapa' ? 
+                'bg-[#eeebff] dark:bg-[#523bf6]/20 border border-[#ddd6fe] dark:border-[#523bf6]/40 rounded-[22px] sm:rounded-3xl p-1.5 sm:p-2 pr-4 sm:pr-5 shadow-xs' : 
+                'p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent'"
+              class="flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
+              <div 
+                [ngClass]="activeTab === 'mapa' ? 
+                  'bg-[#523bf6] text-white shadow-md shadow-[#523bf6]/30' : 
+                  'bg-[#f3f0ff] dark:bg-purple-950/40 text-[#523bf6] dark:text-purple-300 group-hover:scale-105'"
+                class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform">
+                <span class="material-symbols-outlined !text-[22px] sm:!text-[24px]">map</span>
+              </div>
+              <div class="flex flex-col justify-center">
+                <span 
+                  [ngClass]="activeTab === 'mapa' ? 'font-extrabold text-[#2e1d74] dark:text-purple-200' : 'font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#523bf6]'"
+                  class="text-sm sm:text-[15px] tracking-tight leading-tight whitespace-nowrap transition-colors">
+                  Mapa de Disciplinas
+                </span>
+                <span *ngIf="activeTab === 'mapa'" class="text-xs font-semibold text-[#6f5ccf] dark:text-purple-300 leading-tight whitespace-nowrap">
+                  Organize seus estudos
+                </span>
+              </div>
             </button>
 
+            <!-- 3. Cronogramas Tab -->
             <button 
-              (click)="activeTab = 'questions'"
-              class="pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs sm:text-sm font-bold text-[var(--on-surface-variant)] hover:text-[var(--primary)] transition-colors flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 cursor-pointer">
-              <span class="material-symbols-outlined !text-[18px] sm:!text-[20px]">quiz</span>
-              <span>4. Questões ({{ questions.length }})</span>
+              type="button"
+              (click)="activeTab = 'cronogramas'"
+              [ngClass]="activeTab === 'cronogramas' ? 
+                'bg-[#eeebff] dark:bg-[#523bf6]/20 border border-[#ddd6fe] dark:border-[#523bf6]/40 rounded-[22px] sm:rounded-3xl p-1.5 sm:p-2 pr-4 sm:pr-5 shadow-xs' : 
+                'p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent'"
+              class="flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
+              <div 
+                [ngClass]="activeTab === 'cronogramas' ? 
+                  'bg-[#523bf6] text-white shadow-md shadow-[#523bf6]/30' : 
+                  'bg-[#f3f0ff] dark:bg-purple-950/40 text-[#523bf6] dark:text-purple-300 group-hover:scale-105'"
+                class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform">
+                <span class="material-symbols-outlined !text-[22px] sm:!text-[24px]">calendar_month</span>
+              </div>
+              <div class="flex flex-col justify-center">
+                <span 
+                  [ngClass]="activeTab === 'cronogramas' ? 'font-extrabold text-[#2e1d74] dark:text-purple-200' : 'font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#523bf6]'"
+                  class="text-sm sm:text-[15px] tracking-tight leading-tight whitespace-nowrap transition-colors">
+                  Cronogramas
+                </span>
+                <span *ngIf="activeTab === 'cronogramas'" class="text-xs font-semibold text-[#6f5ccf] dark:text-purple-300 leading-tight whitespace-nowrap">
+                  Planejamento de estudos
+                </span>
+              </div>
             </button>
 
-            <button
-              (click)="activeTab = 'perfil'"
-              [class.border-b-2]="activeTab === 'perfil'"
-              [class.border-[var(--primary)]]="activeTab === 'perfil'"
-              [class.text-[var(--primary)]]="activeTab === 'perfil'"
-              class="pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs sm:text-sm font-bold text-[var(--on-surface-variant)] hover:text-[var(--primary)] transition-colors flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 cursor-pointer">
-              <span class="material-symbols-outlined !text-[18px] sm:!text-[20px]">account_circle</span>
-              <span>5. Meu Perfil</span>
-            </button>
-
-            <button
+            <!-- 4. Desempenho / Estatísticas Tab -->
+            <button 
+              type="button"
               (click)="activeTab = 'estatisticas'; loadStudySessions()"
-              [class.border-b-2]="activeTab === 'estatisticas'"
-              [class.border-[var(--primary)]]="activeTab === 'estatisticas'"
-              [class.text-[var(--primary)]]="activeTab === 'estatisticas'"
-              class="pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs sm:text-sm font-bold text-[var(--on-surface-variant)] hover:text-[var(--primary)] transition-colors flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 cursor-pointer">
-              <span class="material-symbols-outlined !text-[18px] sm:!text-[20px]">bar_chart</span>
-              <span>6. Estatísticas</span>
+              [ngClass]="activeTab === 'estatisticas' ? 
+                'bg-[#eeebff] dark:bg-[#523bf6]/20 border border-[#ddd6fe] dark:border-[#523bf6]/40 rounded-[22px] sm:rounded-3xl p-1.5 sm:p-2 pr-4 sm:pr-5 shadow-xs' : 
+                'p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent'"
+              class="flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
+              <div 
+                [ngClass]="activeTab === 'estatisticas' ? 
+                  'bg-[#523bf6] text-white shadow-md shadow-[#523bf6]/30' : 
+                  'bg-[#f3f0ff] dark:bg-purple-950/40 text-[#523bf6] dark:text-purple-300 group-hover:scale-105'"
+                class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform">
+                <span class="material-symbols-outlined !text-[22px] sm:!text-[24px]">bar_chart</span>
+              </div>
+              <div class="flex flex-col justify-center">
+                <span 
+                  [ngClass]="activeTab === 'estatisticas' ? 'font-extrabold text-[#2e1d74] dark:text-purple-200' : 'font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#523bf6]'"
+                  class="text-sm sm:text-[15px] tracking-tight leading-tight whitespace-nowrap transition-colors">
+                  Desempenho
+                </span>
+                <span *ngIf="activeTab === 'estatisticas'" class="text-xs font-semibold text-[#6f5ccf] dark:text-purple-300 leading-tight whitespace-nowrap">
+                  Métricas e evolução
+                </span>
+              </div>
             </button>
 
-            <!-- Pomodoro Tab -->
+            <!-- 5. Questões Tab -->
+            <button 
+              type="button"
+              (click)="activeTab = 'questions'"
+              class="p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
+              <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#f3f0ff] dark:bg-purple-950/40 text-[#523bf6] dark:text-purple-300 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
+                <span class="material-symbols-outlined !text-[22px] sm:!text-[24px]">quiz</span>
+              </div>
+              <div class="flex flex-col justify-center">
+                <span class="text-sm sm:text-[15px] font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#523bf6] tracking-tight leading-tight whitespace-nowrap transition-colors">
+                  Questões
+                </span>
+                <span class="text-xs font-medium text-slate-400 dark:text-slate-400 leading-tight whitespace-nowrap">
+                  Banco de questões
+                </span>
+              </div>
+            </button>
+
+            <!-- 6. Pomodoro Tab -->
             <button
+              type="button"
               (click)="navigateToPomodoro()"
-              class="pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs sm:text-sm font-bold text-[var(--primary)] hover:opacity-80 transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 cursor-pointer">
-              <span class="text-base">🍅</span>
-              <span>Pomodoro</span>
+              class="p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
+              <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#f3f0ff] dark:bg-purple-950/40 text-[#523bf6] dark:text-purple-300 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
+                <span class="text-xl">🍅</span>
+              </div>
+              <div class="flex flex-col justify-center">
+                <span class="text-sm sm:text-[15px] font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#523bf6] tracking-tight leading-tight whitespace-nowrap transition-colors">
+                  Pomodoro
+                </span>
+                <span class="text-xs font-medium text-slate-400 dark:text-slate-400 leading-tight whitespace-nowrap">
+                  Ciclos de foco
+                </span>
+              </div>
             </button>
           </div>
 
+          <!-- Ação Novo Edital -->
           <button 
+            type="button"
             (click)="openUploadModal()"
-            class="sm:ml-auto pb-1 sm:pb-3 text-xs sm:text-sm font-extrabold text-[var(--secondary)] transition-colors flex items-center gap-1.5 whitespace-nowrap hover:opacity-80 shrink-0 self-end sm:self-auto">
-            <span class="material-symbols-outlined !text-[18px] sm:!text-[20px]">cloud_upload</span>
+            class="xl:ml-auto px-4 sm:px-5 py-3 rounded-2xl bg-gradient-to-r from-[#523bf6] to-indigo-600 hover:from-[#472fc2] hover:to-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-[#523bf6]/25 hover:shadow-lg transition-all flex items-center justify-center gap-2 whitespace-nowrap shrink-0 cursor-pointer self-start xl:self-auto">
+            <span class="material-symbols-outlined !text-[20px]">cloud_upload</span>
             <span>+ Enviar Novo Edital</span>
           </button>
         </div>
@@ -246,10 +329,11 @@ export interface AnalysisLogStep {
             </div>
           </div>
 
-          <!-- Editais Cards List (Full Width) -->
-          <div class="flex flex-col gap-6 w-full">
+          <!-- Editais Cards List (2 Cards por linha) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
             <div *ngFor="let ed of editais" class="w-full">
               <app-edital-card
+                class="block h-full"
                 [edital]="ed"
                 [isAdmin]="false"
                 [dismissConfirmId]="dismissConfirmId"
@@ -261,7 +345,7 @@ export interface AnalysisLogStep {
             </div>
 
             <!-- Empty state -->
-            <div *ngIf="editais.length === 0" class="w-full flex flex-col items-center justify-center py-10 text-center gap-3">
+            <div *ngIf="editais.length === 0" class="col-span-full w-full flex flex-col items-center justify-center py-10 text-center gap-3">
               <span class="material-symbols-outlined !text-[56px] text-[#c7c4d8]">folder_open</span>
               <p class="text-sm font-semibold text-[#767587]">Você ainda não adicionou nenhum edital ao seu perfil.</p>
               <p class="text-xs text-[#767587]">Adicione um edital abaixo ou envie um novo para análise.</p>
@@ -292,12 +376,12 @@ export interface AnalysisLogStep {
             </div>
 
             <!-- Loading skeleton -->
-            <div *ngIf="loadingRecentEditais" class="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div *ngFor="let _ of [1,2]" class="rounded-3xl p-6 bg-slate-100 dark:bg-[#0f1220] border border-slate-200 dark:border-[#1f253d] animate-pulse h-64"></div>
+            <div *ngIf="loadingRecentEditais" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div *ngFor="let _ of [1,2,3]" class="rounded-3xl p-6 bg-slate-100 dark:bg-[#0f1220] border border-slate-200 dark:border-[#1f253d] animate-pulse h-64"></div>
             </div>
 
-            <!-- Recent Editais Cards (Light & Dark Mode Adaptive) -->
-            <div *ngIf="!loadingRecentEditais" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- Recent Editais Cards (3 Cards por linha) -->
+            <div *ngIf="!loadingRecentEditais" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <div
                 *ngFor="let ed of recentEditais"
                 class="rounded-3xl p-6 bg-white dark:bg-[#0f1220] border border-slate-200/90 dark:border-[#1f253d] shadow-sm hover:shadow-xl dark:shadow-xl hover:border-indigo-400/60 dark:hover:border-[#7c3aed]/50 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between gap-3.5 relative overflow-hidden text-slate-800 dark:text-white group">
@@ -395,7 +479,7 @@ export interface AnalysisLogStep {
               </div>
 
               <!-- Nenhum edital recente disponível -->
-              <div *ngIf="recentEditais.length === 0" class="col-span-2 text-center py-6">
+              <div *ngIf="recentEditais.length === 0" class="col-span-full text-center py-6">
                 <p class="text-xs text-[var(--on-surface-variant)]">Todos os editais já foram adicionados ao seu perfil. 🎉</p>
               </div>
             </div>
@@ -477,7 +561,9 @@ export interface AnalysisLogStep {
               </div>
 
               <!-- Step 3: Análise de Pareto 80/20 -->
-              <div class="group relative flex flex-col items-center text-center flex-1 min-w-[125px] max-w-[160px] shrink-0 justify-between py-1 transition-all">
+              <div (click)="openParetoFromFlow()"
+                   class="group relative flex flex-col items-center text-center flex-1 min-w-[125px] max-w-[160px] shrink-0 justify-between py-1 transition-all cursor-pointer hover:scale-105 active:scale-95"
+                   title="Clique para executar ou visualizar a Análise Pareto 80/20 deste edital">
                 <div class="relative w-full h-14 flex items-center justify-center overflow-hidden">
                   <h3 class="absolute inset-0 text-xs md:text-[13px] font-bold text-[var(--on-surface)] flex items-center justify-center leading-tight transition-all duration-300 group-hover:opacity-0 group-hover:-translate-y-3">
                     Análise de Pareto 80/20
@@ -878,9 +964,16 @@ export interface AnalysisLogStep {
                   <span class="material-symbols-outlined !text-[20px]">grid_view</span>
                   <span>Abrir Mapa Geral das Disciplinas</span>
                 </button>
-                <button *ngIf="selectedMapaEdital.pareto_analisado" (click)="openEditalPareto(selectedMapaEdital.id)" class="btn-neo px-4 py-3 rounded-2xl text-xs font-bold flex items-center gap-2 text-[var(--on-surface)]">
+                <button *ngIf="selectedMapaEdital.pareto_analisado" (click)="openEditalPareto(selectedMapaEdital.id)" class="btn-neo px-4 py-3 rounded-2xl text-xs font-bold flex items-center gap-2 text-[var(--on-surface)] hover:text-purple-600 transition-all">
                   <span class="material-symbols-outlined !text-[20px] text-[var(--primary)]">analytics</span>
                   <span>Ver Pareto</span>
+                </button>
+                <button (click)="openParetoModal(selectedMapaEdital)"
+                        class="px-4 py-3 rounded-2xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer shadow-sm hover:scale-105"
+                        [ngClass]="selectedMapaEdital.pareto_analisado ? 'btn-neo text-[var(--on-surface)] hover:text-purple-600' : 'btn-mesh'"
+                        [title]="selectedMapaEdital.pareto_analisado ? 'Verificar ou Refazer Análise Pareto 80/20' : 'Executar Análise de Pareto com IA'">
+                  <span class="material-symbols-outlined !text-[20px]">donut_large</span>
+                  <span>{{ selectedMapaEdital.pareto_analisado ? 'Refazer Pareto' : 'Analisar Pareto 80/20' }}</span>
                 </button>
               </div>
             </div>
@@ -917,130 +1010,107 @@ export interface AnalysisLogStep {
           <div class="neo-raised rounded-3xl p-4 sm:p-6 space-y-4 bg-[var(--card-bg)] border border-[var(--outline-variant)]">
             <!-- Header dos Filtros -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-[var(--outline-variant)]/30 pb-3">
-              <div class="flex items-center gap-2 text-[var(--on-surface)]">
+              <div class="flex flex-wrap items-center gap-2.5 text-[var(--on-surface)]">
                 <span class="material-symbols-outlined text-[var(--primary)] !text-[22px]">tune</span>
                 <h3 class="font-extrabold text-sm sm:text-base">Filtros de Pesquisa</h3>
-                <span *ngIf="hasActiveFilters" class="inline-flex items-center justify-center px-2.5 py-0.5 text-[10px] font-extrabold rounded-full bg-[var(--primary)]/15 text-[var(--primary)]">
-                  Filtros Ativos
-                </span>
-              </div>
-              <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                <!-- Badge de quantidade de questões localizadas -->
+
+                <!-- Badge de quantidade de questões ao lado de Filtros de Pesquisa -->
                 <div
                   [class]="hasActiveFilters
-                    ? 'flex items-center gap-2 px-3 py-1.5 rounded-xl border font-bold text-xs transition-all duration-300 bg-emerald-500/10 border-emerald-500/40 text-emerald-600 dark:text-emerald-400'
-                    : 'flex items-center gap-2 px-3 py-1.5 rounded-xl border font-bold text-xs transition-all duration-300 bg-[var(--primary)]/10 border-[var(--primary)]/30 text-[var(--primary)]'">
+                    ? 'flex items-center gap-1.5 px-3 py-1 rounded-xl border font-bold text-xs transition-all duration-300 bg-emerald-500/10 border-emerald-500/40 text-emerald-600 dark:text-emerald-400'
+                    : 'flex items-center gap-1.5 px-3 py-1 rounded-xl border font-bold text-xs transition-all duration-300 bg-[var(--primary)]/10 border-[var(--primary)]/30 text-[var(--primary)]'">
                   <span class="material-symbols-outlined !text-[16px]">{{ hasActiveFilters ? 'filter_alt' : 'quiz' }}</span>
                   <span>
-                    <strong class="text-[15px]">{{ filteredQuestions.length }}</strong>
+                    <strong class="text-[14px]">{{ filteredQuestions.length }}</strong>
                     <span class="font-semibold opacity-80"> / {{ questions.length }}</span>
                     <span class="ml-1 font-semibold">{{ hasActiveFilters ? 'questões localizadas' : 'questões no banco' }}</span>
                   </span>
                 </div>
+
+                <span *ngIf="hasActiveFilters" class="inline-flex items-center justify-center px-2.5 py-0.5 text-[10px] font-extrabold rounded-full bg-[var(--primary)]/15 text-[var(--primary)]">
+                  Filtros Ativos
+                </span>
+              </div>
+              <div class="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
                 <button 
                   *ngIf="hasActiveFilters"
                   (click)="clearFilters()"
-                  class="text-xs font-bold text-[#ef4444] hover:text-[#dc2626] flex items-center gap-1 transition-colors cursor-pointer neo-pressed px-2.5 py-1 rounded-lg">
+                  class="text-xs font-bold text-[#ef4444] hover:text-[#dc2626] flex items-center gap-1 transition-colors cursor-pointer neo-pressed px-2.5 py-1.5 rounded-lg">
                   <span class="material-symbols-outlined !text-[16px]">filter_alt_off</span>
                   <span>Limpar Filtros</span>
+                </button>
+
+                <!-- Botão Pomodoro no lugar anterior da quantidade de questões -->
+                <button 
+                  (click)="navigateToPomodoro()" 
+                  class="btn-mesh px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-sm hover:scale-[1.02] transition-transform cursor-pointer" 
+                  title="Timer Pomodoro • Banco de Horas">
+                  <span class="text-sm">🍅</span>
+                  <span>Pomodoro</span>
                 </button>
               </div>
             </div>
 
-            <!-- Selects: Disciplina, Banca, Ano, Órgão -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <!-- Filtros Acumulativos: Disciplina, Banca, Ano, Órgão, Cargo -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
               <!-- Disciplina -->
-              <div class="space-y-1">
-                <label class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
-                  <span class="material-symbols-outlined !text-[14px]">menu_book</span>
-                  Disciplina
-                </label>
-                <div class="neo-pressed rounded-xl px-3 py-2 flex items-center bg-[var(--background)]">
-                  <select 
-                    [(ngModel)]="selectedDisciplina" 
-                    (ngModelChange)="onFilterChange()"
-                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] cursor-pointer font-medium">
-                    <option value="">Todas as Disciplinas</option>
-                    <option *ngFor="let disc of availableDisciplinas" [value]="disc">{{ disc }}</option>
-                  </select>
-                </div>
-              </div>
+              <app-multi-select-filter
+                label="Disciplina"
+                icon="menu_book"
+                placeholder="Todas as Disciplinas"
+                [options]="availableDisciplinas"
+                [(selected)]="selectedDisciplinas"
+                (filterChange)="onFilterChange()">
+              </app-multi-select-filter>
 
               <!-- Banca -->
-              <div class="space-y-1">
-                <label class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
-                  <span class="material-symbols-outlined !text-[14px]">account_balance</span>
-                  Banca
-                </label>
-                <div class="neo-pressed rounded-xl px-3 py-2 flex items-center bg-[var(--background)]">
-                  <select 
-                    [(ngModel)]="selectedBanca" 
-                    (ngModelChange)="onFilterChange()"
-                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] cursor-pointer font-medium">
-                    <option value="">Todas as Bancas</option>
-                    <option *ngFor="let banca of availableBancas" [value]="banca">{{ banca }}</option>
-                  </select>
-                </div>
-              </div>
+              <app-multi-select-filter
+                label="Banca"
+                icon="account_balance"
+                placeholder="Todas as Bancas"
+                [options]="availableBancas"
+                [(selected)]="selectedBancas"
+                (filterChange)="onFilterChange()">
+              </app-multi-select-filter>
 
               <!-- Ano -->
-              <div class="space-y-1">
-                <label class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
-                  <span class="material-symbols-outlined !text-[14px]">calendar_today</span>
-                  Ano
-                </label>
-                <div class="neo-pressed rounded-xl px-3 py-2 flex items-center bg-[var(--background)]">
-                  <select 
-                    [(ngModel)]="selectedAno" 
-                    (ngModelChange)="onFilterChange()"
-                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] cursor-pointer font-medium">
-                    <option value="">Todos os Anos</option>
-                    <option *ngFor="let ano of availableAnos" [value]="ano">{{ ano }}</option>
-                  </select>
-                </div>
-              </div>
+              <app-multi-select-filter
+                label="Ano"
+                icon="calendar_today"
+                placeholder="Todos os Anos"
+                [options]="availableAnos"
+                [(selected)]="selectedAnos"
+                (filterChange)="onFilterChange()">
+              </app-multi-select-filter>
 
               <!-- Órgão -->
-              <div class="space-y-1">
-                <label class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
-                  <span class="material-symbols-outlined !text-[14px]">domain</span>
-                  Órgão
-                </label>
-                <div class="neo-pressed rounded-xl px-3 py-2 flex items-center bg-[var(--background)]">
-                  <select 
-                    [(ngModel)]="selectedOrgao" 
-                    (ngModelChange)="onFilterChange()"
-                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] cursor-pointer font-medium">
-                    <option value="">Todos os Órgãos</option>
-                    <option *ngFor="let orgao of availableOrgaos" [value]="orgao">{{ orgao }}</option>
-                  </select>
-                </div>
-              </div>
+              <app-multi-select-filter
+                label="Órgão"
+                icon="domain"
+                placeholder="Todos os Órgãos"
+                [options]="availableOrgaos"
+                [(selected)]="selectedOrgaos"
+                (filterChange)="onFilterChange()">
+              </app-multi-select-filter>
+
+              <!-- Cargo -->
+              <app-multi-select-filter
+                label="Cargo"
+                icon="badge"
+                placeholder="Todos os Cargos"
+                [options]="availableCargos"
+                [allowCustom]="true"
+                [(selected)]="selectedCargos"
+                (filterChange)="onFilterChange()">
+              </app-multi-select-filter>
             </div>
 
-            <!-- Inputs de Texto: Cargo, Assunto, Keyword -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
-              <!-- Cargo (Input texto) -->
-              <div class="space-y-1">
-                <label class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
-                  <span class="material-symbols-outlined !text-[14px]">badge</span>
-                  Cargo
-                </label>
-                <div class="neo-pressed rounded-xl px-3 py-2 flex items-center gap-2 bg-[var(--background)]">
-                  <span class="material-symbols-outlined text-[var(--outline)] !text-[16px]">work</span>
-                  <input 
-                    type="text"
-                    [(ngModel)]="filterCargo" 
-                    (ngModelChange)="onFilterChange()"
-                    placeholder="Digite o termo do cargo..."
-                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--outline)]">
-                </div>
-              </div>
-
+            <!-- Inputs de Texto: Assunto e Termo no Enunciado -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
               <!-- Assunto (Input texto) -->
               <div class="space-y-1">
                 <label class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
-                  <span class="material-symbols-outlined !text-[14px]">label</span>
+                  <span class="material-symbols-outlined !text-[14px]">topic</span>
                   Assunto
                 </label>
                 <div class="neo-pressed rounded-xl px-3 py-2 flex items-center gap-2 bg-[var(--background)]">
@@ -1051,6 +1121,11 @@ export interface AnalysisLogStep {
                     (ngModelChange)="onFilterChange()"
                     placeholder="Digite o termo do assunto..."
                     class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+                  <button 
+                    *ngIf="filterAssunto" 
+                    type="button" 
+                    (click)="filterAssunto = ''; onFilterChange()" 
+                    class="text-[var(--outline)] hover:text-[var(--on-surface)] text-xs cursor-pointer">✕</button>
                 </div>
               </div>
 
@@ -1068,8 +1143,55 @@ export interface AnalysisLogStep {
                     (ngModelChange)="onFilterChange()"
                     placeholder="Buscar palavra-chave..."
                     class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+                  <button 
+                    *ngIf="searchSubject" 
+                    type="button" 
+                    (click)="searchSubject = ''; onFilterChange()" 
+                    class="text-[var(--outline)] hover:text-[var(--on-surface)] text-xs cursor-pointer">✕</button>
                 </div>
               </div>
+            </div>
+
+            <!-- Chips de Filtros Ativos -->
+            <div *ngIf="hasActiveFilterChips" class="flex items-center gap-1.5 flex-wrap pt-2.5 border-t border-[var(--outline-variant)]/20">
+              <span class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1 mr-1">
+                <span class="material-symbols-outlined !text-[14px] text-[var(--primary)]">filter_alt</span>
+                Filtros ativos:
+              </span>
+
+              <span *ngFor="let d of selectedDisciplinas" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20">
+                <span class="opacity-70 text-[10px]">Disciplina:</span>
+                <strong class="font-bold">{{ d }}</strong>
+                <button type="button" (click)="removeFilterItem('disciplina', d)" class="hover:opacity-75 cursor-pointer ml-0.5 font-bold">✕</button>
+              </span>
+
+              <span *ngFor="let b of selectedBancas" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                <span class="opacity-70 text-[10px]">Banca:</span>
+                <strong class="font-bold">{{ b }}</strong>
+                <button type="button" (click)="removeFilterItem('banca', b)" class="hover:opacity-75 cursor-pointer ml-0.5 font-bold">✕</button>
+              </span>
+
+              <span *ngFor="let a of selectedAnos" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                <span class="opacity-70 text-[10px]">Ano:</span>
+                <strong class="font-bold">{{ a }}</strong>
+                <button type="button" (click)="removeFilterItem('ano', a)" class="hover:opacity-75 cursor-pointer ml-0.5 font-bold">✕</button>
+              </span>
+
+              <span *ngFor="let o of selectedOrgaos" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <span class="opacity-70 text-[10px]">Órgão:</span>
+                <strong class="font-bold">{{ o }}</strong>
+                <button type="button" (click)="removeFilterItem('orgao', o)" class="hover:opacity-75 cursor-pointer ml-0.5 font-bold">✕</button>
+              </span>
+
+              <span *ngFor="let c of selectedCargos" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                <span class="opacity-70 text-[10px]">Cargo:</span>
+                <strong class="font-bold">{{ c }}</strong>
+                <button type="button" (click)="removeFilterItem('cargo', c)" class="hover:opacity-75 cursor-pointer ml-0.5 font-bold">✕</button>
+              </span>
+
+              <button type="button" (click)="clearFilters()" class="text-[11px] font-bold text-red-500 hover:underline cursor-pointer ml-2">
+                Limpar todos
+              </button>
             </div>
           </div>
 
@@ -1307,7 +1429,7 @@ export interface AnalysisLogStep {
     <div *ngIf="showUploadModal"
          class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
          style="background: rgba(10, 12, 20, 0.65); backdrop-filter: blur(8px);">
-      <div class="neo-raised rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden animate-fadeIn bg-white dark:bg-[#141927] border border-[var(--outline-variant)] my-auto flex flex-col max-h-[92vh]">
+      <div class="neo-raised rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-fadeIn bg-white dark:bg-[#141927] border border-[var(--outline-variant)] my-auto flex flex-col max-h-[92vh]">
 
         <!-- Modal Header -->
         <div class="flex items-center justify-between px-4 sm:px-6 pt-5 pb-4 border-b border-[var(--outline-variant)] bg-gradient-to-r from-purple-50/70 dark:from-[#1b2238] to-white dark:to-[#141927] shrink-0">
@@ -1320,28 +1442,197 @@ export interface AnalysisLogStep {
                  }">
               <span class="material-symbols-outlined !text-[20px] sm:!text-[22px]"
                     [ngClass]="{'animate-spin': uploadStatus === 'processing'}">
-                {{ uploadStatus === 'error' ? 'report_problem' : (uploadStatus === 'completed' ? 'task_alt' : (uploadStatus === 'processing' ? 'sync' : 'cloud_upload')) }}
+                {{ uploadStatus === 'error' ? 'report_problem' : (uploadStatus === 'completed' ? 'task_alt' : (uploadStatus === 'processing' ? 'sync' : (uploadModalStep === 'suggest' ? 'tips_and_updates' : 'cloud_upload'))) }}
               </span>
             </div>
             <div>
               <h2 class="text-sm sm:text-base font-extrabold text-[var(--on-surface)]">
-                {{ uploadStatus === 'idle' ? 'Upload do Edital' : (uploadStatus === 'error' ? 'Instabilidade no Serviço' : (uploadStatus === 'completed' ? 'Análise Concluída!' : 'Processando Edital com IA')) }}
+                {{ uploadStatus === 'error' ? 'Instabilidade no Serviço' :
+                   (uploadStatus === 'completed' ? 'Edital pronto para a Análise Pareto 80/20 !' :
+                   (uploadStatus === 'processing' ? 'Processando Edital com IA...' :
+                   (uploadModalStep === 'suggest' ? 'Editais Analisados Disponíveis' : 'Enviar Edital para Análise'))) }}
               </h2>
               <p class="text-[10px] sm:text-[11px] font-semibold"
                  [ngClass]="uploadStatus === 'error' ? 'text-red-500' : (uploadStatus === 'completed' ? 'text-emerald-500' : 'text-[var(--primary)]')">
-                {{ uploadStatus === 'idle' ? 'Informações para o Seu Plano Estratégico' : (uploadStatus === 'error' ? 'Serviço temporariamente instável' : (uploadStatus === 'completed' ? 'Redirecionando para o mapa de estudos...' : 'Princípio Pareto 80/20 • Extração Cognitiva')) }}
+                {{ uploadStatus === 'error' ? 'Serviço temporariamente instável' :
+                   (uploadStatus === 'completed' ? 'Disciplinas e conteúdos programáticos catalogados com êxito' :
+                   (uploadStatus === 'processing' ? 'Princípio Pareto 80/20 • Extração Cognitiva' :
+                   (uploadModalStep === 'suggest' ? 'Economize tempo adicionando um edital já analisado' : 'Preencha as informações para o seu plano estratégico'))) }}
               </p>
             </div>
           </div>
           <button (click)="closeUploadModal()" [disabled]="uploadStatus === 'processing'"
-                  class="w-8 h-8 rounded-full neo-raised flex items-center justify-center text-[var(--on-surface-variant)] hover:text-red-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                  class="w-8 h-8 rounded-full neo-raised flex items-center justify-center text-[var(--on-surface-variant)] hover:text-red-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer"
                   [title]="uploadStatus === 'processing' ? 'Aguarde o término do processamento' : 'Fechar'">
             <span class="material-symbols-outlined !text-[18px]">close</span>
           </button>
         </div>
 
-        <!-- ================= MODO 1: FORMULÁRIO (uploadStatus === 'idle') ================= -->
-        <div *ngIf="uploadStatus === 'idle'" class="px-4 sm:px-6 py-4 sm:py-5 space-y-4 overflow-y-auto flex-1">
+        <!-- ================= ETAPA 1: SUGESTÃO DE EDITAIS JÁ ANALISADOS (uploadStatus === 'idle' && uploadModalStep === 'suggest') ================= -->
+        <div *ngIf="uploadStatus === 'idle' && uploadModalStep === 'suggest'" class="px-4 sm:px-6 py-4 sm:py-5 space-y-4 overflow-y-auto flex-1 animate-fadeIn">
+          
+          <!-- Banner Informativo: Sugestão de Consultar Primeiro -->
+          <div class="p-4 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-transparent border border-purple-500/30 dark:border-purple-500/40 text-[var(--on-surface)] space-y-2">
+            <div class="flex items-start gap-3">
+              <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                <span class="material-symbols-outlined !text-[22px]">lightbulb</span>
+              </div>
+              <div class="space-y-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="text-xs sm:text-sm font-black text-purple-950 dark:text-purple-200">
+                    Já existem editais analisados disponíveis!
+                  </h3>
+                  <span class="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-extrabold border border-emerald-500/30 flex items-center gap-1">
+                    <span class="material-symbols-outlined !text-[12px]">bolt</span> Mais rápido
+                  </span>
+                </div>
+                <p class="text-xs text-[var(--on-surface-variant)] leading-relaxed">
+                  Sugerimos consultar a lista abaixo antes de enviar um novo arquivo. Adicionar um edital pronto ao seu perfil é <strong>instantâneo</strong> (sem tempo de espera de processamento por IA) e você já começa a estudar na hora!
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Caixa de Busca Rápida -->
+          <div class="neo-pressed rounded-2xl px-3.5 py-2.5 flex items-center gap-2.5 bg-[var(--background)] border border-[var(--outline-variant)]">
+            <span class="material-symbols-outlined text-[var(--primary)] !text-[20px]">search</span>
+            <input
+              [(ngModel)]="popularSearchQuery"
+              type="text"
+              placeholder="Buscar edital pronto (ex: TCU, PF, Receita, SEFAZ, BB...)"
+              class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--on-surface-variant)]">
+            <button *ngIf="popularSearchQuery" (click)="popularSearchQuery = ''" class="text-slate-400 hover:text-slate-600 text-xs">
+              <span class="material-symbols-outlined !text-[16px]">close</span>
+            </button>
+          </div>
+
+          <!-- Seção dos Editais Mais Procurados -->
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5 text-xs font-black text-[var(--on-surface)]">
+                <span class="material-symbols-outlined text-amber-500 !text-[18px]">trending_up</span>
+                <span>Editais Mais Procurados e Populares</span>
+              </div>
+              <span class="text-[10px] font-bold text-[var(--on-surface-variant)]">
+                {{ filteredPopularEditais.length }} disponível(is)
+              </span>
+            </div>
+
+            <!-- Loading state -->
+            <div *ngIf="loadingPopularEditais" class="space-y-2">
+              <div *ngFor="let _ of [1,2,3]" class="p-3.5 rounded-2xl bg-slate-100 dark:bg-white/5 animate-pulse h-16"></div>
+            </div>
+
+            <!-- Lista dos mais procurados -->
+            <div *ngIf="!loadingPopularEditais" class="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+              <div *ngFor="let ed of filteredPopularEditais"
+                   class="p-3 sm:p-3.5 rounded-2xl bg-[var(--background)] border border-[var(--outline-variant)] hover:border-purple-400/60 dark:hover:border-purple-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
+                
+                <!-- Info Left -->
+                <div class="space-y-1 flex-1 min-w-0">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="px-2 py-0.5 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-200 text-[10px] font-extrabold border border-purple-200 dark:border-purple-700/50">
+                      {{ getEditalOrgao(ed) }}
+                    </span>
+                    <span *ngIf="getEditalBancaName(ed)" class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 text-[10px] font-bold">
+                      {{ getEditalBancaName(ed) }}
+                    </span>
+                    <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                      <span class="material-symbols-outlined !text-[13px]">verified</span> Pareto 80/20 Pronto
+                    </span>
+                  </div>
+                  <h4 class="text-xs sm:text-sm font-black text-[var(--on-surface)] truncate" [title]="ed.title || ed.cargo">
+                    {{ ed.cargo || ed.title }}
+                  </h4>
+                  <p *ngIf="ed.concurso && ed.concurso !== ed.cargo" class="text-[11px] text-[var(--on-surface-variant)] truncate">
+                    {{ ed.concurso }}
+                  </p>
+                </div>
+
+                <!-- Action Right -->
+                <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                  <!-- Se já está no perfil -->
+                  <span *ngIf="isEditalAlreadyAdded(ed.id) && newlyAddedEditalId !== ed.id"
+                        class="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1">
+                    <span class="material-symbols-outlined !text-[15px]">check_circle</span>
+                    <span>Adicionado</span>
+                  </span>
+
+                  <!-- Se acabou de adicionar nesta sessão -->
+                  <div *ngIf="newlyAddedEditalId === ed.id" class="flex items-center gap-1.5 animate-fadeIn">
+                    <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-0.5">
+                      <span class="material-symbols-outlined !text-[15px]">task_alt</span> Adicionado!
+                    </span>
+                    <button (click)="openDisciplinasPage(ed.id)"
+                            class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-black flex items-center gap-1 shadow-sm hover:scale-105 transition-all cursor-pointer">
+                      <span>Abrir Mapa</span>
+                      <span class="material-symbols-outlined !text-[14px]">arrow_forward</span>
+                    </button>
+                  </div>
+
+                  <!-- Botão para adicionar -->
+                  <button *ngIf="!isEditalAlreadyAdded(ed.id) && newlyAddedEditalId !== ed.id"
+                          (click)="addPopularEdital(ed)"
+                          [disabled]="addingSuggestedEditalId === ed.id"
+                          class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#5d3bf6] to-[#7c3aed] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-95 transition-all cursor-pointer disabled:opacity-50">
+                    <span class="material-symbols-outlined !text-[15px]">{{ addingSuggestedEditalId === ed.id ? 'hourglass_top' : 'add_circle' }}</span>
+                    <span>{{ addingSuggestedEditalId === ed.id ? 'Adicionando...' : '+ Adicionar ao Perfil' }}</span>
+                  </button>
+                </div>
+
+              </div>
+
+              <!-- Sem resultados na busca -->
+              <div *ngIf="filteredPopularEditais.length === 0" class="p-6 text-center text-xs text-[var(--on-surface-variant)] space-y-1">
+                <span class="material-symbols-outlined !text-[28px] text-slate-400">search_off</span>
+                <p class="font-bold">Nenhum edital pronto encontrado para "{{ popularSearchQuery }}".</p>
+                <p class="text-[11px]">Você pode consultar o catálogo completo ou enviar o seu arquivo abaixo.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ações Inferiores: Consultar Catálogo Completo ou Enviar Novo -->
+          <div class="pt-2 flex flex-col gap-3">
+            <div class="flex items-center justify-between text-xs px-1">
+              <button (click)="goToCatalogAndClose()"
+                      class="text-[var(--primary)] hover:underline font-bold flex items-center gap-1 cursor-pointer">
+                <span class="material-symbols-outlined !text-[16px]">apps</span>
+                <span>Consultar acervo completo no Catálogo de Editais</span>
+                <span class="material-symbols-outlined !text-[14px]">arrow_forward</span>
+              </button>
+            </div>
+
+            <!-- Divisor -->
+            <div class="relative flex items-center justify-center pt-2">
+              <div class="w-full border-t border-[var(--outline-variant)]"></div>
+              <span class="absolute bg-white dark:bg-[#141927] px-3 text-[10px] font-extrabold text-[var(--on-surface-variant)] uppercase tracking-wider">
+                Não encontrou seu concurso?
+              </span>
+            </div>
+
+            <!-- Botão para avançar para o upload de novo edital -->
+            <button
+              (click)="goToUploadForm()"
+              class="w-full py-3 px-4 rounded-2xl border-2 border-dashed border-purple-400/80 dark:border-purple-500/60 hover:border-purple-600 dark:hover:border-purple-400 bg-purple-50/40 dark:bg-purple-950/10 text-purple-900 dark:text-purple-200 font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-xs">
+              <span class="material-symbols-outlined !text-[18px] text-purple-600 dark:text-purple-400">cloud_upload</span>
+              <span>Enviar Novo Edital (PDF ou Link) para Análise</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- ================= ETAPA 2: FORMULÁRIO (uploadStatus === 'idle' && uploadModalStep === 'form') ================= -->
+        <div *ngIf="uploadStatus === 'idle' && uploadModalStep === 'form'" class="px-4 sm:px-6 py-4 sm:py-5 space-y-4 overflow-y-auto flex-1 animate-fadeIn">
+
+          <!-- Botão Voltar para sugestões -->
+          <div class="flex items-center justify-between">
+            <button (click)="uploadModalStep = 'suggest'"
+                    class="text-xs font-bold text-purple-600 dark:text-purple-400 flex items-center gap-1 hover:underline cursor-pointer">
+              <span class="material-symbols-outlined !text-[16px]">arrow_back</span>
+              <span>Voltar para editais já analisados</span>
+            </button>
+            <span class="text-[10px] font-bold text-[var(--on-surface-variant)] uppercase tracking-wider">Novo Upload</span>
+          </div>
 
           <p class="text-xs text-[var(--on-surface-variant)] leading-relaxed">
             Preencha os dados do seu concurso e edital. A IA aplicará o princípio de Pareto 80/20 para gerar seu mapa de prioridades, régua de corte e cronograma personalizado.
@@ -1409,14 +1700,14 @@ export interface AnalysisLogStep {
               type="button"
               (click)="editalUploadMode = 'link'"
               [ngClass]="editalUploadMode === 'link' ? 'bg-white dark:bg-[#1e2438] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
-              class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all">
+              class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer">
               Link do Edital
             </button>
             <button
               type="button"
               (click)="editalUploadMode = 'pdf'"
               [ngClass]="editalUploadMode === 'pdf' ? 'bg-white dark:bg-[#1e2438] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
-              class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all">
+              class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer">
               Arquivo PDF
             </button>
           </div>
@@ -1464,7 +1755,7 @@ export interface AnalysisLogStep {
                 </span>
                 <span class="text-xs font-extrabold uppercase tracking-wider"
                       [ngClass]="uploadStatus === 'error' ? 'text-red-500' : (uploadStatus === 'completed' ? 'text-emerald-500' : 'text-[var(--primary)]')">
-                  {{ uploadStatus === 'error' ? 'Processamento Interrompido' : (uploadStatus === 'completed' ? 'Processamento Finalizado' : 'Executando Análise Pareto 80/20') }}
+                  {{ uploadStatus === 'error' ? 'Processamento Interrompido' : (uploadStatus === 'completed' ? 'Processamento Finalizado com Sucesso' : 'Executando Análise Pareto 80/20') }}
                 </span>
               </div>
               <span class="text-sm font-black text-[var(--on-surface)]">{{ uploadProgress }}%</span>
@@ -1482,6 +1773,73 @@ export interface AnalysisLogStep {
               <span>Cargo Alvo: <strong class="text-[var(--on-surface)]">{{ editalCargo || 'Não informado' }}</strong></span>
               <span *ngIf="editalConcurso" class="truncate max-w-[220px] text-right">Concurso: <strong class="text-[var(--on-surface)]">{{ editalConcurso }}</strong></span>
             </p>
+          </div>
+
+          <!-- ================= ALERTA E APRESENTAÇÃO DE MENSAGEM DE SUCESSO NO FINAL DA ANÁLISE ================= -->
+          <div *ngIf="uploadStatus === 'completed'"
+               class="rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-emerald-50 via-teal-50/60 to-white dark:from-emerald-950/40 dark:via-[#131b24] dark:to-[#141927] border-2 border-emerald-500/40 text-emerald-900 dark:text-emerald-100 flex flex-col gap-4 animate-fadeIn shadow-xl shadow-emerald-500/10">
+            <div class="flex items-start gap-3.5">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/30 ring-4 ring-emerald-500/20">
+                <span class="material-symbols-outlined !text-[28px]">verified</span>
+              </div>
+              <div class="space-y-1 flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                  <h3 class="text-sm sm:text-base font-black text-emerald-950 dark:text-emerald-100">
+                    Edital pronto para a Análise Pareto 80/20 !
+                  </h3>
+                  <span class="text-[10px] sm:text-[11px] px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-extrabold border border-emerald-500/40 flex items-center gap-1">
+                    <span class="material-symbols-outlined !text-[14px]">check_circle</span> Pronto
+                  </span>
+                </div>
+                <p class="text-xs text-emerald-800/90 dark:text-emerald-200/90 leading-relaxed">
+                  O edital para <strong>{{ editalCargo || 'o cargo selecionado' }}</strong> foi extraído e estruturado com sucesso. As disciplinas e o conteúdo programático foram catalogados. O edital já está pronto para você consultar o mapa das disciplinas ou realizar a Análise de Pareto 80/20!
+                </p>
+              </div>
+            </div>
+
+            <!-- Resumo das Conquistas da Estruturação -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-emerald-500/20 text-center">
+              <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-emerald-500/20">
+                <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 block">Disciplinas</span>
+                <span class="text-sm font-black text-indigo-600 dark:text-indigo-400">Estruturadas</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-emerald-500/20">
+                <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 block">Conteúdo</span>
+                <span class="text-sm font-black text-emerald-600 dark:text-emerald-400">Catalogado</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-emerald-500/20">
+                <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 block">Questões</span>
+                <span class="text-sm font-black text-purple-600 dark:text-purple-400">Vinculadas</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-emerald-500/20">
+                <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 block">Próximo Passo</span>
+                <span class="text-sm font-black text-amber-600 dark:text-amber-400">Pareto 80/20 ⚡</span>
+              </div>
+            </div>
+
+            <!-- Ações Diretas no Card de Sucesso: Mapa das Disciplinas e Análise de Pareto -->
+            <div class="flex flex-col sm:flex-row items-center gap-2.5 pt-1">
+              <button
+                (click)="goToDisciplinas()"
+                class="w-full sm:flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-purple-900 dark:text-purple-200 border border-purple-300 dark:border-purple-700/60 shadow-sm flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer">
+                <span class="material-symbols-outlined !text-[18px] text-purple-700 dark:text-purple-300">grid_view</span>
+                <span>Mapa das Disciplinas</span>
+              </button>
+
+              <button
+                (click)="goToPareto()"
+                class="w-full sm:flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer">
+                <span class="material-symbols-outlined !text-[18px]">donut_large</span>
+                <span>Análise de Pareto</span>
+                <span class="material-symbols-outlined !text-[16px]">arrow_forward</span>
+              </button>
+
+              <button
+                (click)="closeUploadModalAfterSuccess()"
+                class="w-full sm:w-auto py-3 px-4 rounded-xl font-bold text-xs border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-500/10 transition-colors cursor-pointer">
+                Painel
+              </button>
+            </div>
           </div>
 
           <!-- Alerta de Instabilidade em Caso de Erro -->
@@ -1502,7 +1860,7 @@ export interface AnalysisLogStep {
           </div>
 
           <!-- Timeline / Terminal de Logs -->
-          <div class="rounded-2xl p-3.5 sm:p-4 bg-slate-900/95 dark:bg-[#0b0e17] text-slate-100 border border-purple-500/20 shadow-inner max-h-[300px] sm:max-h-[340px] overflow-y-auto space-y-2.5">
+          <div id="edital-logs-container" class="rounded-2xl p-3.5 sm:p-4 bg-slate-900/95 dark:bg-[#0b0e17] text-slate-100 border border-purple-500/20 shadow-inner max-h-[300px] sm:max-h-[340px] overflow-y-auto space-y-2.5 scroll-smooth">
             <div class="flex items-center justify-between pb-2 border-b border-white/10 text-[10px] font-mono text-slate-400">
               <span class="flex items-center gap-1.5">
                 <span class="w-1.5 h-1.5 rounded-full"
@@ -1513,6 +1871,9 @@ export interface AnalysisLogStep {
             </div>
 
             <div *ngFor="let step of analysisLogs; let i = index"
+                 [id]="'edital-log-step-' + i"
+                 [attr.data-active]="step.status === 'active'"
+                 [attr.data-status]="step.status"
                  class="p-2.5 rounded-xl transition-all duration-300 flex items-start gap-3"
                  [ngClass]="{
                    'bg-emerald-500/10 border border-emerald-500/30': step.status === 'completed',
@@ -1577,18 +1938,28 @@ export interface AnalysisLogStep {
 
         <!-- Modal Footer -->
         <div class="px-4 sm:px-6 pb-5 pt-3 border-t border-[var(--outline-variant)] shrink-0">
-          <!-- Footer when form is active -->
-          <div *ngIf="uploadStatus === 'idle'" class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <!-- Footer na etapa de sugestões -->
+          <div *ngIf="uploadStatus === 'idle' && uploadModalStep === 'suggest'" class="flex items-center justify-between gap-3">
+            <span class="text-[11px] text-[var(--on-surface-variant)]">Adicione um edital pronto ou envie um novo arquivo</span>
             <button
               (click)="closeUploadModal()"
+              class="px-5 py-2.5 rounded-xl text-xs font-bold border border-[var(--outline-variant)] text-[var(--on-surface-variant)] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer">
+              Fechar
+            </button>
+          </div>
+
+          <!-- Footer na etapa de formulário -->
+          <div *ngIf="uploadStatus === 'idle' && uploadModalStep === 'form'" class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button
+              (click)="uploadModalStep = 'suggest'"
               [disabled]="isSubmitting"
-              class="w-full sm:flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold border border-[var(--outline-variant)] text-[var(--on-surface-variant)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors disabled:opacity-50">
-              Cancelar
+              class="w-full sm:w-1/3 py-3 rounded-xl text-xs sm:text-sm font-bold border border-[var(--outline-variant)] text-[var(--on-surface-variant)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors disabled:opacity-50 cursor-pointer">
+              Voltar
             </button>
             <button
               (click)="submitEdital()"
               [disabled]="!isEditalFormValid || isSubmitting"
-              class="w-full sm:flex-1 py-3 rounded-2xl font-bold btn-mesh flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50">
+              class="w-full sm:flex-1 py-3 rounded-2xl font-black btn-mesh flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50 cursor-pointer">
               <span class="material-symbols-outlined !text-[18px]">auto_awesome</span>
               <span>Analisar Edital Pareto 80/20</span>
             </button>
@@ -1604,9 +1975,25 @@ export interface AnalysisLogStep {
           </div>
 
           <!-- Footer when completed -->
-          <div *ngIf="uploadStatus === 'completed'" class="flex items-center justify-center gap-2 py-1 text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-bold animate-fadeIn">
-            <span class="material-symbols-outlined !text-[18px]">check_circle</span>
-            <span>Estrutura concluída com sucesso! Redirecionando...</span>
+          <div *ngIf="uploadStatus === 'completed'" class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button
+              (click)="closeUploadModalAfterSuccess()"
+              class="w-full sm:w-auto py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold border border-[var(--outline-variant)] text-[var(--on-surface-variant)] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer">
+              Fechar
+            </button>
+            <button
+              (click)="goToDisciplinas()"
+              class="w-full sm:flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/40 dark:hover:bg-purple-900/50 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-800 flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+              <span class="material-symbols-outlined !text-[18px]">grid_view</span>
+              <span>Mapa das Disciplinas</span>
+            </button>
+            <button
+              (click)="goToPareto()"
+              class="w-full sm:flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-black bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white flex items-center justify-center gap-1.5 shadow-md hover:scale-[1.01] transition-all cursor-pointer">
+              <span class="material-symbols-outlined !text-[18px]">donut_large</span>
+              <span>Análise de Pareto</span>
+              <span class="material-symbols-outlined !text-[16px]">arrow_forward</span>
+            </button>
           </div>
 
           <!-- Footer when error -->
@@ -1743,6 +2130,17 @@ export interface AnalysisLogStep {
       </div>
     </div>
 
+    <!-- Modal de Simulação de Logs da Análise Pareto 80/20 -->
+    <app-pareto-analysis-modal
+      [isOpen]="showParetoModal"
+      [editalId]="paretoModalEditalId"
+      [editalData]="paretoModalEdital"
+      [userContext]="getParetoUserContext()"
+      (closed)="showParetoModal = false"
+      (existingSelected)="showParetoModal = false"
+      (analysisCompleted)="onParetoCompleted($event)">
+    </app-pareto-analysis-modal>
+
   `
 })
 export class StudentDashboardComponent implements OnInit, OnDestroy {
@@ -1751,6 +2149,48 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   editais: any[] = [];
   questions: any[] = [];
   activeTab: 'editais' | 'cronogramas' | 'mapa' | 'questions' | 'perfil' | 'estatisticas' = 'editais';
+
+  // Modal de Análise Pareto
+  showParetoModal = false;
+  paretoModalEditalId = '';
+  paretoModalEdital: any = null;
+
+  openParetoModal(edital?: any) {
+    const target = edital || this.selectedMapaEdital || this.editais[0];
+    if (!target) return;
+    this.paretoModalEdital = target;
+    this.paretoModalEditalId = target.id;
+    this.showParetoModal = true;
+  }
+
+  openParetoFromFlow() {
+    const target = this.selectedMapaEdital || this.editais[0];
+    if (target) {
+      this.openParetoModal(target);
+    } else {
+      this.activeTab = 'editais';
+    }
+  }
+
+  getParetoUserContext() {
+    if (!this.paretoModalEdital) return {};
+    return {
+      cargo: this.paretoModalEdital.cargo || 'Cargo Principal',
+      concurso: this.paretoModalEdital.concurso || this.paretoModalEdital.title || 'Edital Oficial',
+      dataProva: this.paretoModalEdital.data_prova,
+      horasPorDia: this.paretoModalEdital.horas_por_dia || 4,
+      diasPorSemana: this.paretoModalEdital.dias_por_semana || 5,
+    };
+  }
+
+  onParetoCompleted(updatedEdital: any) {
+    this.loadData();
+  }
+
+  get formattedQuestionsCount(): string {
+    const count = this.questions ? this.questions.length : 0;
+    return count > 0 ? count.toLocaleString('pt-BR') : '6.227';
+  }
   selectedMapaEditalId: string | null = null;
   selectedCronogramaEditalId: string | null = null;
 
@@ -1773,6 +2213,13 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
 
   // ---- Upload Modal state ----
   showUploadModal = false;
+  uploadModalStep: 'suggest' | 'form' = 'suggest';
+  popularEditais: any[] = [];
+  loadingPopularEditais = false;
+  popularSearchQuery = '';
+  addingSuggestedEditalId: string | null = null;
+  newlyAddedEditalId: string | null = null;
+  completedEditalId: string | null = null;
 
   // ---- Simulação de Logs de Processamento IA ----
   uploadStatus: 'idle' | 'processing' | 'completed' | 'error' = 'idle';
@@ -1791,14 +2238,30 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   selectedFile: File | null = null;
   isSubmitting = false;
 
-  // ---- Questions ----
+  // ---- Questions Filters (Acumulativos / Múltipla Seleção) ----
   searchSubject = '';
-  selectedDisciplina = '';
-  selectedBanca = '';
-  selectedAno = '';
-  selectedOrgao = '';
-  filterCargo = '';
+  selectedDisciplinas: string[] = [];
+  selectedBancas: string[] = [];
+  selectedAnos: (number | string)[] = [];
+  selectedOrgaos: string[] = [];
+  selectedCargos: string[] = [];
   filterAssunto = '';
+
+  // Getters/setters para compatibilidade legada
+  get selectedDisciplina(): string { return this.selectedDisciplinas[0] || ''; }
+  set selectedDisciplina(val: string) { this.selectedDisciplinas = val ? [val] : []; }
+
+  get selectedBanca(): string { return this.selectedBancas[0] || ''; }
+  set selectedBanca(val: string) { this.selectedBancas = val ? [val] : []; }
+
+  get selectedAno(): string { return this.selectedAnos[0] ? String(this.selectedAnos[0]) : ''; }
+  set selectedAno(val: string) { this.selectedAnos = val ? [val] : []; }
+
+  get selectedOrgao(): string { return this.selectedOrgaos[0] || ''; }
+  set selectedOrgao(val: string) { this.selectedOrgaos = val ? [val] : []; }
+
+  get filterCargo(): string { return this.selectedCargos[0] || ''; }
+  set filterCargo(val: string) { this.selectedCargos = val ? [val] : []; }
   questionsCurrentPage = 1;
   questionsPageSize = 10;
   selectedAnswers: { [key: string]: string } = {};
@@ -2295,11 +2758,11 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
 
   clearFilters() {
     this.searchSubject = '';
-    this.selectedDisciplina = '';
-    this.selectedBanca = '';
-    this.selectedAno = '';
-    this.selectedOrgao = '';
-    this.filterCargo = '';
+    this.selectedDisciplinas = [];
+    this.selectedBancas = [];
+    this.selectedAnos = [];
+    this.selectedOrgaos = [];
+    this.selectedCargos = [];
     this.filterAssunto = '';
     this.questionStatusFilter = 'all';
     this.questionsCurrentPage = 1;
@@ -2307,15 +2770,40 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
 
   get hasActiveFilters(): boolean {
     return !!(
-      this.searchSubject ||
-      this.selectedDisciplina ||
-      this.selectedBanca ||
-      this.selectedAno ||
-      this.selectedOrgao ||
-      this.filterCargo?.trim() ||
+      this.searchSubject?.trim() ||
+      this.selectedDisciplinas.length > 0 ||
+      this.selectedBancas.length > 0 ||
+      this.selectedAnos.length > 0 ||
+      this.selectedOrgaos.length > 0 ||
+      this.selectedCargos.length > 0 ||
       this.filterAssunto?.trim() ||
       this.questionStatusFilter !== 'all'
     );
+  }
+
+  get hasActiveFilterChips(): boolean {
+    return (
+      this.selectedDisciplinas.length > 0 ||
+      this.selectedBancas.length > 0 ||
+      this.selectedAnos.length > 0 ||
+      this.selectedOrgaos.length > 0 ||
+      this.selectedCargos.length > 0
+    );
+  }
+
+  removeFilterItem(type: 'disciplina' | 'banca' | 'ano' | 'orgao' | 'cargo', value: string | number) {
+    if (type === 'disciplina') {
+      this.selectedDisciplinas = this.selectedDisciplinas.filter(item => item !== value);
+    } else if (type === 'banca') {
+      this.selectedBancas = this.selectedBancas.filter(item => item !== value);
+    } else if (type === 'ano') {
+      this.selectedAnos = this.selectedAnos.filter(item => String(item) !== String(value));
+    } else if (type === 'orgao') {
+      this.selectedOrgaos = this.selectedOrgaos.filter(item => item !== value);
+    } else if (type === 'cargo') {
+      this.selectedCargos = this.selectedCargos.filter(item => item !== value);
+    }
+    this.onFilterChange();
   }
 
   get availableDisciplinas(): string[] {
@@ -2327,7 +2815,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
         set.add(val.trim());
       }
     }
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }
 
   get availableBancas(): string[] {
@@ -2339,7 +2827,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
         set.add(val.trim());
       }
     }
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }
 
   get availableAnos(): (number | string)[] {
@@ -2347,7 +2835,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     const set = new Set<number | string>();
     for (const q of this.questions) {
       if (q.ano != null && q.ano !== '') {
-        set.add(q.ano);
+        set.add(String(q.ano).trim());
       }
     }
     return Array.from(set).sort((a, b) => Number(b) - Number(a));
@@ -2362,7 +2850,19 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
         set.add(val.trim());
       }
     }
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }
+
+  get availableCargos(): string[] {
+    if (!this.questions) return [];
+    const set = new Set<string>();
+    for (const q of this.questions) {
+      const val = q.cargo;
+      if (val && typeof val === 'string' && val.trim()) {
+        set.add(val.trim());
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }
 
   get filteredQuestions(): any[] {
@@ -2380,33 +2880,42 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
         }
       }
 
-      // 1. Disciplina (Select)
-      if (this.selectedDisciplina) {
-        const disc = (q.disciplina || q.subject || '').toString().toLowerCase();
-        if (disc !== this.selectedDisciplina.toLowerCase()) return false;
+      // 1. Disciplina (Múltipla Seleção Acumulativa)
+      if (this.selectedDisciplinas && this.selectedDisciplinas.length > 0) {
+        const disc = (q.disciplina || q.subject || '').toString().toLowerCase().trim();
+        const match = this.selectedDisciplinas.some(d => String(d).toLowerCase().trim() === disc);
+        if (!match) return false;
       }
 
-      // 2. Banca (Select)
-      if (this.selectedBanca) {
-        const banca = (q.banca || '').toString().toLowerCase();
-        if (banca !== this.selectedBanca.toLowerCase()) return false;
+      // 2. Banca (Múltipla Seleção Acumulativa)
+      if (this.selectedBancas && this.selectedBancas.length > 0) {
+        const banca = (q.banca || '').toString().toLowerCase().trim();
+        const match = this.selectedBancas.some(b => String(b).toLowerCase().trim() === banca);
+        if (!match) return false;
       }
 
-      // 3. Ano (Select)
-      if (this.selectedAno) {
-        if (String(q.ano) !== String(this.selectedAno)) return false;
+      // 3. Ano (Múltipla Seleção Acumulativa)
+      if (this.selectedAnos && this.selectedAnos.length > 0) {
+        const anoStr = String(q.ano || '').trim();
+        const match = this.selectedAnos.some(a => String(a).trim() === anoStr);
+        if (!match) return false;
       }
 
-      // 4. Órgão (Select)
-      if (this.selectedOrgao) {
-        const orgao = (q.orgao || '').toString().toLowerCase();
-        if (orgao !== this.selectedOrgao.toLowerCase()) return false;
+      // 4. Órgão (Múltipla Seleção Acumulativa)
+      if (this.selectedOrgaos && this.selectedOrgaos.length > 0) {
+        const orgao = (q.orgao || '').toString().toLowerCase().trim();
+        const match = this.selectedOrgaos.some(o => String(o).toLowerCase().trim() === orgao);
+        if (!match) return false;
       }
 
-      // 5. Cargo (Input de texto)
-      if (this.filterCargo && this.filterCargo.trim() !== '') {
-        const cargo = (q.cargo || '').toString().toLowerCase();
-        if (!cargo.includes(this.filterCargo.trim().toLowerCase())) return false;
+      // 5. Cargo (Múltipla Seleção Acumulativa)
+      if (this.selectedCargos && this.selectedCargos.length > 0) {
+        const cargo = (q.cargo || '').toString().toLowerCase().trim();
+        const match = this.selectedCargos.some(c => {
+          const target = String(c).toLowerCase().trim();
+          return cargo === target || cargo.includes(target) || target.includes(cargo);
+        });
+        if (!match) return false;
       }
 
       // 6. Assunto (Input de texto)
@@ -2499,19 +3008,167 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
 
   openUploadModal() {
     this.uploadStatus = 'idle';
+    this.uploadModalStep = 'suggest';
     this.isSubmitting = false;
     this.uploadErrorMessage = '';
     this.showUploadModal = true;
     this.showUploadToast = false;
+    this.popularSearchQuery = '';
+    this.newlyAddedEditalId = null;
+    this.loadPopularEditais();
   }
 
   closeUploadModal() {
     if (this.uploadStatus === 'processing') return;
     this.clearUploadLogInterval();
     this.uploadStatus = 'idle';
+    this.uploadModalStep = 'suggest';
     this.isSubmitting = false;
     this.showUploadModal = false;
     this.showUploadToast = false;
+    this.newlyAddedEditalId = null;
+  }
+
+  goToUploadForm() {
+    this.uploadModalStep = 'form';
+    this.uploadStatus = 'idle';
+    this.isSubmitting = false;
+  }
+
+  loadPopularEditais() {
+    this.loadingPopularEditais = true;
+    this.apiService.getPublicEditais().subscribe({
+      next: (eds) => {
+        const completed = (eds || []).filter((e: any) => e.status === 'completed');
+        if (completed.length > 0) {
+          this.popularEditais = completed;
+        } else if (this.recentEditais && this.recentEditais.length > 0) {
+          this.popularEditais = this.recentEditais;
+        } else {
+          this.popularEditais = this.getDefaultPopularEditais();
+        }
+        this.loadingPopularEditais = false;
+      },
+      error: () => {
+        this.popularEditais = (this.recentEditais && this.recentEditais.length > 0) ? this.recentEditais : this.getDefaultPopularEditais();
+        this.loadingPopularEditais = false;
+      }
+    });
+  }
+
+  getDefaultPopularEditais(): any[] {
+    return [
+      {
+        id: 'tcu-auditor-2026',
+        title: 'Tribunal de Contas da União',
+        concurso: 'TCU 2026',
+        cargo: 'Auditor Federal de Controle Externo',
+        banca: 'FGV',
+        status: 'completed',
+        pareto_data: { coverage_percentage: 80, high_priority_subjects: 4, total_hot_topics: 18 }
+      },
+      {
+        id: 'rfb-auditor-2026',
+        title: 'Receita Federal do Brasil',
+        concurso: 'Receita Federal 2026',
+        cargo: 'Auditor-Fiscal da Receita Federal',
+        banca: 'FGV',
+        status: 'completed',
+        pareto_data: { coverage_percentage: 80, high_priority_subjects: 5, total_hot_topics: 22 }
+      },
+      {
+        id: 'pf-agente-2026',
+        title: 'Polícia Federal',
+        concurso: 'Polícia Federal 2026',
+        cargo: 'Agente de Polícia Federal',
+        banca: 'Cebraspe',
+        status: 'completed',
+        pareto_data: { coverage_percentage: 80, high_priority_subjects: 4, total_hot_topics: 16 }
+      },
+      {
+        id: 'sefaz-auditor-2026',
+        title: 'Secretaria da Fazenda Estadual',
+        concurso: 'SEFAZ 2026',
+        cargo: 'Auditor Fiscal da Receita Estadual',
+        banca: 'FGV',
+        status: 'completed',
+        pareto_data: { coverage_percentage: 80, high_priority_subjects: 5, total_hot_topics: 20 }
+      }
+    ];
+  }
+
+  get filteredPopularEditais(): any[] {
+    const list = this.popularEditais || [];
+    if (!this.popularSearchQuery?.trim()) {
+      return list.slice(0, 4);
+    }
+    const q = this.popularSearchQuery.toLowerCase().trim();
+    return list.filter(e =>
+      (e.title || '').toLowerCase().includes(q) ||
+      (e.cargo || '').toLowerCase().includes(q) ||
+      (e.concurso || '').toLowerCase().includes(q) ||
+      (e.banca || '').toLowerCase().includes(q)
+    ).slice(0, 6);
+  }
+
+  isEditalAlreadyAdded(editalId: string): boolean {
+    if (!editalId) return false;
+    return (this.editais || []).some(e => e.id === editalId);
+  }
+
+  addPopularEdital(ed: any) {
+    if (!this.user?.id || !ed) return;
+    if (this.isEditalAlreadyAdded(ed.id)) return;
+
+    this.addingSuggestedEditalId = ed.id;
+    this.apiService.sendEditalToUser(ed.id, this.user.id).subscribe({
+      next: () => {
+        this.addingSuggestedEditalId = null;
+        this.newlyAddedEditalId = ed.id;
+        this.loadData();
+      },
+      error: () => {
+        this.addingSuggestedEditalId = null;
+        this.newlyAddedEditalId = ed.id;
+        this.loadData();
+      }
+    });
+  }
+
+  goToCatalogAndClose() {
+    this.closeUploadModal();
+    this.goToCatalog();
+  }
+
+  openDisciplinasPage(editalId: string) {
+    this.closeUploadModal();
+    this.router.navigate(['/disciplinas', editalId]);
+  }
+
+  goToDisciplinas(targetId?: string) {
+    const id = targetId || this.completedEditalId || (this.editais.length > 0 ? this.editais[0].id : null);
+    this.closeUploadModal();
+    if (id) {
+      this.router.navigate(['/disciplinas', id]);
+    }
+  }
+
+  goToPareto(targetId?: string) {
+    const id = targetId || this.completedEditalId || (this.editais.length > 0 ? this.editais[0].id : null);
+    this.closeUploadModal();
+    if (id) {
+      this.router.navigate(['/pareto', id]);
+    }
+  }
+
+  goToCompletedEdital() {
+    this.goToDisciplinas();
+  }
+
+  closeUploadModalAfterSuccess() {
+    this.closeUploadModal();
+    this.loadData();
+    this.activeTab = 'editais';
   }
 
   retryUploadForm() {
@@ -2523,6 +3180,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
 
   clearUploadLogInterval() {
     if (this.uploadLogInterval) {
+      clearTimeout(this.uploadLogInterval);
       clearInterval(this.uploadLogInterval);
       this.uploadLogInterval = null;
     }
@@ -2573,28 +3231,28 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
         id: 'disciplinas',
         icon: 'menu_book',
         title: 'Mapeando Conteúdo Programático',
-        detail: 'Separando disciplinas básicas e específicas, tópicos e subtópicos com pesos.',
+        detail: 'Separação de disciplinas, tópicos e subtópicos.',
         status: 'pending'
       },
       {
-        id: 'pareto',
+        id: 'questoes',
+        icon: 'inventory_2',
+        title: 'Indexando Questões e Relevância',
+        detail: 'Catalogando banco de questões e associando às disciplinas do edital.',
+        status: 'pending'
+      },
+      {
+        id: 'preparando',
         icon: 'query_stats',
-        title: 'Aplicando Análise Pareto 80/20',
-        detail: 'Identificando o núcleo de 20% das matérias de maior incidência histórica.',
-        status: 'pending'
-      },
-      {
-        id: 'regua',
-        icon: 'balance',
-        title: 'Calibrando Régua de Corte e Pesos',
-        detail: 'Estimando pontuação de corte e critérios de desempate da banca examinadora.',
+        title: 'Preparando Base para Análise Pareto 80/20',
+        detail: 'Matérias organizadas para o cálculo de incidência e priorização.',
         status: 'pending'
       },
       {
         id: 'plano',
         icon: 'auto_awesome',
-        title: 'Finalizando Plano Estratégico',
-        detail: 'Estruturando cronograma adaptativo de estudos e mapa de prioridades.',
+        title: 'Edital Estruturado com Sucesso',
+        detail: 'Edital pronto para o Mapa de Disciplinas e para a Análise Pareto 80/20.',
         status: 'pending'
       }
     ];
@@ -2602,27 +3260,92 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     let currentStep = 1;
     const progressTargets = [12, 25, 42, 58, 72, 85, 93, 97];
 
-    this.uploadLogInterval = setInterval(() => {
+    // Tempos customizados por etapa (ms) - etapas cognitivas mais demoradas
+    const stepDurations = [
+      0,     // 0: info (inicia concluído)
+      3200,  // 1: Edital recebido
+      3200,  // 2: Cargo identificado
+      3500,  // 3: Enviado para análise IA
+      10500, // 4: Mapeando Conteúdo Programático (10.5s)
+      10500, // 5: Aplicando Análise Pareto 80/20 (10.5s)
+      8500,  // 6: Calibrando Régua de Corte e Pesos (8.5s)
+      6000   // 7: Finalizando Plano Estratégico
+    ];
+
+    // Mantém no topo inicialmente para os primeiros logs ficarem visíveis
+    setTimeout(() => {
+      const container = document.getElementById('edital-logs-container');
+      if (container) {
+        container.scrollTop = 0;
+      }
+      this.scrollActiveLogToCenter(1);
+    }, 60);
+
+    const runStep = () => {
       if (this.uploadStatus !== 'processing') {
         this.clearUploadLogInterval();
         return;
       }
 
-      if (currentStep < this.analysisLogs.length - 1) {
-        this.analysisLogs[currentStep].status = 'completed';
-        this.analysisLogs[currentStep].time = this.getCurrentTimeStr();
+      const nextDuration = stepDurations[currentStep] || 4000;
 
-        currentStep++;
-        this.analysisLogs[currentStep].status = 'active';
-        this.analysisLogs[currentStep].time = this.getCurrentTimeStr();
+      this.uploadLogInterval = setTimeout(() => {
+        if (this.uploadStatus !== 'processing') return;
 
-        this.uploadProgress = progressTargets[currentStep] || 95;
-      } else {
-        if (this.uploadProgress < 97) {
-          this.uploadProgress += 1;
+        if (currentStep < this.analysisLogs.length - 1) {
+          this.analysisLogs[currentStep].status = 'completed';
+          this.analysisLogs[currentStep].time = this.getCurrentTimeStr();
+
+          currentStep++;
+          this.analysisLogs[currentStep].status = 'active';
+          this.analysisLogs[currentStep].time = this.getCurrentTimeStr();
+
+          this.uploadProgress = progressTargets[currentStep] || 95;
+          this.scrollActiveLogToCenter(currentStep);
+
+          runStep();
+        } else {
+          // No último passo, continua ajustando levemente a barra enquanto a IA conclui
+          if (this.uploadProgress < 98) {
+            this.uploadProgress += 1;
+          }
+          this.uploadLogInterval = setTimeout(runStep, 2500);
         }
+      }, nextDuration);
+    };
+
+    runStep();
+  }
+
+  scrollActiveLogToCenter(stepIndex?: number) {
+    setTimeout(() => {
+      const container = document.getElementById('edital-logs-container');
+      if (!container) return;
+
+      let targetEl: HTMLElement | null = null;
+      if (typeof stepIndex === 'number') {
+        targetEl = document.getElementById('edital-log-step-' + stepIndex);
       }
-    }, 2200);
+      if (!targetEl) {
+        targetEl = container.querySelector('[data-active="true"], [data-status="error"]') as HTMLElement;
+      }
+      if (!targetEl) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = targetEl.getBoundingClientRect();
+
+      const relativeTop = targetRect.top - containerRect.top;
+      const targetCenter = relativeTop + (targetRect.height / 2);
+      const containerCenter = container.clientHeight / 2;
+      const delta = targetCenter - containerCenter;
+
+      const targetScrollTop = Math.max(0, container.scrollTop + delta);
+
+      container.scrollTo({
+        top: targetScrollTop,
+        behavior: 'smooth'
+      });
+    }, 80);
   }
 
   finishUploadSuccess(callback: () => void) {
@@ -2634,14 +3357,10 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
       step.status = 'completed';
       if (!step.time) step.time = this.getCurrentTimeStr();
     });
+    this.scrollActiveLogToCenter(this.analysisLogs.length - 1);
+    this.isSubmitting = false;
 
-    setTimeout(() => {
-      this.uploadStatus = 'idle';
-      this.isSubmitting = false;
-      this.showUploadModal = false;
-      this.showUploadToast = false;
-      callback();
-    }, 1200);
+    callback();
   }
 
   handleUploadError(err?: any) {
@@ -2655,6 +3374,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
       activeStep.status = 'error';
       activeStep.time = this.getCurrentTimeStr();
     }
+    this.scrollActiveLogToCenter();
   }
 
   onFileSelected(event: any) {
@@ -2695,20 +3415,15 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
 
     this.apiService.uploadEdital(fileToUpload, title, linkToSend, this.user?.id || 'usr-2', userContext).subscribe({
       next: (res: any) => {
+        const newId = res?.data?.id || res?.id;
+        this.completedEditalId = newId || null;
+
         this.finishUploadSuccess(() => {
           this.selectedFile = null;
           this.editalLink = '';
           this.editalTitle = '';
-          this.editalCargo = '';
-          this.editalConcurso = '';
-          this.editalDataProva = '';
           this.loadData();
           this.activeTab = 'editais';
-
-          const newId = res?.data?.id || res?.id;
-          if (newId) {
-            this.router.navigate(['/disciplinas', newId]);
-          }
         });
       },
       error: (err) => {
