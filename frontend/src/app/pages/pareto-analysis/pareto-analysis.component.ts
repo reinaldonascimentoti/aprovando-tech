@@ -4,11 +4,12 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { ThemeService } from '../../services/theme.service';
 import { getBancaLogo, getBancasFromText, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
+import { ParetoAnalysisModalComponent } from '../../components/pareto-analysis-modal/pareto-analysis-modal.component';
 
 @Component({
   selector: 'app-pareto-analysis',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ParetoAnalysisModalComponent],
   template: `
     <div class="min-h-screen bg-[var(--background)] p-4 md:p-8 max-w-7xl mx-auto">
       <!-- Back Navigation Header -->
@@ -58,6 +59,12 @@ import { getBancaLogo, getBancasFromText, getBancaInfo, BancaInfo } from '../../
             <p class="text-xs text-[var(--on-surface)]">Análise Pareto 80/20 em 3 camadas: Disciplinas → Tópicos → Subtópicos com custo-benefício.</p>
           </div>
           <div class="flex items-center gap-2 flex-wrap md:flex-nowrap">
+            <button (click)="openParetoModal()"
+                    class="py-3 px-4 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 btn-neo text-[var(--on-surface)] hover:text-purple-600 transition-all whitespace-nowrap shadow-sm cursor-pointer"
+                    title="Verificar ou Executar Nova Análise Pareto 80/20 com IA">
+              <span class="material-symbols-outlined !text-[18px] text-purple-600">refresh</span>
+              <span>Nova Análise Pareto</span>
+            </button>
             <a [routerLink]="['/disciplinas', editalId]" class="py-3 px-5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 bg-[#e9ddff] text-[#5516be] hover:bg-[#ddd0ff] transition-all whitespace-nowrap shadow-sm">
               <span class="material-symbols-outlined">grid_view</span>
               <span>Mapa Geral das Disciplinas</span>
@@ -398,6 +405,17 @@ import { getBancaLogo, getBancasFromText, getBancaInfo, BancaInfo } from '../../
         </a>
       </div>
 
+      <!-- Modal de Simulação de Logs da Análise Pareto 80/20 -->
+      <app-pareto-analysis-modal
+        [isOpen]="showParetoModal"
+        [editalId]="editalId"
+        [editalData]="edital"
+        [userContext]="getUserContextForPareto()"
+        (closed)="showParetoModal = false"
+        (existingSelected)="onExistingParetoSelected($event)"
+        (analysisCompleted)="onParetoCompleted($event)">
+      </app-pareto-analysis-modal>
+
     </div>
   `,
   styles: [`
@@ -408,8 +426,9 @@ import { getBancaLogo, getBancasFromText, getBancaInfo, BancaInfo } from '../../
       from { opacity: 0; transform: translateY(-4px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .neo-raised-sm {
-      box-shadow: 3px 3px 6px #d1d9e6, -3px -3px 6px rgba(255,255,255,0.8);
+    .summary-content strong {
+      color: #005236;
+      font-weight: 700;
     }
     .border-l-3 {
       border-left-width: 3px;
@@ -421,6 +440,37 @@ export class ParetoAnalysisComponent implements OnInit {
   @Input() editalId = 'ed-1';
   edital: any = null;
   paretoData: any = null;
+  showParetoModal = false;
+
+  openParetoModal() {
+    this.showParetoModal = true;
+  }
+
+  getUserContextForPareto() {
+    return {
+      cargo: this.edital?.cargo || this.concursoInfo?.cargo || 'Cargo Principal',
+      concurso: this.edital?.concurso || this.edital?.title || 'Edital Oficial',
+      dataProva: this.edital?.data_prova || this.concursoInfo?.data_prova,
+      horasPorDia: this.edital?.horas_por_dia || 4,
+      diasPorSemana: this.edital?.dias_por_semana || 5,
+    };
+  }
+
+  onExistingParetoSelected(paretoData: any) {
+    this.showParetoModal = false;
+    if (paretoData) {
+      this.paretoData = paretoData;
+    }
+  }
+
+  onParetoCompleted(updatedEdital: any) {
+    if (updatedEdital?.pareto_data) {
+      this.edital = updatedEdital;
+      this.paretoData = updatedEdital.pareto_data;
+    } else {
+      this.loadParetoDetails();
+    }
+  }
 
   // Mapa Geral state
   mapaGeralTab: 'basicas' | 'especificas' = 'basicas';
