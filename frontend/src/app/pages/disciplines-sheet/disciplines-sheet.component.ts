@@ -6,6 +6,8 @@ import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ThemeService } from '../../services/theme.service';
+import { getBancaInfo, BancaInfo } from '../../utils/banca.utils';
+import { ParetoAnalysisModalComponent } from '../../components/pareto-analysis-modal/pareto-analysis-modal.component';
 
 export interface CheckedItemState {
   [key: string]: boolean;
@@ -14,7 +16,7 @@ export interface CheckedItemState {
 @Component({
   selector: 'app-disciplines-sheet',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, ParetoAnalysisModalComponent],
   template: `
     <div class="min-h-screen w-full bg-[var(--background)] text-[var(--on-surface)] transition-colors duration-300">
       <div class="max-w-7xl mx-auto p-4 md:p-8">
@@ -41,55 +43,79 @@ export interface CheckedItemState {
 
       <!-- Main Edital Info Card -->
       <div class="neo-raised rounded-3xl p-6 md:p-8 mb-8 space-y-4">
-        <!-- Top Row: Badges (Left) & Action Buttons: Cronograma + Pareto (Right) -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--outline-variant)]/30">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="bg-[var(--primary)]/15 text-[var(--primary)] text-[11px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1">
-              <span class="material-symbols-outlined !text-[13px]">emoji_events</span>
-              {{ edital?.concurso || 'Edital Oficial' }}
+        <!-- Top Row: Action Buttons (Right) -->
+        <div class="flex items-center justify-end gap-2.5 pb-3 border-b border-[var(--outline-variant)]/30 flex-wrap">
+          <!-- Botão Cronograma (leva para /sprints se feito ou abre gerador se não) -->
+          <button
+             (click)="handleCronogramaClick()"
+             class="btn-neo px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 text-[var(--on-surface)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-all cursor-pointer shadow-xs"
+             [title]="hasSchedule ? 'Abrir Cronograma de Estudos' : 'Configurar e Gerar Cronograma de Estudos'">
+            <span class="material-symbols-outlined !text-[16px] text-[var(--primary)]">
+              {{ hasSchedule ? 'calendar_month' : 'calendar_add_on' }}
             </span>
-            <span *ngIf="edital?.cargo" class="bg-[var(--secondary)]/15 text-[var(--secondary)] text-[11px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1">
-              <span class="material-symbols-outlined !text-[13px]">badge</span>
-              {{ edital.cargo }}
-            </span>
-          </div>
+            <span class="whitespace-nowrap">{{ hasSchedule ? 'Ver Cronograma' : 'Gerar Cronograma' }}</span>
+          </button>
 
-          <!-- Action Buttons on Top Right of Card -->
-          <div class="flex items-center gap-2.5 flex-wrap">
-            <!-- Botão Cronograma (leva para /sprints se feito ou abre gerador se não) -->
-            <button
-               (click)="handleCronogramaClick()"
-               class="btn-neo px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 text-[var(--on-surface)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-all cursor-pointer shadow-xs"
-               [title]="hasSchedule ? 'Abrir Cronograma de Estudos' : 'Configurar e Gerar Cronograma de Estudos'">
-              <span class="material-symbols-outlined !text-[16px] text-[var(--primary)]">
-                {{ hasSchedule ? 'calendar_month' : 'calendar_add_on' }}
-              </span>
-              <span class="whitespace-nowrap">{{ hasSchedule ? 'Ver Cronograma' : 'Gerar Cronograma' }}</span>
-            </button>
+          <!-- Botão Ver Pareto (se já analisado) -->
+          <a *ngIf="paretoData?.pareto_analisado"
+             [routerLink]="['/pareto', editalId]"
+             class="btn-mesh px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 shadow-md hover:scale-105 transition-all cursor-pointer"
+             title="Ver Relatório Pareto 80/20">
+            <span class="material-symbols-outlined !text-[16px]">donut_large</span>
+            <span class="whitespace-nowrap">Ver Pareto</span>
+          </a>
 
-            <!-- Botão Ver Pareto (se já analisado) -->
-            <a *ngIf="paretoData?.pareto_analisado"
-               [routerLink]="['/pareto', editalId]"
-               class="btn-mesh px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 shadow-md hover:scale-105 transition-all cursor-pointer"
-               title="Ver Relatório Pareto 80/20">
-              <span class="material-symbols-outlined !text-[16px]">donut_large</span>
-              <span class="whitespace-nowrap">Ver Pareto</span>
-            </a>
-
-            <!-- Botão Executar Análise de Pareto (se ainda não analisado) -->
-            <button *ngIf="!paretoData?.pareto_analisado"
-                    (click)="runParetoAnalysis()"
-                    [disabled]="isAnalyzingPareto"
-                    class="bg-gradient-to-r from-[#433fe5] to-[#6b38d4] text-white px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
-                    title="Executar Análise de Pareto com IA">
-              <span class="material-symbols-outlined !text-[16px]" [class.animate-spin]="isAnalyzingPareto">donut_large</span>
-              <span class="whitespace-nowrap">{{ isAnalyzingPareto ? 'Analisando...' : 'Análise de Pareto' }}</span>
-            </button>
-          </div>
+          <!-- Botão Análise de Pareto / Refazer Análise (Abre Modal com Logs e Checagem) -->
+          <button (click)="openParetoModal()"
+                  class="px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
+                  [ngClass]="paretoData?.pareto_analisado ? 'btn-neo text-[var(--on-surface)] hover:text-purple-600' : 'bg-gradient-to-r from-[#433fe5] to-[#6b38d4] text-white'"
+                  [title]="paretoData?.pareto_analisado ? 'Verificar ou Refazer Análise Pareto 80/20 com IA' : 'Executar Análise de Pareto com IA'">
+            <span class="material-symbols-outlined !text-[16px]">donut_large</span>
+            <span class="whitespace-nowrap">{{ paretoData?.pareto_analisado ? 'Refazer Pareto' : 'Análise de Pareto' }}</span>
+          </button>
         </div>
 
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
+        <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 pt-1">
           <div class="flex-1 min-w-0">
+            <!-- Badges com o style exato ACIMA do nome Mapa Geral das Disciplinas -->
+            <div class="flex items-center gap-2 flex-wrap mb-2.5">
+              <!-- Concurso / Edital Badge -->
+              <span class="bg-[var(--primary)]/15 text-[var(--primary)] text-xs font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xs">
+                <span class="material-symbols-outlined !text-[15px]">emoji_events</span>
+                <span>{{ concursoName }}</span>
+              </span>
+
+              <!-- Cargo Badge (ou botão para informar cargo se não preenchido) -->
+              <span *ngIf="cargoName" class="bg-[var(--secondary)]/15 text-[var(--secondary)] text-xs font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xs">
+                <span class="material-symbols-outlined !text-[15px]">badge</span>
+                <span>{{ cargoName }}</span>
+              </span>
+              <button *ngIf="!cargoName" (click)="openEditModal()" class="bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 text-xs font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 transition-all cursor-pointer border border-amber-500/30 shadow-2xs" title="Informar Cargo para este Edital">
+                <span class="material-symbols-outlined !text-[15px]">add_circle</span>
+                <span>Informar Cargo</span>
+              </button>
+
+              <!-- Data da Prova Badge (se houver) -->
+              <span *ngIf="dataProva" class="bg-[#00845a]/15 text-[#00845a] dark:text-[#4edea3] text-xs font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xs">
+                <span class="material-symbols-outlined !text-[15px]">event</span>
+                <span>Prova: {{ dataProva | date:'dd/MM/yyyy' }}</span>
+              </span>
+
+              <!-- Banca Badge (se houver) -->
+              <span *ngIf="bancaName" class="inline-flex items-center gap-1.5 bg-[#fff3e0] dark:bg-amber-950/40 text-[#e65100] dark:text-amber-400 border border-amber-500/20 text-xs font-bold px-3 py-1.5 rounded-full shadow-2xs">
+                <span *ngIf="getBanca(bancaName)" class="h-3.5 w-6 flex items-center justify-center bg-white rounded px-0.5 shadow-2xs">
+                  <img [src]="getBanca(bancaName)?.logo" [alt]="bancaName" class="max-h-full max-w-full object-contain" />
+                </span>
+                <span *ngIf="!getBanca(bancaName)" class="material-symbols-outlined !text-[14px]">shield</span>
+                <span>{{ bancaName }}</span>
+              </span>
+
+              <!-- Botão de Editar Informações do Edital e Cargo -->
+              <button (click)="openEditModal()" class="btn-neo p-1.5 rounded-full text-[var(--on-surface-variant)] hover:text-[var(--primary)] transition-all cursor-pointer shadow-2xs flex items-center justify-center" title="Editar Edital e Cargo">
+                <span class="material-symbols-outlined !text-[16px]">edit</span>
+              </button>
+            </div>
+
             <h1 class="text-2xl md:text-3xl font-black text-[var(--on-surface)] mb-2">Mapa Geral das Disciplinas</h1>
             <p class="text-xs text-[var(--on-surface-variant)] font-medium">Visão estruturada de todo o conteúdo programático do edital em 3 camadas (Disciplinas, Tópicos e Subtópicos) gerada automaticamente a partir do edital.</p>
           </div>
@@ -690,6 +716,156 @@ export interface CheckedItemState {
           </div>
         </div>
       </div>
+
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <!-- MODAL: Informar / Editar Edital e Cargo                    -->
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <div *ngIf="showEditModal"
+           class="fixed inset-0 z-50 flex items-center justify-center p-4"
+           (click)="closeEditModal()">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div class="relative bg-white dark:bg-[#141927] text-[var(--on-surface)] rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-[var(--outline-variant)]/40 animate-fadeIn"
+             (click)="$event.stopPropagation()">
+
+          <!-- Header do modal -->
+          <div class="p-5 sm:p-6 border-b border-[var(--outline-variant)]/30 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white flex items-center justify-center shadow-md">
+                <span class="material-symbols-outlined !text-[22px]">edit_document</span>
+              </div>
+              <div>
+                <h3 class="text-sm sm:text-base font-black text-[var(--on-surface)]">Informar Edital e Cargo</h3>
+                <p class="text-[11px] text-[var(--on-surface-variant)]">Atualize os dados e personalize seu estudo</p>
+              </div>
+            </div>
+            <button (click)="closeEditModal()" class="w-8 h-8 rounded-xl neo-pressed flex items-center justify-center text-[var(--on-surface-variant)] hover:text-[var(--primary)] transition-colors cursor-pointer">
+              <span class="material-symbols-outlined !text-[18px]">close</span>
+            </button>
+          </div>
+
+          <!-- Corpo do modal -->
+          <div class="p-5 sm:p-6 space-y-4">
+            <!-- Título do Edital -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
+                <span class="material-symbols-outlined !text-[14px]">description</span>
+                Título do Edital <span class="text-red-500">*</span>
+              </label>
+              <div class="neo-pressed rounded-xl p-3 flex items-center gap-2 bg-[var(--card-bg)]">
+                <input
+                  [(ngModel)]="editTitle"
+                  type="text"
+                  placeholder="Ex: Concurso Banco do Nordeste 2024"
+                  class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+              </div>
+            </div>
+
+            <!-- Cargo Alvo -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
+                <span class="material-symbols-outlined !text-[14px]">badge</span>
+                Cargo Alvo <span class="text-red-500">*</span>
+              </label>
+              <div class="neo-pressed rounded-xl p-3 flex items-center gap-2 bg-[var(--card-bg)]">
+                <input
+                  [(ngModel)]="editCargo"
+                  type="text"
+                  placeholder="Ex: Analista de Sistemas - Desenvolvimento"
+                  class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+              </div>
+            </div>
+
+            <!-- Concurso / Órgão -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
+                <span class="material-symbols-outlined !text-[14px]">emoji_events</span>
+                Concurso / Órgão
+              </label>
+              <div class="neo-pressed rounded-xl p-3 flex items-center gap-2 bg-[var(--card-bg)]">
+                <input
+                  [(ngModel)]="editConcurso"
+                  type="text"
+                  placeholder="Ex: Banco do Nordeste (BNB)"
+                  class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+              </div>
+            </div>
+
+            <!-- Data da Prova -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
+                <span class="material-symbols-outlined !text-[14px]">event</span>
+                Data da Prova (Opcional)
+              </label>
+              <div class="neo-pressed rounded-xl p-3 flex items-center gap-2 bg-[var(--card-bg)]">
+                <input
+                  [(ngModel)]="editDataProva"
+                  type="date"
+                  [min]="today"
+                  class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)]">
+              </div>
+            </div>
+
+            <!-- Horas por dia + Dias por semana -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
+                  <span class="material-symbols-outlined !text-[14px]">schedule</span>
+                  Horas / dia
+                </label>
+                <div class="neo-pressed rounded-xl p-3 flex items-center gap-2 bg-[var(--card-bg)]">
+                  <input
+                    [(ngModel)]="editHorasPorDia"
+                    type="number"
+                    min="0.5" max="24" step="0.5"
+                    placeholder="Ex: 4"
+                    class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)]">
+                </div>
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
+                  <span class="material-symbols-outlined !text-[14px]">calendar_view_week</span>
+                  Dias / semana
+                </label>
+                <div class="neo-pressed rounded-xl p-3 flex items-center gap-2 bg-[var(--card-bg)]">
+                  <input
+                    [(ngModel)]="editDiasPorSemana"
+                    type="number"
+                    min="1" max="7" step="1"
+                    placeholder="Ex: 5"
+                    class="w-full bg-transparent border-none outline-none text-sm text-[var(--on-surface)]">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer do modal -->
+          <div class="p-5 sm:p-6 border-t border-[var(--outline-variant)]/30 flex items-center gap-3">
+            <button
+              (click)="closeEditModal()"
+              class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold border border-[var(--outline-variant)] text-[var(--on-surface-variant)] hover:border-[var(--primary)] transition-all cursor-pointer">
+              Cancelar
+            </button>
+            <button
+              (click)="saveEditalContext()"
+              [disabled]="!editCargo.trim() || isSavingContext"
+              class="flex-1 py-2.5 px-4 rounded-xl text-xs font-extrabold btn-mesh flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-all cursor-pointer disabled:opacity-50">
+              <span class="material-symbols-outlined !text-[16px]">{{ isSavingContext ? 'hourglass_top' : 'save' }}</span>
+              <span>{{ isSavingContext ? 'Salvando...' : 'Salvar Informações' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal de Simulação de Logs da Análise Pareto 80/20 -->
+      <app-pareto-analysis-modal
+        [isOpen]="showParetoModal"
+        [editalId]="editalId || ''"
+        [editalData]="edital"
+        [userContext]="getUserContextForPareto()"
+        (closed)="showParetoModal = false"
+        (existingSelected)="showParetoModal = false"
+        (analysisCompleted)="onParetoCompleted($event)">
+      </app-pareto-analysis-modal>
     </div>
   `
 })
@@ -701,12 +877,23 @@ export class DisciplinesSheetComponent implements OnInit {
   hasSchedule: boolean = false;
   currentUser: any = null;
 
+  showParetoModal: boolean = false;
   showScheduleModal: boolean = false;
   isSavingSchedule: boolean = false;
   scheduleHorasPorDia: number | null = 3;
   scheduleDiasPorSemana: number | null = 5;
   scheduleDataProva: string = '';
   today: string = new Date().toISOString().split('T')[0];
+
+  // Edit Edital & Cargo Modal
+  showEditModal: boolean = false;
+  isSavingContext: boolean = false;
+  editTitle: string = '';
+  editCargo: string = '';
+  editConcurso: string = '';
+  editDataProva: string = '';
+  editHorasPorDia: number | null = null;
+  editDiasPorSemana: number | null = null;
 
   searchQuery: string = '';
   categoryFilter: 'todas' | 'basicas' | 'especificas' = 'todas';
@@ -817,6 +1004,7 @@ export class DisciplinesSheetComponent implements OnInit {
     this.apiService.getEditalDetails(id).subscribe({
       next: (res: any) => {
         const ed = res?.data || res;
+        this.edital = ed;
         let pd = ed?.pareto_data || ed || {};
         if (typeof pd === 'string') {
           try { pd = JSON.parse(pd); } catch (e) { }
@@ -834,35 +1022,131 @@ export class DisciplinesSheetComponent implements OnInit {
     });
   }
 
-  /** Executa a Análise Pareto 80/20 sob demanda atualizando a tabela existente */
-  runParetoAnalysis() {
-    if (!this.editalId || this.isAnalyzingPareto) return;
-    this.isAnalyzingPareto = true;
+  get concursoInfo(): any {
+    return this.paretoData?.concurso_info || null;
+  }
 
-    const userContext = {
-      cargo: this.edital?.cargo || 'Cargo Principal',
-      concurso: this.edital?.concurso || 'Edital Oficial',
-      dataProva: this.edital?.data_prova,
+  get concursoName(): string {
+    return this.edital?.concurso ||
+           this.concursoInfo?.concurso ||
+           this.paretoData?.concurso ||
+           this.edital?.title ||
+           'Edital Oficial';
+  }
+
+  get cargoName(): string {
+    return this.edital?.cargo ||
+           this.concursoInfo?.cargo ||
+           this.paretoData?.cargo ||
+           '';
+  }
+
+  get editalTitle(): string {
+    return this.edital?.title ||
+           this.concursoInfo?.edital ||
+           this.paretoData?.edital ||
+           this.edital?.concurso ||
+           'Edital Oficial';
+  }
+
+  get bancaName(): string {
+    return this.edital?.banca ||
+           this.concursoInfo?.banca ||
+           this.paretoData?.banca ||
+           this.paretoData?.alertas_banca?.banca_identificada ||
+           '';
+  }
+
+  get dataProva(): string | null {
+    return this.edital?.data_prova ||
+           this.concursoInfo?.data_prova ||
+           this.paretoData?.data_prova ||
+           null;
+  }
+
+  getBanca(text: string | null | undefined): BancaInfo | null {
+    return getBancaInfo(text);
+  }
+
+  openEditModal(): void {
+    this.editTitle = this.edital?.title || this.editalTitle || '';
+    this.editCargo = this.edital?.cargo || this.cargoName || '';
+    this.editConcurso = this.edital?.concurso || this.concursoName || '';
+    this.editDataProva = this.edital?.data_prova || this.dataProva || '';
+    this.editHorasPorDia = this.edital?.horas_por_dia || null;
+    this.editDiasPorSemana = this.edital?.dias_por_semana || null;
+    this.showEditModal = true;
+  }
+
+  closeEditModal(): void {
+    if (!this.isSavingContext) {
+      this.showEditModal = false;
+    }
+  }
+
+  saveEditalContext(): void {
+    if (!this.editalId || !this.editCargo?.trim()) return;
+    this.isSavingContext = true;
+
+    const context = {
+      title: this.editTitle.trim() || undefined,
+      cargo: this.editCargo.trim(),
+      concurso: this.editConcurso.trim() || undefined,
+      dataProva: this.editDataProva || undefined,
+      horasPorDia: this.editHorasPorDia ?? undefined,
+      diasPorSemana: this.editDiasPorSemana ?? undefined,
+    };
+
+    this.apiService.updateEditalContext(this.editalId, context).subscribe({
+      next: () => {
+        this.isSavingContext = false;
+        this.showEditModal = false;
+        if (this.edital) {
+          if (context.title) this.edital.title = context.title;
+          this.edital.cargo = context.cargo;
+          if (context.concurso) this.edital.concurso = context.concurso;
+          if (context.dataProva) this.edital.data_prova = context.dataProva;
+          if (context.horasPorDia) this.edital.horas_por_dia = context.horasPorDia;
+          if (context.diasPorSemana) this.edital.dias_por_semana = context.diasPorSemana;
+        }
+        if (this.editalId) {
+          this.loadEditalDetails(this.editalId);
+        }
+      },
+      error: (err: any) => {
+        this.isSavingContext = false;
+        console.error('Erro ao atualizar contexto do edital:', err);
+      }
+    });
+  }
+
+  openParetoModal() {
+    this.showParetoModal = true;
+  }
+
+  getUserContextForPareto() {
+    return {
+      cargo: this.cargoName || 'Cargo Principal',
+      concurso: this.concursoName || 'Edital Oficial',
+      dataProva: this.dataProva || this.edital?.data_prova,
       horasPorDia: this.edital?.horas_por_dia || 4,
       diasPorSemana: this.edital?.dias_por_semana || 5,
     };
+  }
 
-    this.apiService.analyzeEditalPareto(this.editalId, userContext).subscribe({
-      next: (res: any) => {
-        this.isAnalyzingPareto = false;
-        if (res?.data?.pareto_data) {
-          this.edital = res.data;
-          this.paretoData = res.data.pareto_data;
-        } else {
-          this.loadEditalDetails(this.editalId!);
-        }
-        this.expandAll();
-      },
-      error: (err: any) => {
-        this.isAnalyzingPareto = false;
-        console.error('Erro ao executar Análise Pareto:', err);
-      }
-    });
+  onParetoCompleted(updatedEdital: any) {
+    if (updatedEdital?.pareto_data) {
+      this.edital = updatedEdital;
+      this.paretoData = updatedEdital.pareto_data;
+    } else if (this.editalId) {
+      this.loadEditalDetails(this.editalId);
+    }
+    this.expandAll();
+  }
+
+  /** Executa a Análise Pareto 80/20 sob demanda abrindo o modal com simulação de logs e verificação prévia */
+  runParetoAnalysis() {
+    this.openParetoModal();
   }
 
   reanalyzeMapaGeral() {
@@ -870,9 +1154,9 @@ export class DisciplinesSheetComponent implements OnInit {
     this.isReanalyzing = true;
 
     const userContext = {
-      cargo: this.edital?.cargo || 'Cargo Principal',
-      concurso: this.edital?.concurso || 'Edital Oficial',
-      dataProva: this.edital?.data_prova,
+      cargo: this.cargoName || 'Cargo Principal',
+      concurso: this.concursoName || 'Edital Oficial',
+      dataProva: this.dataProva || this.edital?.data_prova,
       horasPorDia: this.edital?.horas_por_dia || 4,
       diasPorSemana: this.edital?.dias_por_semana || 5,
     };
