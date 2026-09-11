@@ -15,7 +15,7 @@
   padding: 110px 0 0;
   overflow: hidden;
   background: #0f1a29;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: none;
   transition: background 0.35s ease;
 
   &__container {
@@ -41,8 +41,8 @@
   // Top Row: Content on Left & Visual on Right
   &__top-grid {
     display: grid;
-    grid-template-columns: 1.15fr 0.85fr;
-    gap: 48px;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
     align-items: center;
     justify-items: center;
     width: 100%;
@@ -160,15 +160,34 @@
   &__action-section {
     position: relative;
     width: 100%;
-    padding: 38px 24px 42px;
+    padding: 38px 24px 58px;
     border: none;
-    background: rgba(15, 26, 41, 0.85);
+    background: linear-gradient(
+      180deg,
+      rgba(15, 26, 41, 0.85) 0%,
+      rgba(15, 26, 41, 0.94) 35%,
+      rgba(11, 15, 25, 0.98) 75%,
+      var(--background) 100%
+    );
     backdrop-filter: blur(16px);
     overflow: hidden;
     z-index: 2;
 
+    // Smooth gradient fade at the bottom transitioning seamlessly into the next section
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 70px;
+      background: linear-gradient(to bottom, transparent 0%, var(--background) 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
     @media (max-width: 768px) {
-      padding: 26px 16px 30px;
+      padding: 26px 16px 44px;
     }
   }
 
@@ -194,6 +213,8 @@
     overflow: hidden;
     width: 100%;
     height: 100%;
+    mask-image: linear-gradient(180deg, #000000 0%, #000000 35%, transparent 95%);
+    -webkit-mask-image: linear-gradient(180deg, #000000 0%, #000000 35%, transparent 95%);
   }
 
   // Search Bar (Pill)
@@ -318,12 +339,16 @@
   &__scene-wrapper {
     position: relative;
     width: 100%;
-    max-width: 540px;
+    max-width: 680px;
     display: grid;
     place-items: center;
 
+    @media (max-width: 1280px) {
+      max-width: 600px;
+    }
+
     @media (max-width: 600px) {
-      max-width: 360px;
+      max-width: 440px;
     }
 
     .scene-ambient-glow {
@@ -342,32 +367,76 @@
       height: auto;
       object-fit: contain;
       z-index: 1;
-      border: none;
       display: block;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
       opacity: 1;
       transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       will-change: opacity;
-      -webkit-mask-image: radial-gradient(
-        ellipse 70% 65% at 50% 50%,
-        #000000 50%,
-        rgba(0, 0, 0, 0.85) 55%,
-        rgba(0, 0, 0, 0.55) 65%,
-        rgba(0, 0, 0, 0.25) 75%,
-        rgba(0, 0, 0, 0.06) 88%,
-        transparent 100%
-      );
-      mask-image: radial-gradient(
-        ellipse 70% 65% at 50% 50%,
-        #000000 50%,
-        rgba(0, 0, 0, 0.85) 55%,
-        rgba(0, 0, 0, 0.55) 65%,
-        rgba(0, 0, 0, 0.25) 75%,
-        rgba(0, 0, 0, 0.06) 88%,
-        transparent 100%
-      );
 
       &.faded {
         opacity: 0;
+      }
+    }
+
+    .hero__sound-toggle {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(15, 26, 41, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+      color: #ffffff;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+
+      &:hover {
+        transform: translateY(-2px) scale(1.08);
+        background: rgba(26, 41, 64, 0.95);
+        border-color: rgba(129, 140, 248, 0.6);
+        box-shadow: 0 6px 24px rgba(99, 102, 241, 0.4);
+      }
+
+      &:active {
+        transform: scale(0.94);
+      }
+
+      .sound-icon {
+        font-size: 22px;
+        color: #38bdf8;
+        transition: transform 0.2s ease, color 0.2s ease;
+      }
+
+      &--active {
+        background: rgba(99, 102, 241, 0.32);
+        border-color: rgba(99, 102, 241, 0.7);
+        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.5);
+
+        .sound-icon {
+          color: #818cf8;
+          animation: soundPulse 1.6s infinite ease-in-out;
+        }
+      }
+
+      @media (max-width: 600px) {
+        bottom: 14px;
+        right: 14px;
+        width: 38px;
+        height: 38px;
+
+        .sound-icon {
+          font-size: 19px;
+        }
       }
     }
   }
@@ -452,5 +521,17 @@
 
   50% {
     transform: translateY(-5px) rotate(1deg);
+  }
+}
+
+@keyframes soundPulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.18);
   }
 }

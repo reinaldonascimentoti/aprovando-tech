@@ -1040,13 +1040,24 @@ export interface AnalysisLogStep {
                   <span>Limpar Filtros</span>
                 </button>
 
-                <!-- Botão Pomodoro no lugar anterior da quantidade de questões -->
+                <!-- Botão Pomodoro -->
                 <button 
                   (click)="navigateToPomodoro()" 
                   class="btn-mesh px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-sm hover:scale-[1.02] transition-transform cursor-pointer" 
                   title="Timer Pomodoro • Banco de Horas">
                   <span class="text-sm">🍅</span>
                   <span>Pomodoro</span>
+                </button>
+
+                <!-- Botão Modo Turbo -->
+                <button 
+                  (click)="activateTurboMode()" 
+                  class="relative px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shrink-0 shadow-lg hover:scale-[1.04] active:scale-95 transition-all cursor-pointer overflow-hidden"
+                  style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 50%, #8b5cf6 100%); color: white; box-shadow: 0 4px 15px rgba(239,68,68,0.4);"
+                  title="Modo Turbo — Tela Cheia para resolver questões">
+                  <span class="absolute inset-0 opacity-20" style="background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.15) 4px, rgba(255,255,255,0.15) 8px);"></span>
+                  <span class="material-symbols-outlined !text-[16px] relative z-10">bolt</span>
+                  <span class="relative z-10">Modo Turbo</span>
                 </button>
               </div>
             </div>
@@ -2141,6 +2152,204 @@ export interface AnalysisLogStep {
       (analysisCompleted)="onParetoCompleted($event)">
     </app-pareto-analysis-modal>
 
+    <!-- ===== TURBO MODE ACTIVATION MODAL ===== -->
+    <div *ngIf="showTurboActivationModal"
+         class="fixed inset-0 z-[9998] flex items-center justify-center"
+         style="background: rgba(0,0,0,0.7); backdrop-filter: blur(12px);">
+      <div class="relative rounded-3xl p-8 max-w-md w-full mx-4 text-center overflow-hidden animate-[fadeIn_0.3s_ease]"
+           style="background: linear-gradient(135deg, #1a0a2e 0%, #0f172a 60%, #1a1040 100%); border: 1px solid rgba(139,92,246,0.4); box-shadow: 0 25px 60px rgba(139,92,246,0.3), 0 0 0 1px rgba(245,158,11,0.2);">
+        <!-- Glow rings -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full opacity-20" style="background: radial-gradient(circle, #f59e0b 0%, transparent 70%);"></div>
+        <!-- Lightning icon -->
+        <div class="relative z-10 flex items-center justify-center mb-5">
+          <div class="w-20 h-20 rounded-2xl flex items-center justify-center"
+               style="background: linear-gradient(135deg, #f59e0b, #ef4444); box-shadow: 0 10px 30px rgba(239,68,68,0.5);">
+            <span class="material-symbols-outlined text-white !text-[44px]">bolt</span>
+          </div>
+        </div>
+        <h2 class="relative z-10 text-2xl font-black text-white mb-2">⚡ Modo Turbo</h2>
+        <p class="relative z-10 text-sm font-semibold mb-1" style="color: #f59e0b;">A aplicação entrará em Tela Cheia</p>
+        <p class="relative z-10 text-xs mb-6" style="color: rgba(255,255,255,0.6);">
+          Foco total para resolver questões! O Modo Turbo ativa a tela cheia e remove todas as distrações.
+          O Pomodoro fica disponível dentro do modo.
+        </p>
+        <!-- Stats preview -->
+        <div class="relative z-10 grid grid-cols-3 gap-3 mb-6">
+          <div class="rounded-2xl p-3" style="background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);">
+            <span class="text-xl font-black text-white block">{{ filteredQuestions.length }}</span>
+            <span class="text-[10px] font-bold" style="color: rgba(255,255,255,0.5);">Questões</span>
+          </div>
+          <div class="rounded-2xl p-3" style="background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);">
+            <span class="text-xl font-black block" style="color: #10b981;">{{ resolvedCount }}</span>
+            <span class="text-[10px] font-bold" style="color: rgba(255,255,255,0.5);">Resolvidas</span>
+          </div>
+          <div class="rounded-2xl p-3" style="background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);">
+            <span class="text-xl font-black block" style="color: #ef4444;">{{ wrongCount }}</span>
+            <span class="text-[10px] font-bold" style="color: rgba(255,255,255,0.5);">Erradas</span>
+          </div>
+        </div>
+        <!-- Action buttons -->
+        <div class="relative z-10 flex gap-3">
+          <button
+            (click)="showTurboActivationModal = false"
+            class="flex-1 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer"
+            style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.15);">
+            Cancelar
+          </button>
+          <button
+            (click)="confirmTurboMode()"
+            class="flex-1 py-3 rounded-xl text-sm font-black transition-all cursor-pointer hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
+            style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); color: white; box-shadow: 0 8px 20px rgba(239,68,68,0.4);">
+            <span class="material-symbols-outlined !text-[18px]">bolt</span>
+            <span>Ativar Turbo!</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TURBO MODE FULLSCREEN OVERLAY ===== -->
+    <div *ngIf="turboModeActive"
+         class="fixed inset-0 z-[9999] flex flex-col overflow-hidden"
+         style="background: var(--background);">
+      
+      <!-- Turbo Mode Top Bar -->
+      <div class="shrink-0 flex items-center justify-between px-4 sm:px-6 py-3 border-b"
+           style="background: linear-gradient(90deg, #1a0a2e 0%, #0f172a 100%); border-color: rgba(139,92,246,0.3);">
+        <!-- Left: Title -->
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center"
+               style="background: linear-gradient(135deg, #f59e0b, #ef4444); box-shadow: 0 4px 12px rgba(239,68,68,0.4);">
+            <span class="material-symbols-outlined text-white !text-[20px]">bolt</span>
+          </div>
+          <div>
+            <h2 class="text-sm font-black text-white">⚡ Modo Turbo Ativo</h2>
+            <p class="text-[10px] font-semibold" style="color: rgba(255,255,255,0.5);">Tela cheia • Foco total nas questões</p>
+          </div>
+        </div>
+
+        <!-- Center: Stats bar -->
+        <div class="hidden sm:flex items-center gap-4">
+          <div class="flex items-center gap-1.5 text-xs font-bold text-white/70">
+            <span class="w-2 h-2 rounded-full" style="background:#6366f1;"></span>
+            <span>{{ filteredQuestions.length }} questões</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs font-bold" style="color: #10b981;">
+            <span class="material-symbols-outlined !text-[14px]">check_circle</span>
+            <span>{{ resolvedCount }} resolvidas</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs font-bold" style="color: #ef4444;">
+            <span class="material-symbols-outlined !text-[14px]">cancel</span>
+            <span>{{ wrongCount }} erradas</span>
+          </div>
+        </div>
+
+        <!-- Right: Actions -->
+        <div class="flex items-center gap-2">
+          <!-- Pomodoro button -->
+          <button
+            (click)="navigateToPomodoro()"
+            class="px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all hover:scale-[1.03]"
+            style="background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.15);"
+            title="Abrir Pomodoro">
+            <span class="text-base">🍅</span>
+            <span class="hidden sm:inline">Pomodoro</span>
+          </button>
+          <!-- Theme toggle -->
+          <button
+            (click)="themeService.toggle()"
+            class="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all hover:scale-[1.05]"
+            style="background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.15);"
+            [title]="themeService.isDark() ? 'Modo Claro' : 'Modo Escuro'">
+            <span class="material-symbols-outlined !text-[18px]">{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</span>
+          </button>
+          <!-- Exit Turbo -->
+          <button
+            (click)="exitTurboMode()"
+            class="px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all hover:scale-[1.03]"
+            style="background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3);"
+            title="Sair do Modo Turbo">
+            <span class="material-symbols-outlined !text-[16px]">fullscreen_exit</span>
+            <span class="hidden sm:inline">Sair do Turbo</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Turbo Mode Filter Strip -->
+      <div class="shrink-0 px-4 sm:px-6 py-3 border-b flex items-center gap-3 flex-wrap"
+           style="background: rgba(139,92,246,0.05); border-color: rgba(139,92,246,0.15);">
+        <!-- Status filters -->
+        <div class="flex items-center gap-2">
+          <button
+            (click)="questionStatusFilter = 'all'; onFilterChange()"
+            [ngClass]="questionStatusFilter === 'all' ? 'text-white' : 'text-white/50 hover:text-white/80'"
+            [style.background]="questionStatusFilter === 'all' ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.06)'"
+            class="px-3 py-1.5 rounded-xl text-[11px] font-bold border border-white/10 transition-all cursor-pointer flex items-center gap-1">
+            <span class="material-symbols-outlined !text-[13px]">list</span>
+            <span>Todas ({{ questions.length }})</span>
+          </button>
+          <button
+            (click)="questionStatusFilter = 'resolved'; onFilterChange()"
+            [ngClass]="questionStatusFilter === 'resolved' ? 'text-white' : 'text-white/50 hover:text-white/80'"
+            [style.background]="questionStatusFilter === 'resolved' ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.06)'"
+            class="px-3 py-1.5 rounded-xl text-[11px] font-bold border border-white/10 transition-all cursor-pointer flex items-center gap-1">
+            <span class="material-symbols-outlined !text-[13px]">check_circle</span>
+            <span>Resolvidas</span>
+          </button>
+          <button
+            (click)="questionStatusFilter = 'wrong'; onFilterChange()"
+            [ngClass]="questionStatusFilter === 'wrong' ? 'text-white' : 'text-white/50 hover:text-white/80'"
+            [style.background]="questionStatusFilter === 'wrong' ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.06)'"
+            class="px-3 py-1.5 rounded-xl text-[11px] font-bold border border-white/10 transition-all cursor-pointer flex items-center gap-1">
+            <span class="material-symbols-outlined !text-[13px]">cancel</span>
+            <span>Erradas</span>
+          </button>
+        </div>
+        <!-- Search -->
+        <div class="flex-1 min-w-[160px] flex items-center gap-2 px-3 py-1.5 rounded-xl" style="background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);">
+          <span class="material-symbols-outlined text-white/40 !text-[16px]">search</span>
+          <input
+            type="text"
+            [(ngModel)]="searchSubject"
+            (ngModelChange)="onFilterChange()"
+            placeholder="Buscar questão..."
+            class="bg-transparent border-none outline-none text-xs w-full text-white placeholder:text-white/30">
+          <button *ngIf="searchSubject" (click)="searchSubject = ''; onFilterChange()" class="text-white/40 hover:text-white/70 text-xs cursor-pointer">✕</button>
+        </div>
+        <!-- Clear filters -->
+        <button
+          *ngIf="hasActiveFilters"
+          (click)="clearFilters()"
+          class="text-xs font-bold flex items-center gap-1 cursor-pointer px-2.5 py-1.5 rounded-lg transition-colors"
+          style="color: #ef4444; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);">
+          <span class="material-symbols-outlined !text-[14px]">filter_alt_off</span>
+          <span>Limpar</span>
+        </button>
+        <!-- Filtered count -->
+        <span class="text-[11px] font-bold ml-auto" style="color: rgba(255,255,255,0.4);">
+          {{ filteredQuestions.length }} / {{ questions.length }} questões
+        </span>
+      </div>
+
+      <!-- Turbo Mode Scrollable Questions Area -->
+      <div class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
+        <app-question-card
+          *ngFor="let q of paginatedQuestions; let i = index"
+          [question]="q"
+          [index]="(questionsCurrentPage - 1) * questionsPageSize + i"
+          [isResolved]="isQuestionResolved(q)"
+          [isWrong]="isQuestionWrong(q)"
+          (answerSubmitted)="onAnswerSubmitted($event)">
+        </app-question-card>
+
+        <app-pagination
+          [currentPage]="questionsCurrentPage"
+          [totalItems]="filteredQuestions.length"
+          [pageSize]="questionsPageSize"
+          (pageChange)="onQuestionsPageChange($event)">
+        </app-pagination>
+      </div>
+    </div>
+
   `
 })
 export class StudentDashboardComponent implements OnInit, OnDestroy {
@@ -2149,6 +2358,36 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   editais: any[] = [];
   questions: any[] = [];
   activeTab: 'editais' | 'cronogramas' | 'mapa' | 'questions' | 'perfil' | 'estatisticas' = 'editais';
+
+  // ---- Modo Turbo ----
+  turboModeActive = false;
+  showTurboActivationModal = false;
+
+  activateTurboMode() {
+    this.activeTab = 'questions';
+    this.showTurboActivationModal = true;
+  }
+
+  confirmTurboMode() {
+    this.showTurboActivationModal = false;
+    this.turboModeActive = true;
+    // Solicitar tela cheia
+    const el = document.documentElement;
+    if (el.requestFullscreen) {
+      el.requestFullscreen().catch(() => {});
+    } else if ((el as any).webkitRequestFullscreen) {
+      (el as any).webkitRequestFullscreen();
+    }
+  }
+
+  exitTurboMode() {
+    this.turboModeActive = false;
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    } else if ((document as any).webkitExitFullscreen) {
+      (document as any).webkitExitFullscreen();
+    }
+  }
 
   // Modal de Análise Pareto
   showParetoModal = false;
@@ -2323,6 +2562,12 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     private supabaseService: SupabaseService
   ) { }
 
+  private _fullscreenChangeHandler = () => {
+    if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
+      this.turboModeActive = false;
+    }
+  };
+
   ngOnInit() {
     this.user = this.authServiceRef.getCurrentUser();
     this.loadSavedAnswers();
@@ -2331,6 +2576,10 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     this.loadAccuracyStats();
     this.loadUserAnswerMap();
     this.loadStudySessions();
+
+    // Listener para detectar quando o usuário sai do fullscreen via Esc
+    document.addEventListener('fullscreenchange', this._fullscreenChangeHandler);
+    document.addEventListener('webkitfullscreenchange', this._fullscreenChangeHandler);
 
     this.supabaseService.session$.subscribe(session => {
       if (session?.user) {
@@ -2999,6 +3248,8 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.clearUploadLogInterval();
+    document.removeEventListener('fullscreenchange', this._fullscreenChangeHandler);
+    document.removeEventListener('webkitfullscreenchange', this._fullscreenChangeHandler);
   }
 
   private getCurrentTimeStr(): string {

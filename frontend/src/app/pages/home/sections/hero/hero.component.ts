@@ -16,6 +16,7 @@ export class HeroComponent implements AfterViewInit, OnDestroy {
 
   @ViewChild('singleVideo') singleVideo!: ElementRef<HTMLVideoElement>;
   isFading = false;
+  isMuted = true;
   private isRestarting = false;
   private readonly FADE_TIME = 0.25;
   private fadeTimeout: any;
@@ -87,6 +88,7 @@ export class HeroComponent implements AfterViewInit, OnDestroy {
     this.isRestarting = true;
     this.isFading = true;
     vid.currentTime = 0;
+    vid.muted = this.isMuted;
 
     vid.play().then(() => {
       requestAnimationFrame(() => {
@@ -97,6 +99,18 @@ export class HeroComponent implements AfterViewInit, OnDestroy {
       this.isFading = false;
       this.isRestarting = false;
     });
+  }
+
+  toggleSound(): void {
+    const vid = this.singleVideo?.nativeElement;
+    if (!vid) return;
+
+    this.isMuted = !this.isMuted;
+    vid.muted = this.isMuted;
+    if (!this.isMuted) {
+      vid.volume = 1;
+      vid.play().catch(() => {});
+    }
   }
 
   ngOnDestroy(): void {

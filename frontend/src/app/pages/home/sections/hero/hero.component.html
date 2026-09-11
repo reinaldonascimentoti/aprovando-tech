@@ -30,12 +30,22 @@
       <div class="hero__visual">
         <div class="hero__scene-wrapper">
           <div class="scene-ambient-glow" aria-hidden="true"></div>
-          <video #singleVideo class="hero__scene-video" [class.faded]="isFading" src="assets/hero2.mp4" autoplay muted
+          <video #singleVideo class="hero__scene-video" [class.faded]="isFading" src="assets/aprovandotech.mp4" autoplay [muted]="isMuted"
             playsinline preload="auto" aria-label="Demonstração Aprovando Tech" (timeupdate)="onTimeUpdate()"
             (ended)="onVideoEnded()">
-            <source src="assets/hero2.mp4" type="video/mp4" />
+            <source src="assets/aprovandotech.mp4" type="video/mp4" />
             Seu navegador não suporta reprodução de vídeos.
           </video>
+
+          <!-- Floating Sound Toggle Button -->
+          <button type="button" class="hero__sound-toggle" (click)="toggleSound()"
+            [class.hero__sound-toggle--active]="!isMuted"
+            [attr.aria-label]="isMuted ? 'Ativar som' : 'Desativar som'"
+            [title]="isMuted ? 'Ativar som' : 'Silenciar áudio'">
+            <span class="material-symbols-outlined sound-icon" aria-hidden="true">
+              {{ isMuted ? 'volume_off' : 'volume_up' }}
+            </span>
+          </button>
         </div>
       </div>
     </div>
