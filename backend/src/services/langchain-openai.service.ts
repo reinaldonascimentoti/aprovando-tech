@@ -1978,4 +1978,584 @@ Retorne EXCLUSIVAMENTE um JSON (sem texto adicional, sem markdown):
       },
     };
   }
+
+  // ===========================================================================
+  // AGENTE 1 — EXTRATOR DE LEGISLAÇÃO BRASILEIRA
+  // Usa Gemini File API para PDFs e fallback para texto bruto
+  // ===========================================================================
+
+  async extractLegislacao(pdfBuffer: Buffer | null, pdfText: string, fileName: string): Promise<any> {
+    const googleKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
+    if (!googleKey) {
+      throw new Error('GOOGLE_AI_API_KEY não configurada para o Agente Extrator.');
+    }
+
+    const PROMPT_EXTRATOR = `# AGENTE EXTRATOR DE LEGISLAÇÃO BRASILEIRA
+
+## 1. PAPEL DO AGENTE
+
+Você é um **Agente Especialista em Extração e Estruturação de Legislação Brasileira**.
+
+Sua função é receber uma legislação brasileira e transformá-la em uma estrutura de dados organizada, hierárquica e semanticamente preservada.
+
+### REGRA FUNDAMENTAL
+
+Você é um **EXTRATOR**, não um comentarista jurídico.
+
+* NÃO interprete o conteúdo;
+* NÃO explique os artigos;
+* NÃO faça comentários jurídicos;
+* NÃO invente artigos, incisos, parágrafos ou alíneas;
+* NÃO corrija silenciosamente erros existentes no documento.
+
+## 2. HIERARQUIA DO DOCUMENTO
+
+Identifique e preserve: Título → Capítulo → Seção → Subseção → Artigo → Caput → Parágrafo → Inciso → Alínea → Item.
+
+## 3. ARTIGOS
+
+Para cada artigo extraia:
+- número (ex: "1º", "1º-A")
+- título (se existir)
+- texto_original completo
+- status_dispositivo ("vigente_no_documento" ou "revogado")
+- dispositivos (caput, parágrafos, incisos, alíneas, itens)
+
+## 4. DISPOSITIVOS
+
+Tipos: caput | paragrafo | paragrafo_unico | inciso | alinea | item | subitem
+
+## 5. QUALIDADE DA EXTRAÇÃO
+
+Identifique problemas encontrados (trecho ilegível, artigo incompleto, etc.).
+
+## 6. SAÍDA
+
+A resposta deve ser **EXCLUSIVAMENTE JSON válido**. Sem introdução, sem Markdown, sem explicações.
+
+Estrutura obrigatória:
+
+{
+  "legislacao": {
+    "tipo": null,
+    "numero": null,
+    "ano": null,
+    "titulo": null,
+    "ementa": null,
+    "data_publicacao": null,
+    "data_vigencia": null,
+    "orgao_emissor": null,
+    "fonte": null
+  },
+  "estrutura": {
+    "preambulo": null,
+    "titulos": [],
+    "capitulos": [],
+    "secoes": [],
+    "subsecoes": []
+  },
+  "artigos": [
+    {
+      "ordem": 1,
+      "numero": "1º",
+      "titulo": null,
+      "texto_original": "...",
+      "status_dispositivo": "vigente_no_documento",
+      "dispositivos": [
+        {
+          "ordem": 1,
+          "tipo": "caput",
+          "numero": null,
+          "texto_original": "..."
+        }
+      ]
+    }
+  ],
+  "qualidade_extracao": {
+    "status": "completa",
+    "problemas": []
+  }
+}`;
+
+    const genAI = new GoogleGenerativeAI(googleKey);
+    const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+
+    // Tenta com Gemini File API (upload do PDF binário) se buffer disponível
+    if (pdfBuffer && pdfBuffer.length > 0) {
+      const { GoogleAIFileManager } = await import('@google/generative-ai/server');
+      const fileManager = new GoogleAIFileManager(googleKey);
+
+      for (const modelName of modelNames) {
+        let uploadResult: any = null;
+        let tmpPath: string | null = null;
+        try {
+          this.logger.log(`[Extrator] Tentando Gemini File API com modelo ${modelName}...`);
+
+          // Salva temporariamente o buffer para upload
+          const os = await import('os');
+          const path = await import('path');
+          const fs = await import('fs');
+          tmpPath = path.join(os.tmpdir(), `legis_${Date.now()}.pdf`);
+          fs.writeFileSync(tmpPath, pdfBuffer);
+
+          uploadResult = await fileManager.uploadFile(tmpPath, {
+            mimeType: 'application/pdf',
+            displayName: fileName,
+          });
+
+          // Cleanup local file immediately
+          try { fs.unlinkSync(tmpPath); tmpPath = null; } catch {}
+
+          const fileUri = uploadResult.file.uri;
+          const mimeType = uploadResult.file.mimeType;
+
+          const model = genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+              temperature: 0.0,
+              maxOutputTokens: 65536,
+              responseMimeType: 'application/json',
+            },
+          });
+
+          const result = await model.generateContent([
+            { fileData: { fileUri, mimeType } },
+            { text: PROMPT_EXTRATOR },
+          ]);
+
+          const text = result.response.text();
+          if (text && text.trim().length > 10) {
+            const parsed = this.parseJsonResponse(text, 'Extrator-FileAPI');
+            if (parsed && parsed.artigos && Array.isArray(parsed.artigos) && parsed.artigos.length > 0) {
+              this.logger.log(`[Extrator] ✅ File API com ${modelName}: ${parsed.artigos.length} artigos extraídos.`);
+              return parsed;
+            }
+          }
+        } catch (err: any) {
+          this.logger.warn(`[Extrator] File API com ${modelName} falhou: ${err.message}. Tentando próximo...`);
+        } finally {
+          if (tmpPath) {
+            try { const fs = await import('fs'); fs.unlinkSync(tmpPath); } catch {}
+          }
+          if (uploadResult?.file?.name) {
+            try { await fileManager.deleteFile(uploadResult.file.name); } catch {}
+          }
+        }
+      }
+    }
+
+    // Fallback: texto bruto
+    this.logger.warn('[Extrator] Usando fallback com texto bruto...');
+    const textoTruncado = pdfText.substring(0, 180000); // Limita para evitar overflow de contexto
+
+    for (const modelName of modelNames) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            temperature: 0.0,
+            maxOutputTokens: 65536,
+            responseMimeType: 'application/json',
+          },
+        });
+
+        const prompt = `${PROMPT_EXTRATOR}\n\n## LEGISLAÇÃO PARA EXTRAIR:\n\n${textoTruncado}`;
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
+
+        if (text && text.trim().length > 10) {
+          const parsed = this.parseJsonResponse(text, 'Extrator-TextFallback');
+          if (parsed && parsed.artigos) {
+            this.logger.log(`[Extrator] ✅ Fallback texto com ${modelName}: ${parsed.artigos?.length ?? 0} artigos.`);
+            return parsed;
+          }
+        }
+      } catch (err: any) {
+        this.logger.warn(`[Extrator] Fallback texto com ${modelName} falhou: ${err.message}`);
+      }
+    }
+
+    throw new Error('Todos os modelos Gemini falharam na extração da legislação.');
+  }
+
+  // ===========================================================================
+  // AGENTE 2 — COMENTADOR DE LEGISLAÇÃO BRASILEIRA
+  // Processa um artigo por vez com contexto da legislação
+  // ===========================================================================
+
+  async comentarArtigo(
+    artigo: { numero: string; texto_original: string; dispositivos: any[] },
+    legislacaoTitulo: string,
+    legislacaoTipo: string,
+  ): Promise<any> {
+    const googleKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
+    if (!googleKey) {
+      throw new Error('GOOGLE_AI_API_KEY não configurada para o Agente Comentador.');
+    }
+
+    const dispositivosTexto = (artigo.dispositivos || [])
+      .map(d => `  [${d.tipo}${d.numero ? ' ' + d.numero : ''}]: ${d.texto_original}`)
+      .join('\n');
+
+    const PROMPT_COMENTADOR = `# AGENTE COMENTADOR DE LEGISLAÇÃO BRASILEIRA
+
+Você é um **Agente Especialista em Comentários e Explicação de Legislação Brasileira para Estudo e Preparação para Concursos Públicos**.
+
+## LEGISLAÇÃO
+${legislacaoTipo || 'Legislação'}: ${legislacaoTitulo}
+
+## ARTIGO A COMENTAR
+Art. ${artigo.numero}
+
+TEXTO ORIGINAL:
+${artigo.texto_original}
+
+DISPOSITIVOS:
+${dispositivosTexto || '(sem dispositivos adicionais)'}
+
+## INSTRUÇÕES
+
+Para este artigo, produza uma análise didática completa.
+
+### REGRAS FUNDAMENTAIS
+- Baseie-se EXCLUSIVAMENTE no texto fornecido acima.
+- Não invente informações.
+- "poderá" ≠ "deverá" — preserve essa distinção.
+- Preencha apenas os campos que realmente existirem no texto.
+- Se um campo não se aplicar, use null ou [].
+
+### FORMATO DE SAÍDA
+
+Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
+
+{
+  "artigo_numero": "${artigo.numero}",
+  "resumo": "Frase curta: sobre o que trata este artigo?",
+  "explicacao_simples": "Explicação em linguagem acessível, sem perder precisão jurídica.",
+  "comentario_tecnico": "Análise objetiva da estrutura normativa: sujeito, ação, obrigação, direito, condição, etc.",
+  "direitos": [],
+  "obrigacoes": [],
+  "proibicoes": [],
+  "permissoes": [],
+  "requisitos": [],
+  "condicoes": [],
+  "competencias": [],
+  "prazos": [],
+  "excecoes": [],
+  "consequencias": [],
+  "pontos_importantes": [],
+  "pontos_atencao": [],
+  "termos_juridicos": [],
+  "referencias": [],
+  "exemplo_pratico": null,
+  "relevancia_concurso": "alta",
+  "observacao_interpretativa": null,
+  "grau_confianca": "alta"
+}
+
+### RELEVÂNCIA PARA CONCURSOS
+- "alta": prazos, competências, requisitos, exceções, proibições, penalidades, percentuais, números
+- "media": informações importantes mas menos específicas
+- "baixa": informações predominantemente contextuais
+
+### GRAU DE CONFIANÇA
+- "alta": conteúdo claramente determinado pelo texto
+- "media": existe dependência contextual
+- "baixa": dispositivo ambíguo ou depende de informação não fornecida`;
+
+    const genAI = new GoogleGenerativeAI(googleKey);
+    const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+
+    for (const modelName of modelNames) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 8192,
+            responseMimeType: 'application/json',
+          },
+        });
+
+        const result = await model.generateContent(PROMPT_COMENTADOR);
+        const text = result.response.text();
+
+        if (text && text.trim().length > 10) {
+          const parsed = this.parseJsonResponse(text, `Comentador-Art.${artigo.numero}`);
+          if (parsed && parsed.resumo !== undefined) {
+            this.logger.log(`[Comentador] ✅ Art. ${artigo.numero} comentado com ${modelName}.`);
+            return parsed;
+          }
+        }
+      } catch (err: any) {
+        this.logger.warn(`[Comentador] Art. ${artigo.numero} com ${modelName} falhou: ${err.message}`);
+      }
+    }
+
+    throw new Error(`Todos os modelos Gemini falharam ao comentar Art. ${artigo.numero}`);
+  }
+
+  // ===========================================================================
+  // AGENTE 3 — PLANEJADOR E GERENCIADOR DE CRONOGRAMA DE ESTUDOS
+  // Recebe a legislação (Agente 1) + comentários (Agente 2) e gera plano
+  // ===========================================================================
+
+  async gerarPlanoCronograma(
+    legislacao: {
+      id: string;
+      titulo: string;
+      tipo?: string | null;
+      numero?: string | null;
+      ano?: number | null;
+      ementa?: string | null;
+    },
+    artigosComComentarios: any[],
+    preferencias: {
+      data_inicio?: string;
+      data_prova?: string;
+      tempo_diario_minutos?: number;
+      dias_disponiveis?: number[];
+      nivel_estudante?: string;
+      objetivo?: string;
+      prioridade_legislacao?: string;
+    },
+  ): Promise<any> {
+    const googleKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
+    if (!googleKey) {
+      throw new Error('GOOGLE_AI_API_KEY não configurada para o Agente Planejador.');
+    }
+
+    // -----------------------------------------------------------------------
+    // Monta o contexto da legislação para o prompt
+    // -----------------------------------------------------------------------
+    const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const diasStr = preferencias.dias_disponiveis?.length
+      ? preferencias.dias_disponiveis.map(d => diasSemana[d] || d).join(', ')
+      : 'Segunda a Sexta (padrão assumido)';
+
+    const dataHoje = preferencias.data_inicio || new Date().toISOString().split('T')[0];
+
+    // Serializa artigos + comentários de forma concisa para o prompt
+    // Inclui apenas campos relevantes para planejamento (não o texto completo)
+    const artigosContexto = artigosComComentarios.map(a => {
+      const c = Array.isArray(a.legislacao_comentarios)
+        ? a.legislacao_comentarios[0]
+        : a.legislacao_comentarios;
+      return {
+        artigo_id: a.id,
+        numero: a.numero,
+        titulo: a.titulo,
+        status_dispositivo: a.status_dispositivo,
+        // Comentário do Agente 2 (campos relevantes para planejamento)
+        resumo: c?.resumo || null,
+        relevancia_concurso: c?.relevancia_concurso || 'media',
+        grau_confianca: c?.grau_confianca || 'media',
+        prazos: c?.prazos?.length ? c.prazos : [],
+        competencias: c?.competencias?.length ? c.competencias : [],
+        requisitos: c?.requisitos?.length ? c.requisitos : [],
+        excecoes: c?.excecoes?.length ? c.excecoes : [],
+        consequencias: c?.consequencias?.length ? c.consequencias : [],
+        pontos_atencao: c?.pontos_atencao?.length ? c.pontos_atencao : [],
+        pontos_importantes: c?.pontos_importantes?.length ? c.pontos_importantes : [],
+        obrigacoes: c?.obrigacoes?.length ? c.obrigacoes : [],
+        proibicoes: c?.proibicoes?.length ? c.proibicoes : [],
+        comentario_tecnico: c?.comentario_tecnico || null,
+        comentario_status: c?.status || 'pendente',
+      };
+    });
+
+    const PROMPT_PLANEJADOR = `# AGENTE 3 — PLANEJADOR E GERENCIADOR DE CRONOGRAMA DE ESTUDOS
+
+## 1. PAPEL DO AGENTE
+
+Você é um especialista em planejamento de estudos para concursos públicos brasileiros.
+
+Sua função é transformar a legislação estruturada e comentada recebida em um cronograma de estudos organizado, realista, progressivo e adaptável.
+
+Determine: o que estudar, em que ordem, quais artigos estudar juntos, quanto tempo dedicar, quando revisar, quais conteúdos priorizar e como distribuir o conteúdo até a data da prova.
+
+## 2. PRINCÍPIO FUNDAMENTAL
+
+Utilize EXCLUSIVAMENTE as informações fornecidas abaixo. NÃO invente artigos, assuntos, regras, prazos, frequência de cobrança ou informações sobre concursos.
+Se uma informação necessária não estiver disponível, utilize premissas claramente identificadas.
+
+## 3. DADOS DA LEGISLAÇÃO
+
+\`\`\`json
+${JSON.stringify({
+  legislacao_id: legislacao.id,
+  tipo: legislacao.tipo,
+  numero: legislacao.numero,
+  ano: legislacao.ano,
+  titulo: legislacao.titulo,
+  ementa: legislacao.ementa,
+  quantidade_artigos: artigosComComentarios.length,
+}, null, 2)}
+\`\`\`
+
+## 4. ARTIGOS E COMENTÁRIOS (Agentes 1 e 2)
+
+Total de artigos: ${artigosComComentarios.length}
+
+\`\`\`json
+${JSON.stringify(artigosContexto, null, 2)}
+\`\`\`
+
+## 5. PREFERÊNCIAS DO ESTUDANTE
+
+- Data de início: ${dataHoje}
+- Data da prova: ${preferencias.data_prova || 'Não informada'}
+- Tempo disponível por dia: ${preferencias.tempo_diario_minutos || 60} minutos
+- Dias disponíveis: ${diasStr}
+- Nível de conhecimento: ${preferencias.nivel_estudante || 'Não informado'}
+- Objetivo: ${preferencias.objetivo || 'Aprovação em concurso público'}
+- Prioridade desta legislação: ${preferencias.prioridade_legislacao || 'Não informada'}
+
+## 6. INSTRUÇÕES DE PLANEJAMENTO
+
+### ANÁLISE
+Identifique: estrutura formal (títulos, capítulos, seções), artigos relacionados, artigos simples vs. complexos, artigos com prazos/requisitos/competências/exceções, artigos de alta/média/baixa relevância para concurso.
+
+### DIVISÃO EM BLOCOS
+Divida os artigos em blocos temáticos coerentes considerando: estrutura formal, proximidade temática, relação entre artigos, complexidade e relevância.
+Cada bloco deve ter explicitamente a lista de artigos que o compõem.
+
+REGRA: Não divida simplesmente em blocos com a mesma quantidade de artigos. A divisão deve ter coerência temática.
+
+### PRIORIZAÇÃO
+Classifique cada artigo em alta/média/baixa:
+- ALTA: artigos com prazos, competências, requisitos, exceções, proibições, penalidades, consequências, pontos de atenção, alta relevância para concurso
+- MÉDIA: conteúdo relevante mas de menor densidade
+- BAIXA: conteúdo complementar ou contextual
+
+### ESTIMATIVA DE TEMPO
+Estime o tempo de estudo de cada bloco considerando quantidade de artigos, complexidade, densidade normativa, necessidade de memorização. NÃO use tempo fixo por artigo.
+
+### SESSÕES E REVISÕES
+- Distribua as sessões nos dias disponíveis, respeitando o tempo diário informado
+- Inclua revisão espaçada: 24h, 7 dias, 30 dias (quando houver tempo)
+- Se não houver tempo para todo o conteúdo antes da prova, priorize os artigos de alta relevância e informe o que ficará pendente nos alertas
+
+## 7. COBERTURA TOTAL
+Todos os ${artigosComComentarios.length} artigos devem estar em algum bloco. Verifique antes de responder.
+
+## 8. SAÍDA
+
+Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
+
+{
+  "plano_estudo": {
+    "legislacao_id": "${legislacao.id}",
+    "objetivo": "...",
+    "data_inicio": "${dataHoje}",
+    "data_prova": ${preferencias.data_prova ? `"${preferencias.data_prova}"` : 'null'},
+    "tempo_diario_minutos": ${preferencias.tempo_diario_minutos || 60},
+    "dias_disponiveis": ${JSON.stringify(preferencias.dias_disponiveis || [1,2,3,4,5])},
+    "nivel_estudante": "${preferencias.nivel_estudante || 'não informado'}",
+    "estrategia": "...",
+    "premissas": []
+  },
+  "priorizacao": [
+    {
+      "artigo_id": "uuid-do-artigo",
+      "artigo_numero": "1º",
+      "prioridade": "alta",
+      "complexidade": "media",
+      "tempo_estimado_minutos": 20,
+      "motivos": ["possui prazos", "define competências"]
+    }
+  ],
+  "blocos": [
+    {
+      "id": "bloco-1",
+      "ordem": 1,
+      "titulo": "...",
+      "assunto": "...",
+      "artigos": ["1º", "2º", "3º"],
+      "artigo_inicial": "1º",
+      "artigo_final": "3º",
+      "quantidade_artigos": 3,
+      "prioridade": "alta",
+      "complexidade": "media",
+      "tempo_estimado_minutos": 60,
+      "justificativa": "..."
+    }
+  ],
+  "sessoes": [
+    {
+      "id": "sessao-1",
+      "ordem": 1,
+      "data": "${dataHoje}",
+      "bloco_id": "bloco-1",
+      "tipo": "leitura_inicial",
+      "objetivo": "...",
+      "artigos": ["1º", "2º"],
+      "tempo_minutos": 40,
+      "prioridade": "alta"
+    }
+  ],
+  "revisoes": [
+    {
+      "sessao_origem_id": "sessao-1",
+      "tipo": "revisao_24h",
+      "data": "YYYY-MM-DD",
+      "artigos": ["1º", "2º"],
+      "tempo_minutos": 15
+    }
+  ],
+  "resumo": {
+    "total_artigos": ${artigosComComentarios.length},
+    "artigos_planejados": 0,
+    "artigos_prioridade_alta": 0,
+    "artigos_prioridade_media": 0,
+    "artigos_prioridade_baixa": 0,
+    "total_blocos": 0,
+    "total_sessoes": 0,
+    "tempo_total_minutos": 0
+  },
+  "alertas": []
+}
+
+## 9. VALIDAÇÃO ANTES DE RESPONDER
+
+- Todos os ${artigosComComentarios.length} artigos estão em algum bloco?
+- Cada bloco tem a lista explícita de artigos?
+- As sessões respeitam o tempo diário de ${preferencias.tempo_diario_minutos || 60} minutos?
+- As datas são coerentes com a data de início ${dataHoje}?
+- O JSON é válido e completo?
+
+Se qualquer validação falhar, corrija antes de retornar o JSON.`;
+
+    const genAI = new GoogleGenerativeAI(googleKey);
+    const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+
+    for (const modelName of modelNames) {
+      try {
+        this.logger.log(`[Planejador] Tentando gerarPlanoCronograma com modelo ${modelName}...`);
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 65536,
+            responseMimeType: 'application/json',
+          },
+        });
+
+        const result = await model.generateContent(PROMPT_PLANEJADOR);
+        const text = result.response.text();
+
+        if (text && text.trim().length > 10) {
+          const parsed = this.parseJsonResponse(text, `Planejador-${modelName}`);
+          if (parsed && parsed.blocos && Array.isArray(parsed.blocos) && parsed.blocos.length > 0) {
+            this.logger.log(`[Planejador] ✅ ${modelName}: ${parsed.blocos.length} blocos, ${parsed.sessoes?.length ?? 0} sessões gerados.`);
+            return parsed;
+          }
+        }
+      } catch (err: any) {
+        this.logger.warn(`[Planejador] ${modelName} falhou: ${err.message}. Tentando próximo modelo...`);
+      }
+    }
+
+    throw new Error('Todos os modelos Gemini falharam ao gerar o plano de cronograma.');
+  }
 }

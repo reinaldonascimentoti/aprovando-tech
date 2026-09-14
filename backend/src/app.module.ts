@@ -9,6 +9,8 @@ import { PdfProcessingModule } from './modules/pdf-processing/pdf-processing.mod
 import { EditaisModule } from './modules/editais/editais.module';
 import { QuestionsModule } from './modules/questions/questions.module';
 import { UserSchedulesModule } from './modules/user-schedules/user-schedules.module';
+import { LegislacaoModule } from './modules/legislacao/legislacao.module';
+
 
 const env = process.env.NODE_ENV || 'development';
 
@@ -53,6 +55,7 @@ const env = process.env.NODE_ENV || 'development';
     EditaisModule,
     QuestionsModule,
     UserSchedulesModule,
+    LegislacaoModule,
   ],
   controllers: [AppController],
 })

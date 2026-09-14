@@ -277,6 +277,24 @@ export interface AnalysisLogStep {
                 </span>
               </div>
             </button>
+
+            <!-- 7. Legislação Tab -->
+            <button
+              type="button"
+              routerLink="/legislacao"
+              class="p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
+              <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#f3f0ff] dark:bg-purple-950/40 text-[#523bf6] dark:text-purple-300 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
+                <span class="material-symbols-outlined !text-[22px] sm:!text-[24px]">gavel</span>
+              </div>
+              <div class="flex flex-col justify-center">
+                <span class="text-sm sm:text-[15px] font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#523bf6] tracking-tight leading-tight whitespace-nowrap transition-colors">
+                  Legislação
+                </span>
+                <span class="text-xs font-medium text-slate-400 dark:text-slate-400 leading-tight whitespace-nowrap">
+                  Comentários com IA
+                </span>
+              </div>
+            </button>
           </div>
 
           <!-- Ação Novo Edital -->

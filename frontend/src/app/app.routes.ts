@@ -9,6 +9,9 @@ import { DisciplinesSheetComponent } from './pages/disciplines-sheet/disciplines
 import { EditaisCatalogComponent } from './pages/editais-catalog/editais-catalog.component';
 import { AuthCallbackComponent } from './pages/auth-callback/auth-callback.component';
 import { PomodoroComponent } from './pages/pomodoro/pomodoro.component';
+import { LegislacaoListComponent } from './pages/legislacao/legislacao-list.component';
+import { LegislacaoNewComponent } from './pages/legislacao/legislacao-new.component';
+import { LegislacaoDetailComponent } from './pages/legislacao/legislacao-detail.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent, pathMatch: 'full' },
@@ -22,8 +25,12 @@ export const routes: Routes = [
   { path: 'editais-catalog', component: EditaisCatalogComponent },
   { path: 'pomodoro', component: PomodoroComponent },
   { path: 'pomodoro/:editalId', component: PomodoroComponent },
-  { path: '**', redirectTo: '' }
+  { path: 'legislacao', component: LegislacaoListComponent },
+  { path: 'legislacao/nova', component: LegislacaoNewComponent },
+  { path: 'legislacao/:id', component: LegislacaoDetailComponent },
+  { path: '**', redirectTo: '' },
 ];
+
 
 
 

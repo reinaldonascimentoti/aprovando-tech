@@ -989,4 +989,406 @@ export class SupabaseService {
     }
     return true;
   }
+
+  // ----------------------------------------------------------------
+  // LEGISLAÇÕES — Comentador de Legislação
+  // ----------------------------------------------------------------
+
+  async createLegislacao(data: {
+    user_id: string;
+    titulo: string;
+    tipo?: string;
+    numero?: string;
+    ano?: number;
+  }) {
+    if (!this.adminClient) return null;
+    const { data: row, error } = await this.adminClient
+      .from('legislacoes')
+      .insert({
+        user_id: data.user_id,
+        titulo: data.titulo,
+        tipo: data.tipo || null,
+        numero: data.numero || null,
+        ano: data.ano || null,
+        status: 'pendente',
+      })
+      .select()
+      .single();
+    if (error) { this.logger.error(`createLegislacao error: ${error.message}`); return null; }
+    return row;
+  }
+
+  async updateLegislacao(id: string, updates: Record<string, any>) {
+    if (!this.adminClient) return null;
+    const { data: row, error } = await this.adminClient
+      .from('legislacoes')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) { this.logger.error(`updateLegislacao error: ${error.message}`); return null; }
+    return row;
+  }
+
+  async getLegislacaoById(id: string) {
+    if (!this.adminClient) return null;
+    const { data, error } = await this.adminClient
+      .from('legislacoes')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) { this.logger.warn(`getLegislacaoById error: ${error.message}`); return null; }
+    return data;
+  }
+
+  async listLegislacoesByUser(userId: string) {
+    if (!this.adminClient) return [];
+    const { data, error } = await this.adminClient
+      .from('legislacoes')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) { this.logger.error(`listLegislacoesByUser error: ${error.message}`); return []; }
+    return data ?? [];
+  }
+
+  async deleteLegislacao(id: string) {
+    if (!this.adminClient) return false;
+    const { error } = await this.adminClient.from('legislacoes').delete().eq('id', id);
+    if (error) { this.logger.error(`deleteLegislacao error: ${error.message}`); return false; }
+    return true;
+  }
+
+  async uploadLegislacaoFile(userId: string, legislacaoId: string, buffer: Buffer, fileName: string): Promise<string | null> {
+    if (!this.adminClient) return null;
+    const storagePath = `${userId}/${legislacaoId}/${fileName}`;
+    const { error } = await this.adminClient.storage
+      .from('legislacao')
+      .upload(storagePath, buffer, { contentType: 'application/pdf', upsert: true });
+    if (error) { this.logger.error(`uploadLegislacaoFile error: ${error.message}`); return null; }
+    return storagePath;
+  }
+
+  // ----------------------------------------------------------------
+  // ARTIGOS
+  // ----------------------------------------------------------------
+
+  async createArtigosLote(legislacaoId: string, artigos: {
+    ordem: number;
+    numero: string;
+    titulo?: string | null;
+    texto_original: string;
+    status_dispositivo?: string;
+    estrutura?: any;
+  }[]) {
+    if (!this.adminClient || artigos.length === 0) return [];
+    const rows = artigos.map(a => ({
+      legislacao_id: legislacaoId,
+      ordem: a.ordem,
+      numero: a.numero,
+      titulo: a.titulo || null,
+      texto_original: a.texto_original,
+      status_dispositivo: a.status_dispositivo || 'vigente_no_documento',
+      estrutura: a.estrutura ? { dispositivos: a.estrutura } : { dispositivos: [] },
+    }));
+    const { data, error } = await this.adminClient
+      .from('legislacao_artigos')
+      .insert(rows)
+      .select();
+    if (error) { this.logger.error(`createArtigosLote error: ${error.message}`); return []; }
+    return data ?? [];
+  }
+
+  async listArtigosByLegislacao(legislacaoId: string) {
+    if (!this.adminClient) return [];
+    const { data, error } = await this.adminClient
+      .from('legislacao_artigos')
+      .select('*, legislacao_comentarios(id, status, resumo, grau_confianca, erro)')
+      .eq('legislacao_id', legislacaoId)
+      .order('ordem', { ascending: true });
+    if (error) { this.logger.error(`listArtigosByLegislacao error: ${error.message}`); return []; }
+    return data ?? [];
+  }
+
+  async getArtigoById(artigoId: string) {
+    if (!this.adminClient) return null;
+    const { data, error } = await this.adminClient
+      .from('legislacao_artigos')
+      .select('*')
+      .eq('id', artigoId)
+      .single();
+    if (error) { this.logger.warn(`getArtigoById error: ${error.message}`); return null; }
+    return data;
+  }
+
+  // ----------------------------------------------------------------
+  // COMENTÁRIOS
+  // ----------------------------------------------------------------
+
+  async upsertComentario(legislacaoId: string, artigoId: string, comentario: Record<string, any>, status: 'concluido' | 'erro', erro?: string) {
+    if (!this.adminClient) return null;
+    const payload: Record<string, any> = {
+      legislacao_id: legislacaoId,
+      artigo_id: artigoId,
+      status,
+      erro: erro || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (status === 'concluido' && comentario) {
+      const jsonFields = ['direitos','obrigacoes','proibicoes','permissoes','requisitos','condicoes','competencias','prazos','excecoes','consequencias','pontos_importantes','pontos_atencao','termos_juridicos','referencias'];
+      Object.assign(payload, {
+        resumo: comentario.resumo || null,
+        explicacao_simples: comentario.explicacao_simples || null,
+        comentario_tecnico: comentario.comentario_tecnico || null,
+        exemplo_pratico: comentario.exemplo_pratico || null,
+        relevancia_concurso: comentario.relevancia_concurso || 'media',
+        observacao_interpretativa: comentario.observacao_interpretativa || null,
+        grau_confianca: comentario.grau_confianca || 'alta',
+      });
+      for (const f of jsonFields) {
+        payload[f] = Array.isArray(comentario[f]) ? comentario[f] : [];
+      }
+    }
+
+    const { data, error } = await this.adminClient
+      .from('legislacao_comentarios')
+      .upsert(payload, { onConflict: 'artigo_id' })
+      .select()
+      .single();
+    if (error) { this.logger.error(`upsertComentario error: ${error.message}`); return null; }
+    return data;
+  }
+
+  async getComentarioByArtigo(artigoId: string) {
+    if (!this.adminClient) return null;
+    const { data, error } = await this.adminClient
+      .from('legislacao_comentarios')
+      .select('*')
+      .eq('artigo_id', artigoId)
+      .single();
+    if (error && error.code !== 'PGRST116') { this.logger.warn(`getComentarioByArtigo error: ${error.message}`); }
+    return data || null;
+  }
+
+  // ----------------------------------------------------------------
+  // PROCESSAMENTOS
+  // ----------------------------------------------------------------
+
+  async upsertProcessamento(legislacaoId: string, etapa: string, updates: {
+    status?: string;
+    quantidade_total?: number;
+    quantidade_processada?: number;
+    erro?: string | null;
+  }) {
+    if (!this.adminClient) return null;
+    // Tenta encontrar registro existente
+    const { data: existing } = await this.adminClient
+      .from('legislacao_processamentos')
+      .select('id')
+      .eq('legislacao_id', legislacaoId)
+      .eq('etapa', etapa)
+      .maybeSingle();
+
+    if (existing) {
+      const { data, error } = await this.adminClient
+        .from('legislacao_processamentos')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (error) { this.logger.error(`upsertProcessamento update error: ${error.message}`); return null; }
+      return data;
+    } else {
+      const { data, error } = await this.adminClient
+        .from('legislacao_processamentos')
+        .insert({ legislacao_id: legislacaoId, etapa, ...updates })
+        .select()
+        .single();
+      if (error) { this.logger.error(`upsertProcessamento insert error: ${error.message}`); return null; }
+      return data;
+    }
+  }
+
+  async getProcessamentosByLegislacao(legislacaoId: string) {
+    if (!this.adminClient) return [];
+    const { data, error } = await this.adminClient
+      .from('legislacao_processamentos')
+      .select('*')
+      .eq('legislacao_id', legislacaoId)
+      .order('created_at', { ascending: true });
+    if (error) { this.logger.error(`getProcessamentosByLegislacao error: ${error.message}`); return []; }
+    return data ?? [];
+  }
+
+  // ----------------------------------------------------------------
+  // PLANOS DE ESTUDO — Agente 3: Planejador de Cronograma
+  // ----------------------------------------------------------------
+
+  /**
+   * Cria ou substitui o plano de estudo de uma legislação para um usuário.
+   * Usa upsert para garantir apenas um plano ativo por legislação+usuário.
+   */
+  async upsertPlanoLegislacao(
+    legislacaoId: string,
+    userId: string,
+    updates: Record<string, any>,
+  ) {
+    if (!this.adminClient) return null;
+    const { data, error } = await this.adminClient
+      .from('legislacao_planos')
+      .upsert(
+        {
+          legislacao_id: legislacaoId,
+          user_id: userId,
+          ...updates,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'legislacao_id,user_id' },
+      )
+      .select()
+      .single();
+    if (error) { this.logger.error(`upsertPlanoLegislacao error: ${error.message}`); return null; }
+    return data;
+  }
+
+  /**
+   * Busca o plano de estudo de uma legislação para um usuário.
+   */
+  async getPlanoByLegislacao(legislacaoId: string, userId: string) {
+    if (!this.adminClient) return null;
+    const { data, error } = await this.adminClient
+      .from('legislacao_planos')
+      .select('*')
+      .eq('legislacao_id', legislacaoId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) { this.logger.warn(`getPlanoByLegislacao error: ${error.message}`); return null; }
+    return data || null;
+  }
+
+  /**
+   * Lista artigos de uma legislação com seus comentários completos.
+   * Usado pelo Agente 3 para montar o contexto de análise.
+   */
+  async listArtigosComComentarios(legislacaoId: string) {
+    if (!this.adminClient) return [];
+    const { data, error } = await this.adminClient
+      .from('legislacao_artigos')
+      .select(`
+        id,
+        ordem,
+        numero,
+        titulo,
+        texto_original,
+        status_dispositivo,
+        estrutura,
+        legislacao_comentarios (
+          resumo,
+          explicacao_simples,
+          comentario_tecnico,
+          direitos,
+          obrigacoes,
+          proibicoes,
+          permissoes,
+          requisitos,
+          condicoes,
+          competencias,
+          prazos,
+          excecoes,
+          consequencias,
+          pontos_importantes,
+          pontos_atencao,
+          termos_juridicos,
+          referencias,
+          exemplo_pratico,
+          relevancia_concurso,
+          observacao_interpretativa,
+          grau_confianca,
+          status
+        )
+      `)
+      .eq('legislacao_id', legislacaoId)
+      .order('ordem', { ascending: true });
+    if (error) { this.logger.error(`listArtigosComComentarios error: ${error.message}`); return []; }
+    return data ?? [];
+  }
+
+  /**
+   * Busca lista de números dos artigos marcados como lidos pelo usuário para esta legislação.
+   */
+  async getArtigosLidos(legislacaoId: string, userId: string): Promise<string[]> {
+    if (!this.adminClient || !userId) return [];
+    const { data, error } = await this.adminClient
+      .from('legislacao_artigos_lidos')
+      .select('artigo_numero')
+      .eq('legislacao_id', legislacaoId)
+      .eq('user_id', userId);
+    if (error) {
+      this.logger.warn(`getArtigosLidos error: ${error.message}`);
+      return [];
+    }
+    return (data || []).map((row: any) => String(row.artigo_numero));
+  }
+
+  /**
+   * Marca ou desmarca um artigo como lido pelo usuário.
+   * Também sincroniza a coluna artigos_lidos em legislacao_planos.
+   */
+  async toggleArtigoLido(
+    legislacaoId: string,
+    artigoId: string,
+    artigoNumero: string,
+    userId: string,
+    lido?: boolean,
+  ): Promise<{ lido: boolean; artigos_lidos: string[] }> {
+    if (!this.adminClient || !userId) return { lido: false, artigos_lidos: [] };
+
+    const { data: existing } = await this.adminClient
+      .from('legislacao_artigos_lidos')
+      .select('id')
+      .eq('legislacao_id', legislacaoId)
+      .eq('artigo_id', artigoId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const shouldBeLido = lido !== undefined ? lido : !existing;
+
+    if (shouldBeLido) {
+      if (!existing) {
+        await this.adminClient
+          .from('legislacao_artigos_lidos')
+          .insert({
+            legislacao_id: legislacaoId,
+            artigo_id: artigoId,
+            artigo_numero: String(artigoNumero),
+            user_id: userId,
+          });
+      }
+    } else {
+      if (existing) {
+        await this.adminClient
+          .from('legislacao_artigos_lidos')
+          .delete()
+          .eq('legislacao_id', legislacaoId)
+          .eq('artigo_id', artigoId)
+          .eq('user_id', userId);
+      }
+    }
+
+    const artigosLidos = await this.getArtigosLidos(legislacaoId, userId);
+
+    try {
+      await this.adminClient
+        .from('legislacao_planos')
+        .update({ artigos_lidos: artigosLidos, updated_at: new Date().toISOString() })
+        .eq('legislacao_id', legislacaoId)
+        .eq('user_id', userId);
+    } catch (e: any) {
+      this.logger.warn(`Falha ao sincronizar artigos_lidos no plano: ${e.message}`);
+    }
+
+    return { lido: shouldBeLido, artigos_lidos: artigosLidos };
+  }
 }
+
