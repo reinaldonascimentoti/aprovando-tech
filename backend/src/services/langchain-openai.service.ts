@@ -112,7 +112,7 @@ class GeminiProvider implements LLMProvider {
   private models: { name: string; model: GenerativeModel; jsonModel: GenerativeModel }[];
 
   constructor(genAI: GoogleGenerativeAI, private logger: Logger) {
-    const candidates = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+    const candidates = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash'];
     this.models = candidates.map(name => ({
       name,
       model: genAI.getGenerativeModel({
@@ -687,7 +687,7 @@ Retorne a resposta EXCLUSIVAMENTE em formato JSON (Array de objetos), onde cada 
       this.logger.log(`[Gemini File API] 2. Analisando o edital e extraindo os dados com schema estrito para o cargo: "${params.cargo}"...`);
 
       const genAI = new GoogleGenerativeAI(apiKey);
-      const candidates = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+      const candidates = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash'];
       let result: any = null;
       let lastFileError: any = null;
 
@@ -2079,7 +2079,7 @@ Estrutura obrigatória:
 }`;
 
     const genAI = new GoogleGenerativeAI(googleKey);
-    const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+    const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash'];
 
     // Tenta com Gemini File API (upload do PDF binário) se buffer disponível
     if (pdfBuffer && pdfBuffer.length > 0) {
@@ -2418,7 +2418,7 @@ Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
 }`;
 
     const genAI = new GoogleGenerativeAI(googleKey);
-    const modelNames = ['gemini-1.5-pro', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+    const modelNames = ['gemini-1.5-pro', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash'];
 
     for (const modelName of modelNames) {
       try {
@@ -2672,7 +2672,7 @@ ${JSON.stringify(artigosContexto, null, 2)}
 }`;
 
     const genAI = new GoogleGenerativeAI(googleKey);
-    const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+    const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash'];
 
     for (const modelName of modelNames) {
       try {
@@ -2915,7 +2915,7 @@ ${JSON.stringify(artigosContexto, null, 2)}
 }`;
 
     const genAI = new GoogleGenerativeAI(googleKey);
-    const modelNames = ['gemini-1.5-pro', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+    const modelNames = ['gemini-1.5-pro', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash'];
 
     for (const modelName of modelNames) {
       try {
