@@ -58,6 +58,32 @@ export class LegislacaoService {
     return legislacao;
   }
 
+  async reprocessarLegislacao(legislacaoId: string, userId: string) {
+    this.logger.log(`[Legislação] Reprocessando legislacaoId=${legislacaoId} para userId=${userId}`);
+    const legislacao = await this.supabaseService.getLegislacaoDetails(legislacaoId, userId);
+    if (!legislacao) {
+      throw new NotFoundException('Legislação não encontrada');
+    }
+
+    let fileMock: Express.Multer.File | undefined = undefined;
+    if (legislacao.arquivo_path) {
+      const buffer = await this.supabaseService.downloadLegislacaoFile(legislacao.arquivo_path);
+      if (buffer) {
+        fileMock = {
+          buffer,
+          originalname: legislacao.arquivo_nome || 'documento.pdf',
+        } as Express.Multer.File;
+      }
+    }
+
+    // Inicia o processamento em background
+    this.processarLegislacao(legislacaoId, fileMock, legislacao.titulo, legislacao.tipo || undefined, legislacao.fonte || undefined).catch(err => {
+      this.logger.error(`[Legislação] Erro no reprocessamento em background para ${legislacaoId}: ${err.message}`);
+    });
+
+    return { message: 'Reprocessamento iniciado' };
+  }
+
   // ---------------------------------------------------------------
   // Pipeline completo: Extrator → Artigos → Comentador
   // ---------------------------------------------------------------

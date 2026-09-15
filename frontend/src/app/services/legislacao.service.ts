@@ -433,6 +433,16 @@ export class LegislacaoService {
     );
   }
 
+  reprocessarLegislacao(legislacaoId: string): Observable<any> {
+    const userId = this.supabaseService.currentUser?.id;
+    if (!userId) throw new Error('Usuário não autenticado.');
+    return this.http.post<any>(
+      `${this.baseUrl}/legislacao/${legislacaoId}/reprocessar`,
+      { userId },
+      { headers: this.getHeaders() },
+    );
+  }
+
   excluir(id: string): Observable<any> {
     return this.http.delete<any>(`${this.baseUrl}/legislacao/${id}`, { headers: this.getHeaders() });
   }

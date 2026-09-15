@@ -267,6 +267,19 @@ export class LegislacaoController {
     };
   }
 
+  // Reprocessar a legislação inteira (em caso de falha de extração)
+  @Post(':id/reprocessar')
+  async reprocessarLegislacao(
+    @Param('id') legislacaoId: string,
+    @Query('userId') queryUserId?: string,
+    @Body('userId') bodyUserId?: string,
+  ) {
+    const userId = queryUserId || bodyUserId;
+    if (!userId) throw new BadRequestException('userId é obrigatório');
+    
+    return this.legislacaoService.reprocessarLegislacao(legislacaoId, userId);
+  }
+
   // Reprocessar artigo específico (retry)
   @Post(':id/artigos/:artigoId/reprocessar')
   async reprocessarArtigo(

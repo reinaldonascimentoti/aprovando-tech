@@ -1071,6 +1071,19 @@ export class SupabaseService {
     return storagePath;
   }
 
+  async downloadLegislacaoFile(storagePath: string): Promise<Buffer | null> {
+    if (!this.adminClient) return null;
+    const { data, error } = await this.adminClient.storage
+      .from('legislacao')
+      .download(storagePath);
+    if (error || !data) {
+      this.logger.error(`downloadLegislacaoFile error: ${error?.message || 'Arquivo não encontrado'}`);
+      return null;
+    }
+    const arrayBuffer = await data.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  }
+
   // ----------------------------------------------------------------
   // ARTIGOS
   // ----------------------------------------------------------------

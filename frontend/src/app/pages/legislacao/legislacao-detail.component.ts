@@ -51,14 +51,21 @@ import { Subscription } from 'rxjs';
             <span class="text-[var(--on-surface-variant)] truncate">
               {{ legislacao.tipo }} {{ legislacao.numero ? 'nº ' + legislacao.numero : '' }}{{ legislacao.ano ? '/' + legislacao.ano : '' }}
             </span>
-            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border flex-shrink-0"
-              [style.background-color]="legislacaoService.getStatusColor(legislacao.status) + '15'"
-              [style.color]="legislacaoService.getStatusColor(legislacao.status)"
-              [style.border-color]="legislacaoService.getStatusColor(legislacao.status) + '40'">
-              <span *ngIf="isProcessing" class="inline-block w-1.5 h-1.5 rounded-full animate-pulse"
-                [style.background-color]="legislacaoService.getStatusColor(legislacao.status)"></span>
-              {{ legislacaoService.getStatusLabel(legislacao.status || 'pendente') }}
-            </span>
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border flex-shrink-0"
+                [style.background-color]="legislacaoService.getStatusColor(legislacao.status) + '15'"
+                [style.color]="legislacaoService.getStatusColor(legislacao.status)"
+                [style.border-color]="legislacaoService.getStatusColor(legislacao.status) + '40'">
+                <span *ngIf="isProcessing" class="inline-block w-1.5 h-1.5 rounded-full animate-pulse"
+                  [style.background-color]="legislacaoService.getStatusColor(legislacao.status)"></span>
+                {{ legislacaoService.getStatusLabel(legislacao.status || 'pendente') }}
+              </span>
+              <button *ngIf="legislacao.status === 'erro'" (click)="reprocessar()"
+                class="px-2 py-0.5 rounded-full text-[10px] font-bold border border-red-500/40 text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-1 cursor-pointer">
+                <span class="material-symbols-outlined !text-[12px]">refresh</span>
+                Tentar Novamente
+              </button>
+            </div>
           </div>
         </div>
 
@@ -163,7 +170,7 @@ import { Subscription } from 'rxjs';
               </div>
 
               <div class="overflow-y-auto max-h-56 pr-1 custom-scroll flex flex-col gap-0.5">
-                <button *ngFor="let artigo of artigosFiltrados"
+                <button *ngFor="let artigo of artigosFiltrados; trackBy: trackById"
                   type="button"
                   (click)="selecionarArtigoViaDropdown(artigo)"
                   class="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-left transition-all text-xs"
@@ -230,7 +237,7 @@ import { Subscription } from 'rxjs';
           <span class="material-symbols-outlined !text-[16px] text-[var(--primary)]">track_changes</span>
           Progresso
         </h3>
-        <div *ngFor="let p of processamentos" class="flex flex-col gap-2">
+        <div *ngFor="let p of processamentos; trackBy: trackByEtapa" class="flex flex-col gap-2">
           <div class="flex items-center justify-between gap-2">
             <span class="text-xs font-semibold text-[var(--on-surface)] flex items-center gap-1.5">
               <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black"
@@ -2365,6 +2372,13 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
     private ngZone: NgZone,
     private cdr: ChangeDetectorRef,
   ) {}
+  trackById(index: number, item: any): string {
+    return item?.id || index;
+  }
+
+  trackByEtapa(index: number, item: any): string {
+    return item?.etapa || index;
+  }
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
@@ -2418,6 +2432,30 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
     this.subs.push(sub);
   }
 
+  reprocessar() {
+    if (!this.legislacao || this.legislacao.status !== 'erro') return;
+    
+    // Altera otimisticamente o status para dar feedback imediato
+    this.legislacao.status = 'pendente';
+    this.cdr.markForCheck();
+
+    const sub = this.legislacaoService.reprocessarLegislacao(this.legislacao.id).subscribe({
+      next: () => {
+        // Reinicia o polling se precisar
+        this.iniciarPolling(this.legislacao!.id);
+      },
+      error: (err) => {
+        console.error('Erro ao reprocessar:', err);
+        // Volta para erro em caso de falha de rede
+        if (this.legislacao) {
+          this.legislacao.status = 'erro';
+          this.cdr.markForCheck();
+        }
+      }
+    });
+    this.subs.push(sub);
+  }
+
   iniciarPolling(id: string) {
     if (this.pollingTimer) {
       clearInterval(this.pollingTimer);
@@ -2439,10 +2477,11 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
             this.processamentos = data.processamentos || [];
             this.artigos = data.artigos || [];
             if (this.artigoSelecionado) {
+              const prevComentarioStatus = this.getComentarioStatus(this.artigoSelecionado);
               const atualizado = this.artigos.find((a: LegislacaoArtigo) => a.id === this.artigoSelecionado!.id);
               if (atualizado) {
                 this.artigoSelecionado = atualizado;
-                if (this.getComentarioStatus(atualizado) === 'concluido' && prevStatus !== 'concluida') {
+                if (this.getComentarioStatus(atualizado) === 'concluido' && prevComentarioStatus !== 'concluido') {
                   this.carregarComentario();
                 }
               }
@@ -2473,10 +2512,11 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
             const novosArtigos = data.artigos || [];
             this.artigos = novosArtigos;
             if (this.artigoSelecionado) {
+              const prevComentarioStatus = this.getComentarioStatus(this.artigoSelecionado);
               const atualizado = novosArtigos.find((a: LegislacaoArtigo) => a.id === this.artigoSelecionado!.id);
               if (atualizado) {
                 this.artigoSelecionado = atualizado;
-                if (this.getComentarioStatus(atualizado) === 'concluido' && prevStatus !== 'concluida') {
+                if (this.getComentarioStatus(atualizado) === 'concluido' && prevComentarioStatus !== 'concluido') {
                   this.carregarComentario();
                 }
               }

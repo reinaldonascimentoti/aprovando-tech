@@ -1266,7 +1266,7 @@ export interface AnalysisLogStep {
 
           <div class="flex flex-col gap-4 sm:gap-5">
             <app-question-card 
-              *ngFor="let q of paginatedQuestions; let i = index" 
+              *ngFor="let q of paginatedQuestions; let i = index; trackBy: trackById" 
               [question]="q" 
               [index]="(questionsCurrentPage - 1) * questionsPageSize + i"
               [isResolved]="isQuestionResolved(q)"
@@ -2350,7 +2350,7 @@ export interface AnalysisLogStep {
       <!-- Turbo Mode Scrollable Questions Area -->
       <div class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
         <app-question-card
-          *ngFor="let q of paginatedQuestions; let i = index"
+          *ngFor="let q of paginatedQuestions; let i = index; trackBy: trackById"
           [question]="q"
           [index]="(questionsCurrentPage - 1) * questionsPageSize + i"
           [isResolved]="isQuestionResolved(q)"
@@ -2584,6 +2584,10 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
       this.turboModeActive = false;
     }
   };
+
+  trackById(index: number, item: any): string {
+    return item?.id || index;
+  }
 
   ngOnInit() {
     this.user = this.authServiceRef.getCurrentUser();

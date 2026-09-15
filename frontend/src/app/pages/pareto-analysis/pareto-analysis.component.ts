@@ -134,7 +134,7 @@ import { ParetoAnalysisModalComponent } from '../../components/pareto-analysis-m
 
         <!-- Disciplina Rows (Accordion) -->
         <div class="space-y-3">
-          <div *ngFor="let disc of disciplinas; let i = index">
+          <div *ngFor="let disc of disciplinas; let i = index; trackBy: trackByNome">
             <!-- Disciplina Row -->
             <div
               (click)="toggleDisciplina(i)"
@@ -194,7 +194,7 @@ import { ParetoAnalysisModalComponent } from '../../components/pareto-analysis-m
                 <div class="col-span-2 text-center">Subtópicos</div>
               </div>
 
-              <div *ngFor="let topico of disc.camada_2_topicos; let j = index">
+              <div *ngFor="let topico of disc.camada_2_topicos; let j = index; trackBy: trackByNome">
                 <div
                   (click)="toggleTopico(i, j); $event.stopPropagation()"
                   class="bg-[var(--surface-container)] border border-[var(--outline-variant)] rounded-xl p-3 md:p-4 cursor-pointer transition-all hover:scale-[1.001]"
@@ -247,7 +247,7 @@ import { ParetoAnalysisModalComponent } from '../../components/pareto-analysis-m
                     <div class="col-span-2 text-center">Incluir?</div>
                   </div>
 
-                  <div *ngFor="let sub of topico.camada_3_subtopicos"
+                  <div *ngFor="let sub of topico.camada_3_subtopicos; trackBy: trackByNome"
                        class="rounded-lg p-3 transition-all"
                        [ngClass]="sub.incluir ? 'bg-[var(--surface-container-low)] border border-[var(--outline-variant)]' : 'bg-[var(--surface-container-highest)] opacity-50 border border-[var(--outline-variant)]'">
                     <div class="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
@@ -503,6 +503,10 @@ export class ParetoAnalysisComponent implements OnInit {
     private router: Router,
     private apiService: ApiService
   ) {}
+
+  trackByNome(index: number, item: any): string {
+    return item?.nome || index;
+  }
 
   ngOnInit() {
     const idFromRoute = this.route.snapshot.paramMap.get('id');
