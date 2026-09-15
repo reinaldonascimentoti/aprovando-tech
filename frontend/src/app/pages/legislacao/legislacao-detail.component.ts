@@ -378,17 +378,26 @@ import { Subscription } from 'rxjs';
         </div>
 
         <!-- Estado: Erro -->
-        <div *ngIf="!loadingAnaliseEstrategica && !gerandoAnaliseEstrategica && analiseEstrategica?.status === 'erro'" class="neo-raised rounded-2xl p-6 bg-[var(--card-bg)] flex flex-col gap-3">
-          <div class="rounded-xl p-4 bg-[var(--error)]/10 border border-[var(--error)]/30 flex items-start gap-3">
-            <span class="material-symbols-outlined !text-[20px] text-[var(--error)] mt-0.5">error</span>
-            <div>
-              <p class="text-sm font-bold text-[var(--error)]">Falha ao gerar a análise estratégica</p>
-              <p class="text-xs text-[var(--on-surface-variant)] mt-1">{{ analiseEstrategica?.erro || 'Ocorreu um erro inesperado.' }}</p>
+        <div *ngIf="!loadingAnaliseEstrategica && !gerandoAnaliseEstrategica && analiseEstrategica?.status === 'erro'" class="neo-raised rounded-3xl p-10 flex flex-col items-center justify-center text-center gap-5 bg-[var(--card-bg)] border border-red-500/10">
+          <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-red-500/20 to-orange-500/20 flex items-center justify-center relative shadow-inner">
+            <span class="material-symbols-outlined !text-[40px] text-red-500">smart_toy</span>
+            <span class="absolute -bottom-2 -right-2 w-6 h-6 bg-[var(--card-bg)] rounded-full flex items-center justify-center">
+              <span class="material-symbols-outlined !text-[14px] text-red-500">warning</span>
+            </span>
+          </div>
+          <div class="max-w-md">
+            <p class="text-base font-black text-[var(--on-surface)]">Agente 3 Indisponível</p>
+            <p class="text-xs text-[var(--on-surface-variant)] mt-2 leading-relaxed">
+              Nossos agentes de IA estão enfrentando instabilidade ou alta demanda. Não foi possível concluir a análise estratégica neste momento.
+            </p>
+            <div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 w-full justify-center">
+              <span class="material-symbols-outlined !text-[14px] text-red-500">terminal</span>
+              <span class="text-[10px] font-mono text-red-600 dark:text-red-400 line-clamp-2">{{ analiseEstrategica?.erro || 'Timeout ou falha na comunicação' }}</span>
             </div>
           </div>
-          <button (click)="confirmarGerarAnaliseEstrategica()" class="self-start px-4 py-2 rounded-xl text-xs font-bold bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25 transition-all flex items-center gap-2">
-            <span class="material-symbols-outlined !text-[15px]">refresh</span>
-            Tentar novamente
+          <button (click)="confirmarGerarAnaliseEstrategica()" class="px-6 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-red-500 to-orange-500 hover:opacity-90 text-white shadow-lg shadow-red-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 mt-2 cursor-pointer">
+            <span class="material-symbols-outlined !text-[18px]">refresh</span>
+            <span>Tentar Novamente</span>
           </button>
         </div>
 
@@ -717,17 +726,26 @@ import { Subscription } from 'rxjs';
         </div>
 
         <!-- Estado: Erro -->
-        <div *ngIf="!loadingPlano && plano?.status === 'erro'" class="neo-raised rounded-2xl p-6 bg-[var(--card-bg)] flex flex-col gap-3">
-          <div class="rounded-xl p-4 bg-[var(--error)]/10 border border-[var(--error)]/30 flex items-start gap-3">
-            <span class="material-symbols-outlined !text-[20px] text-[var(--error)] mt-0.5">error</span>
-            <div>
-              <p class="text-sm font-bold text-[var(--error)]">Falha ao gerar o cronograma</p>
-              <p class="text-xs text-[var(--on-surface-variant)] mt-1">{{ plano?.erro }}</p>
+        <div *ngIf="!loadingPlano && plano?.status === 'erro'" class="neo-raised rounded-3xl p-10 flex flex-col items-center justify-center text-center gap-5 bg-[var(--card-bg)] border border-red-500/10">
+          <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-red-500/20 to-orange-500/20 flex items-center justify-center relative shadow-inner">
+            <span class="material-symbols-outlined !text-[40px] text-red-500">smart_toy</span>
+            <span class="absolute -bottom-2 -right-2 w-6 h-6 bg-[var(--card-bg)] rounded-full flex items-center justify-center">
+              <span class="material-symbols-outlined !text-[14px] text-red-500">warning</span>
+            </span>
+          </div>
+          <div class="max-w-md">
+            <p class="text-base font-black text-[var(--on-surface)]">Agente 4 Indisponível</p>
+            <p class="text-xs text-[var(--on-surface-variant)] mt-2 leading-relaxed">
+              Ocorreu uma instabilidade na comunicação com a IA responsável por montar cronogramas. Por favor, tente novamente em alguns instantes.
+            </p>
+            <div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 w-full justify-center">
+              <span class="material-symbols-outlined !text-[14px] text-red-500">terminal</span>
+              <span class="text-[10px] font-mono text-red-600 dark:text-red-400 line-clamp-2">{{ plano?.erro || 'Timeout ou falha na comunicação' }}</span>
             </div>
           </div>
-          <button (click)="abrirModalPreferencias()" class="self-start px-4 py-2 rounded-xl text-xs font-bold bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25 transition-all flex items-center gap-2">
-            <span class="material-symbols-outlined !text-[15px]">refresh</span>
-            Tentar novamente
+          <button (click)="abrirModalPreferencias()" class="px-6 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-red-500 to-orange-500 hover:opacity-90 text-white shadow-lg shadow-red-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 mt-2 cursor-pointer">
+            <span class="material-symbols-outlined !text-[18px]">refresh</span>
+            <span>Tentar Novamente</span>
           </button>
         </div>
 
@@ -1142,17 +1160,26 @@ import { Subscription } from 'rxjs';
         </div>
 
         <!-- Estado 4: Erro -->
-        <div *ngIf="!loadingMaterialConcurso && materialConcurso?.status === 'erro'" class="neo-raised rounded-2xl p-6 bg-[var(--card-bg)] flex flex-col gap-3">
-          <div class="rounded-xl p-4 bg-[var(--error)]/10 border border-[var(--error)]/30 flex items-start gap-3">
-            <span class="material-symbols-outlined !text-[20px] text-[var(--error)] mt-0.5">error</span>
-            <div>
-              <p class="text-sm font-bold text-[var(--error)]">Falha ao gerar o material de concurso</p>
-              <p class="text-xs text-[var(--on-surface-variant)] mt-1">{{ materialConcurso?.erro }}</p>
+        <div *ngIf="!loadingMaterialConcurso && materialConcurso?.status === 'erro'" class="neo-raised rounded-3xl p-10 flex flex-col items-center justify-center text-center gap-5 bg-[var(--card-bg)] border border-red-500/10">
+          <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-red-500/20 to-orange-500/20 flex items-center justify-center relative shadow-inner">
+            <span class="material-symbols-outlined !text-[40px] text-red-500">smart_toy</span>
+            <span class="absolute -bottom-2 -right-2 w-6 h-6 bg-[var(--card-bg)] rounded-full flex items-center justify-center">
+              <span class="material-symbols-outlined !text-[14px] text-red-500">warning</span>
+            </span>
+          </div>
+          <div class="max-w-md">
+            <p class="text-base font-black text-[var(--on-surface)]">Agente 5 Indisponível</p>
+            <p class="text-xs text-[var(--on-surface-variant)] mt-2 leading-relaxed">
+              Não conseguimos concluir a geração do seu material de concurso (Questões e Flashcards). A IA pode estar sobrecarregada no momento.
+            </p>
+            <div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 w-full justify-center">
+              <span class="material-symbols-outlined !text-[14px] text-red-500">terminal</span>
+              <span class="text-[10px] font-mono text-red-600 dark:text-red-400 line-clamp-2">{{ materialConcurso?.erro || 'Timeout ou falha na comunicação' }}</span>
             </div>
           </div>
-          <button (click)="abrirModalConcursoOpcoes()" class="self-start px-4 py-2 rounded-xl text-xs font-bold bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/25 transition-all flex items-center gap-2 cursor-pointer">
-            <span class="material-symbols-outlined !text-[15px]">refresh</span>
-            Tentar novamente
+          <button (click)="abrirModalConcursoOpcoes()" class="px-6 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-red-500 to-orange-500 hover:opacity-90 text-white shadow-lg shadow-red-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 mt-2 cursor-pointer">
+            <span class="material-symbols-outlined !text-[18px]">refresh</span>
+            <span>Tentar Novamente</span>
           </button>
         </div>
 
@@ -2016,14 +2043,26 @@ import { Subscription } from 'rxjs';
 
             <!-- Erro no comentário -->
             <div *ngIf="!loadingComentario && getComentarioStatus(artigoSelecionado) === 'erro' && !comentarioAtivo"
-              class="neo-raised rounded-2xl p-6 bg-[var(--card-bg)] flex flex-col gap-3">
-              <div class="rounded-xl p-4 bg-[var(--error)]/10 border border-[var(--error)]/30 flex items-start gap-3">
-                <span class="material-symbols-outlined !text-[20px] text-[var(--error)] mt-0.5">error</span>
-                <div>
-                  <p class="text-sm font-bold text-[var(--error)]">Falha ao processar este artigo</p>
-                  <p class="text-xs text-[var(--on-surface-variant)] mt-1">{{ getErroComentario(artigoSelecionado) }}</p>
-                </div>
+              class="neo-raised rounded-3xl p-10 flex flex-col items-center justify-center text-center gap-5 bg-[var(--card-bg)] border border-red-500/10 mt-4">
+              <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-red-500/20 to-orange-500/20 flex items-center justify-center relative shadow-inner">
+                <span class="material-symbols-outlined !text-[40px] text-red-500">smart_toy</span>
+                <span class="absolute -bottom-2 -right-2 w-6 h-6 bg-[var(--card-bg)] rounded-full flex items-center justify-center">
+                  <span class="material-symbols-outlined !text-[14px] text-red-500">warning</span>
+                </span>
               </div>
+              <div class="max-w-md">
+                <p class="text-base font-black text-[var(--on-surface)]">Agente 2 Indisponível</p>
+                <p class="text-xs text-[var(--on-surface-variant)] mt-2 leading-relaxed">
+                  Não foi possível processar os comentários para este artigo. O agente especialista pode estar indisponível devido a alta demanda ou falha na comunicação.
+                </p>
+              </div>
+              <button
+                (click)="reprocessarArtigo(artigoSelecionado)"
+                [disabled]="reprocessando"
+                class="px-6 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-red-500 to-orange-500 hover:opacity-90 text-white shadow-lg shadow-red-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 mt-2 cursor-pointer disabled:opacity-50">
+                <span class="material-symbols-outlined !text-[18px]" [class.animate-spin]="reprocessando">{{ reprocessando ? 'sync' : 'refresh' }}</span>
+                <span>{{ reprocessando ? 'Processando...' : 'Tentar Novamente' }}</span>
+              </button>
             </div>
 
             <!-- Card: Comentário -->
