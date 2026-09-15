@@ -2418,7 +2418,7 @@ Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
 }`;
 
     const genAI = new GoogleGenerativeAI(googleKey);
-    const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+    const modelNames = ['gemini-1.5-pro', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
 
     for (const modelName of modelNames) {
       try {
@@ -2915,7 +2915,7 @@ ${JSON.stringify(artigosContexto, null, 2)}
 }`;
 
     const genAI = new GoogleGenerativeAI(googleKey);
-    const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+    const modelNames = ['gemini-1.5-pro', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
 
     for (const modelName of modelNames) {
       try {
