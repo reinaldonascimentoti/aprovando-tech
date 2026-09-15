@@ -68,7 +68,7 @@ export interface CheckedItemState {
           <!-- Botão Análise de Pareto / Refazer Análise (Abre Modal com Logs e Checagem) -->
           <button (click)="openParetoModal()"
                   class="px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
-                  [ngClass]="paretoData?.pareto_analisado ? 'btn-neo text-[var(--on-surface)] hover:text-purple-600' : 'bg-gradient-to-r from-[#433fe5] to-[#6b38d4] text-white'"
+                  [ngClass]="paretoData?.pareto_analisado ? 'btn-neo text-[var(--on-surface)] hover:text-blue-500' : 'bg-[#3b82f6] hover:bg-[#2563eb] text-white'"
                   [title]="paretoData?.pareto_analisado ? 'Verificar ou Refazer Análise Pareto 80/20 com IA' : 'Executar Análise de Pareto com IA'">
             <span class="material-symbols-outlined !text-[16px]">donut_large</span>
             <span class="whitespace-nowrap">{{ paretoData?.pareto_analisado ? 'Refazer Pareto' : 'Análise de Pareto' }}</span>
@@ -96,7 +96,7 @@ export interface CheckedItemState {
               </button>
 
               <!-- Data da Prova Badge (se houver) -->
-              <span *ngIf="dataProva" class="bg-[#00845a]/15 text-[#00845a] dark:text-[#4edea3] text-xs font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xs">
+              <span *ngIf="dataProva" class="bg-[#22c55e]/15 text-[#22c55e] dark:text-[#86efac] text-xs font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xs">
                 <span class="material-symbols-outlined !text-[15px]">event</span>
                 <span>Prova: {{ dataProva | date:'dd/MM/yyyy' }}</span>
               </span>
@@ -146,7 +146,7 @@ export interface CheckedItemState {
           </div>
           <div class="neo-pressed rounded-xl p-3 text-center">
             <span class="text-[10px] font-extrabold text-[var(--on-surface-variant)] block">Cobertura Estimada</span>
-            <span class="text-lg font-black text-[#00845a] dark:text-[#4edea3]">{{ paretoData?.coverage_percentage || 80 }}%</span>
+            <span class="text-lg font-black text-[#22c55e] dark:text-[#86efac]">{{ paretoData?.coverage_percentage || 80 }}%</span>
           </div>
           <div class="neo-pressed rounded-xl p-3 text-center">
             <span class="text-[10px] font-extrabold text-[var(--on-surface-variant)] block">Tópicos Quentes 🔥</span>

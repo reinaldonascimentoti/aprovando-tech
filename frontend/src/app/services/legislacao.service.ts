@@ -25,7 +25,6 @@ export interface Legislacao {
   artigos_lidos?: string[];
 }
 
-
 export interface LegislacaoArtigo {
   id: string;
   legislacao_id: string;
@@ -64,7 +63,6 @@ export interface LegislacaoComentario {
   consequencias: any[];
   pontos_importantes: any[];
   pontos_atencao: any[];
-  termos_juridicos: any[];
   referencias: any[];
   exemplo_pratico: string | null;
   relevancia_concurso: 'alta' | 'media' | 'baixa';
@@ -83,6 +81,62 @@ export interface LegislacaoProcessamento {
   quantidade_processada: number;
   erro: string | null;
 }
+
+// ---------------------------------------------------------------
+// Agente 3 — Analista Estratégico de Concursos
+// ---------------------------------------------------------------
+
+export interface MetaQuestoesArtigo {
+  minimo: number;
+  recomendado: number;
+  maximo: number;
+}
+
+export interface MetaFlashcardsArtigo {
+  minimo: number;
+  recomendado: number;
+  maximo: number;
+}
+
+export interface AnaliseArtigoConcurso {
+  artigo_id: string;
+  artigo_numero?: string;
+  prioridade: 'alta' | 'media' | 'baixa' | 'fora_de_escopo';
+  potencial_cobranca: 'alto' | 'medio' | 'baixo';
+  justificativa: string;
+  riscos_de_erro: string[];
+  formas_de_cobranca: string[];
+  meta_questoes: MetaQuestoesArtigo;
+  meta_flashcards: MetaFlashcardsArtigo;
+  tipos_recomendados: string[];
+}
+
+export interface ComparacaoRecomendada {
+  artigos: string[];
+  motivo: string;
+  foco: string;
+  tipo_questao?: string;
+}
+
+export interface LegislacaoAnaliseEstrategica {
+  id: string;
+  legislacao_id: string;
+  user_id: string;
+  meta_global: {
+    meta_questoes_total: number;
+    meta_flashcards_total: number;
+  };
+  analise_concurso: AnaliseArtigoConcurso[];
+  comparacoes_recomendadas: ComparacaoRecomendada[];
+  status: 'pendente' | 'processando' | 'concluido' | 'erro';
+  erro: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ---------------------------------------------------------------
+// Agente 4 — Planejador e Gerenciador de Cronograma de Estudos
+// ---------------------------------------------------------------
 
 export interface PreferenciasEstudante {
   data_inicio?: string;
@@ -119,6 +173,7 @@ export interface SessaoEstudo {
   artigos: string[];
   tempo_minutos: number;
   prioridade: 'alta' | 'media' | 'baixa';
+  meta_questoes?: number;
 }
 
 export interface RevisaoEstudo {
@@ -167,6 +222,131 @@ export interface LegislacaoPlano {
   updated_at: string;
 }
 
+// ---------------------------------------------------------------
+// Agente 5 — Gerador de Questões e Material de Fixação
+// ---------------------------------------------------------------
+
+export interface PontoDeProva {
+  id: string;
+  artigo_id?: string;
+  artigo_numero: string;
+  assunto: string;
+  conteudo: string;
+  motivo_relevancia: string;
+  prioridade: 'alta' | 'media' | 'baixa';
+  dificuldade: 'facil' | 'medio' | 'dificil';
+}
+
+export interface Pegadinha {
+  id: string;
+  artigo_id?: string;
+  artigo_numero: string;
+  descricao: string;
+  forma_de_cobranca: string;
+  resposta_correta: string;
+  prioridade: 'alta' | 'media' | 'baixa';
+}
+
+export interface ConceitoMemorizacao {
+  id: string;
+  artigo_id?: string;
+  artigo_numero: string;
+  conceito: string;
+  o_que_memorizar: string;
+  estrategia_memorizacao: string;
+  prioridade: 'alta' | 'media' | 'baixa';
+}
+
+export interface Comparacao {
+  id: string;
+  titulo: string;
+  artigos: string[];
+  semelhancas: string[];
+  diferencas: string[];
+  ponto_atencao: string;
+}
+
+export interface FlashcardConcurso {
+  id: string;
+  artigo_id?: string;
+  artigo_numero: string;
+  pergunta: string;
+  resposta: string;
+  assunto: string;
+  dificuldade: 'facil' | 'medio' | 'dificil';
+  prioridade: 'alta' | 'media' | 'baixa';
+}
+
+export interface QuestaoConcurso {
+  id: string;
+  tipo: 'multipla_escolha' | 'certo_errado' | 'caso_pratico' | 'comparativa' | string;
+  artigo_id?: string;
+  artigo_numero: string;
+  assunto: string;
+  dificuldade: 'facil' | 'medio' | 'dificil';
+  prioridade: 'alta' | 'media' | 'baixa';
+  enunciado: string;
+  alternativas?: {
+    A: string;
+    B: string;
+    C: string;
+    D: string;
+    E: string;
+  };
+  gabarito: 'A' | 'B' | 'C' | 'D' | 'E' | 'certo' | 'errado' | string;
+  justificativa: string;
+  justificativas_alternativas?: {
+    A?: string;
+    B?: string;
+    C?: string;
+    D?: string;
+    E?: string;
+  };
+}
+
+export interface ControleCobertura {
+  total_artigos_elegiveis: number;
+  artigos_com_material: number;
+  artigos_sem_material: number;
+  percentual_cobertura: number;
+}
+
+export interface ControleMetas {
+  questoes_planejadas: number;
+  questoes_geradas: number;
+  questoes_pendentes: number;
+  flashcards_planejados: number;
+  flashcards_gerados: number;
+}
+
+export interface ParametrosGeracaoConcurso {
+  sessao_id?: string;
+  artigo_id?: string;
+  artigos_filtro?: string[];
+  banca?: string;
+  modo?: 'adicionar' | 'substituir';
+}
+
+export interface LegislacaoMaterialConcurso {
+  id: string;
+  legislacao_id: string;
+  user_id: string;
+  pontos_de_prova?: any[];
+  pegadinhas?: any[];
+  conceitos_memorizacao?: any[];
+  comparacoes?: any[];
+  flashcards: FlashcardConcurso[];
+  questoes: QuestaoConcurso[];
+  metas?: ControleMetas | null;
+  cobertura?: ControleCobertura | null;
+  resumo?: any;
+  alertas: string[];
+  parametros: ParametrosGeracaoConcurso;
+  status: 'pendente' | 'processando' | 'concluido' | 'erro';
+  erro: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class LegislacaoService {
@@ -185,7 +365,7 @@ export class LegislacaoService {
   }
 
   // ---------------------------------------------------------------
-  // Backend API calls
+  // Backend API calls — Gerais
   // ---------------------------------------------------------------
 
   listar(): Observable<Legislacao[]> {
@@ -225,17 +405,17 @@ export class LegislacaoService {
     );
   }
 
-
-  upload(file: File, titulo: string, tipo?: string, numero?: string, ano?: number): Observable<{ data: Legislacao }> {
+  upload(file: File | null, titulo: string, tipo?: string, numero?: string, ano?: number, url?: string): Observable<{ data: Legislacao }> {
     const userId = this.supabaseService.currentUser?.id;
     if (!userId) throw new Error('Usuário não autenticado.');
     const form = new FormData();
-    form.append('file', file);
+    if (file) form.append('file', file);
     form.append('userId', userId);
     form.append('titulo', titulo);
     if (tipo) form.append('tipo', tipo);
     if (numero) form.append('numero', numero);
     if (ano) form.append('ano', String(ano));
+    if (url) form.append('url', url);
     return this.http.post<any>(`${this.baseUrl}/legislacao/upload`, form, { headers: this.getHeaders() });
   }
 
@@ -258,7 +438,32 @@ export class LegislacaoService {
   }
 
   // ---------------------------------------------------------------
-  // Agente 3 — Plano de Cronograma de Estudos
+  // Agente 3 — Analista Estratégico de Concursos
+  // ---------------------------------------------------------------
+
+  /** Busca a análise estratégica de concursos gerada pelo Agente 3. */
+  getAnaliseEstrategica(legislacaoId: string): Observable<{ data: LegislacaoAnaliseEstrategica | null }> {
+    const userId = this.supabaseService.currentUser?.id;
+    if (!userId) return from(Promise.resolve({ data: null }));
+    return this.http.get<any>(
+      `${this.baseUrl}/legislacao/${legislacaoId}/analise-estrategica?userId=${userId}`,
+      { headers: this.getHeaders() },
+    );
+  }
+
+  /** Gera (ou regenera) a análise estratégica do Agente 3. */
+  gerarAnaliseEstrategica(legislacaoId: string): Observable<{ message: string; data: LegislacaoAnaliseEstrategica }> {
+    const userId = this.supabaseService.currentUser?.id;
+    if (!userId) throw new Error('Usuário não autenticado.');
+    return this.http.post<any>(
+      `${this.baseUrl}/legislacao/${legislacaoId}/analise-estrategica`,
+      { userId },
+      { headers: this.getHeaders() },
+    );
+  }
+
+  // ---------------------------------------------------------------
+  // Agente 4 — Plano de Cronograma de Estudos
   // ---------------------------------------------------------------
 
   /** Busca o plano de cronograma existente para uma legislação. */
@@ -287,6 +492,49 @@ export class LegislacaoService {
   }
 
   // ---------------------------------------------------------------
+  // Agente 5 — Gerador de Questões e Fixação
+  // ---------------------------------------------------------------
+
+  /** Busca o material de fixação existente para uma legislação. */
+  getMaterialConcurso(legislacaoId: string): Observable<{ data: LegislacaoMaterialConcurso | null }> {
+    const userId = this.supabaseService.currentUser?.id;
+    if (!userId) return from(Promise.resolve({ data: null }));
+    return this.http.get<any>(
+      `${this.baseUrl}/legislacao/${legislacaoId}/concurso?userId=${userId}`,
+      { headers: this.getHeaders() },
+    );
+  }
+
+  /** Gera (ou regenera) material de fixação para uma legislação ou sessão. */
+  gerarMaterialConcurso(
+    legislacaoId: string,
+    opcoes?: ParametrosGeracaoConcurso,
+  ): Observable<{ message: string; data: LegislacaoMaterialConcurso }> {
+    const userId = this.supabaseService.currentUser?.id;
+    if (!userId) throw new Error('Usuário não autenticado.');
+    return this.http.post<any>(
+      `${this.baseUrl}/legislacao/${legislacaoId}/concurso`,
+      { userId, ...opcoes },
+      { headers: this.getHeaders() },
+    );
+  }
+
+  /** Gera material de fixação focado em um artigo específico. */
+  gerarMaterialConcursoArtigo(
+    legislacaoId: string,
+    artigoId: string,
+    banca?: string,
+  ): Observable<{ message: string; data: LegislacaoMaterialConcurso }> {
+    const userId = this.supabaseService.currentUser?.id;
+    if (!userId) throw new Error('Usuário não autenticado.');
+    return this.http.post<any>(
+      `${this.baseUrl}/legislacao/${legislacaoId}/artigos/${artigoId}/concurso`,
+      { userId, banca },
+      { headers: this.getHeaders() },
+    );
+  }
+
+  // ---------------------------------------------------------------
   // Supabase Realtime — subscription para atualização ao vivo
   // ---------------------------------------------------------------
 
@@ -309,6 +557,18 @@ export class LegislacaoService {
         event: '*',
         schema: 'public',
         table: 'legislacao_comentarios',
+        filter: `legislacao_id=eq.${legislacaoId}`,
+      }, callback)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'legislacao_analises_estrategicas',
+        filter: `legislacao_id=eq.${legislacaoId}`,
+      }, callback)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'legislacao_materiais_concurso',
         filter: `legislacao_id=eq.${legislacaoId}`,
       }, callback)
       .subscribe();

@@ -21,14 +21,14 @@ export interface ParetoLogStep {
     <div *ngIf="isOpen"
          class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fadeIn"
          style="background: rgba(10, 12, 20, 0.70); backdrop-filter: blur(8px);">
-      <div class="neo-raised rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden bg-white dark:bg-[#141927] border border-[var(--outline-variant)] my-auto flex flex-col max-h-[92vh]">
+      <div class="neo-raised rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden bg-white dark:bg-[#1e293b] border border-[var(--outline-variant)] dark:border-[#334155] my-auto flex flex-col max-h-[92vh]">
 
         <!-- ================= MODAL HEADER ================= -->
-        <div class="flex items-center justify-between px-4 sm:px-6 pt-5 pb-4 border-b border-[var(--outline-variant)] bg-gradient-to-r from-purple-50/70 dark:from-[#1b2238] to-white dark:to-[#141927] shrink-0">
+        <div class="flex items-center justify-between px-4 sm:px-6 pt-5 pb-4 border-b border-[var(--outline-variant)] dark:border-[#334155] bg-slate-50 dark:bg-[#1e293b] shrink-0">
           <div class="flex items-center gap-3">
             <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center shadow-md shrink-0 transition-all duration-300"
                  [ngClass]="{
-                   'bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white': status === 'checking' || status === 'exists' || status === 'processing',
+                   'bg-[#3b82f6] text-white': status === 'checking' || status === 'exists' || status === 'processing',
                    'bg-gradient-to-tr from-emerald-500 to-teal-600 text-white': status === 'completed',
                    'bg-gradient-to-tr from-rose-500 to-red-600 text-white': status === 'error'
                  }">
@@ -83,19 +83,19 @@ export interface ParetoLogStep {
 
             <!-- Resumo das métricas da análise pronta -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-purple-200/60 dark:border-purple-800/30 text-center">
-              <div class="p-2 rounded-xl bg-white dark:bg-slate-900/60 border border-purple-100 dark:border-purple-900/50">
+              <div class="p-2 rounded-xl bg-white dark:bg-[#0f172a] border border-purple-100 dark:border-[#334155]">
                 <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 block">Cobertura</span>
                 <span class="text-sm font-black text-emerald-600 dark:text-emerald-400">{{ existingParetoData?.coverage_percentage || 80 }}%</span>
               </div>
-              <div class="p-2 rounded-xl bg-white dark:bg-slate-900/60 border border-purple-100 dark:border-purple-900/50">
+              <div class="p-2 rounded-xl bg-white dark:bg-[#0f172a] border border-purple-100 dark:border-[#334155]">
                 <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 block">Disciplinas (20%)</span>
                 <span class="text-sm font-black text-purple-600 dark:text-purple-400">{{ existingParetoData?.high_priority_subjects || existingDisciplineCount }}</span>
               </div>
-              <div class="p-2 rounded-xl bg-white dark:bg-slate-900/60 border border-purple-100 dark:border-purple-900/50">
+              <div class="p-2 rounded-xl bg-white dark:bg-[#0f172a] border border-purple-100 dark:border-[#334155]">
                 <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 block">Tópicos Quentes</span>
                 <span class="text-sm font-black text-rose-500">{{ existingParetoData?.total_hot_topics || 'Mapeados' }}</span>
               </div>
-              <div class="p-2 rounded-xl bg-white dark:bg-slate-900/60 border border-purple-100 dark:border-purple-900/50">
+              <div class="p-2 rounded-xl bg-white dark:bg-[#0f172a] border border-purple-100 dark:border-[#334155]">
                 <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 block">Banca</span>
                 <span class="text-xs font-black text-amber-600 truncate block">{{ getBancaName() }}</span>
               </div>
@@ -150,7 +150,7 @@ export interface ParetoLogStep {
             <div class="w-full h-2.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden relative">
               <div class="h-full rounded-full transition-all duration-500 ease-out"
                    [style.width.%]="progress"
-                   [ngClass]="status === 'error' ? 'bg-gradient-to-r from-rose-500 to-red-600' : (status === 'completed' ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-gradient-to-r from-[#5d3bf6] via-[#7c3aed] to-[#c084fc]')">
+                   [ngClass]="status === 'error' ? 'bg-gradient-to-r from-rose-500 to-red-600' : (status === 'completed' ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-[#3b82f6]')">
               </div>
             </div>
 
@@ -184,15 +184,15 @@ export interface ParetoLogStep {
 
             <!-- Resumo das métricas extraídas se disponível -->
             <div *ngIf="completedMetrics" class="grid grid-cols-3 gap-2 pt-2 border-t border-emerald-500/20 text-center">
-              <div class="p-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-emerald-500/20">
+              <div class="p-2 rounded-xl bg-white/80 dark:bg-[#0f172a] border border-emerald-500/20">
                 <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 block">Cobertura</span>
                 <span class="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400">{{ completedMetrics.coverage }}%</span>
               </div>
-              <div class="p-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-emerald-500/20">
+              <div class="p-2 rounded-xl bg-white/80 dark:bg-[#0f172a] border border-emerald-500/20">
                 <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 block">Disciplinas (20%)</span>
                 <span class="text-xs sm:text-sm font-black text-purple-600 dark:text-purple-400">{{ completedMetrics.subjects }}</span>
               </div>
-              <div class="p-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-emerald-500/20">
+              <div class="p-2 rounded-xl bg-white/80 dark:bg-[#0f172a] border border-emerald-500/20">
                 <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 block">Tópicos Quentes</span>
                 <span class="text-xs sm:text-sm font-black text-rose-500">{{ completedMetrics.hotTopics }}</span>
               </div>
@@ -218,7 +218,7 @@ export interface ParetoLogStep {
 
           <!-- Timeline / Terminal de Logs -->
           <div id="pareto-logs-container"
-               class="rounded-2xl p-3.5 sm:p-4 bg-slate-900/95 dark:bg-[#0b0e17] text-slate-100 border border-purple-500/20 shadow-inner max-h-[300px] sm:max-h-[340px] overflow-y-auto space-y-2.5 scroll-smooth">
+               class="rounded-2xl p-3.5 sm:p-4 bg-slate-900/95 dark:bg-[#0f172a] text-slate-100 border border-slate-200 dark:border-[#334155] shadow-inner max-h-[300px] sm:max-h-[340px] overflow-y-auto space-y-2.5 scroll-smooth">
             <div class="flex items-center justify-between pb-2 border-b border-white/10 text-[10px] font-mono text-slate-400">
               <span class="flex items-center gap-1.5">
                 <span class="w-1.5 h-1.5 rounded-full"

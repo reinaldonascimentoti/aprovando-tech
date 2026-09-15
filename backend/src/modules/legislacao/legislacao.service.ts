@@ -13,25 +13,33 @@ export class LegislacaoService {
   ) {}
 
   // ---------------------------------------------------------------
-  // Upload + início do processamento completo
+  // Upload + início do processamento completo (Arquivo ou Link)
   // ---------------------------------------------------------------
   async uploadEProcessar(
-    file: Express.Multer.File,
+    file: Express.Multer.File | undefined,
     userId: string,
     titulo: string,
     tipo?: string,
     numero?: string,
     ano?: number,
+    urlLink?: string,
   ) {
-    this.logger.log(`[Legislação] Iniciando upload para userId=${userId}, titulo="${titulo}"`);
+    this.logger.log(`[Legislação] Iniciando cadastro para userId=${userId}, titulo="${titulo}", url=${urlLink || 'nenhuma'}`);
 
     // 1. Cria o registro da legislação
-    const legislacao = await this.supabaseService.createLegislacao({ user_id: userId, titulo, tipo, numero, ano });
+    const legislacao = await this.supabaseService.createLegislacao({
+      user_id: userId,
+      titulo,
+      tipo,
+      numero,
+      ano,
+      fonte: urlLink || null,
+    });
     if (!legislacao) throw new Error('Falha ao criar registro da legislação.');
 
     const legislacaoId = legislacao.id;
 
-    // 2. Salva o arquivo no Storage
+    // 2. Salva o arquivo no Storage se fornecido
     if (file?.buffer) {
       const storagePath = await this.supabaseService.uploadLegislacaoFile(userId, legislacaoId, file.buffer, file.originalname);
       if (storagePath) {
@@ -43,7 +51,7 @@ export class LegislacaoService {
     }
 
     // 3. Inicia o processamento em background (não aguarda)
-    this.processarLegislacao(legislacaoId, file, titulo, tipo).catch(err => {
+    this.processarLegislacao(legislacaoId, file, titulo, tipo, urlLink).catch(err => {
       this.logger.error(`[Legislação] Erro em background para ${legislacaoId}: ${err.message}`);
     });
 
@@ -58,6 +66,7 @@ export class LegislacaoService {
     file: Express.Multer.File | undefined,
     titulo: string,
     tipo?: string,
+    urlLink?: string,
   ) {
     try {
       // === ETAPA 1: EXTRAÇÃO ===
@@ -66,21 +75,64 @@ export class LegislacaoService {
 
       this.logger.log(`[Extrator] Iniciando extração para legislacaoId=${legislacaoId}`);
 
-      // Extrai texto do PDF como fallback
+      let pdfBuffer: Buffer | null = file?.buffer ?? null;
       let pdfText = '';
+      let fileName = file?.originalname ?? titulo;
+
+      // Se temos arquivo local
       if (file?.buffer) {
         try {
           pdfText = await extractTextFromPdf(file.buffer, titulo, this.logger);
-        } catch (e) {
+        } catch (e: any) {
           this.logger.warn(`[Extrator] Falha ao extrair texto do PDF: ${e.message}`);
+        }
+      } else if (urlLink) {
+        // Se temos link / URL
+        this.logger.log(`[Extrator] Baixando conteúdo da URL: ${urlLink}`);
+        try {
+          const response = await fetch(urlLink, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,application/pdf,*/*;q=0.8',
+            },
+          });
+
+          const contentType = response.headers.get('content-type') || '';
+
+          if (contentType.includes('application/pdf')) {
+            const arrayBuf = await response.arrayBuffer();
+            pdfBuffer = Buffer.from(arrayBuf);
+            fileName = `${titulo.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+            pdfText = await extractTextFromPdf(pdfBuffer, titulo, this.logger);
+          } else {
+            // HTML ou texto web
+            const html = await response.text();
+            pdfText = html
+              .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+              .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+              .replace(/<br\s*[\/]?>/gi, '\n')
+              .replace(/<\/p>/gi, '\n\n')
+              .replace(/<\/div>/gi, '\n')
+              .replace(/<[^>]+>/g, '')
+              .replace(/&nbsp;/g, ' ')
+              .replace(/&amp;/g, '&')
+              .replace(/&quot;/g, '"')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/\n\s*\n\s*\n/g, '\n\n')
+              .trim();
+          }
+        } catch (e: any) {
+          this.logger.error(`[Extrator] Erro ao carregar link ${urlLink}: ${e.message}`);
+          throw new Error(`Falha ao acessar o link informado: ${e.message}`);
         }
       }
 
       // Chama o Agente 1 (Gemini File API com fallback texto)
       const extraido = await this.langChainService.extractLegislacao(
-        file?.buffer ?? null,
+        pdfBuffer,
         pdfText,
-        file?.originalname ?? titulo,
+        fileName,
       );
 
       // Valida resultado
@@ -88,15 +140,15 @@ export class LegislacaoService {
         throw new Error('Extrator não retornou artigos válidos.');
       }
 
-      // Atualiza metadados da legislação com o que o Agente 1 extraiu
+      // Atualiza metadados da legislação com o que o Agente 1 extraiu (sanitizando datas para formato ISO)
       const metaLegis = extraido.legislacao || {};
       await this.supabaseService.updateLegislacao(legislacaoId, {
         tipo: metaLegis.tipo || tipo || null,
         numero: metaLegis.numero || null,
-        ano: metaLegis.ano || null,
+        ano: metaLegis.ano ? (typeof metaLegis.ano === 'number' ? metaLegis.ano : parseInt(String(metaLegis.ano), 10) || null) : null,
         ementa: metaLegis.ementa || null,
-        data_publicacao: metaLegis.data_publicacao || null,
-        data_vigencia: metaLegis.data_vigencia || null,
+        data_publicacao: this.formatDateIso(metaLegis.data_publicacao),
+        data_vigencia: this.formatDateIso(metaLegis.data_vigencia),
         orgao_emissor: metaLegis.orgao_emissor || null,
         fonte: metaLegis.fonte || null,
       });
@@ -124,33 +176,11 @@ export class LegislacaoService {
         quantidade_processada: artigosSalvos.length,
       });
 
-      // === ETAPA 2: COMENTÁRIOS (artigo por artigo) ===
-      await this.supabaseService.updateLegislacao(legislacaoId, { status: 'comentando' });
-      await this.supabaseService.upsertProcessamento(legislacaoId, 'comentarios', {
-        status: 'processando',
-        quantidade_total: artigosSalvos.length,
-        quantidade_processada: 0,
-      });
-
-      let processados = 0;
-      for (const artigoSalvo of artigosSalvos) {
-        await this.comentarArtigoIndividual(legislacaoId, artigoSalvo, titulo, tipo || '');
-        processados++;
-        // Atualiza progresso a cada artigo
-        await this.supabaseService.upsertProcessamento(legislacaoId, 'comentarios', {
-          status: 'processando',
-          quantidade_total: artigosSalvos.length,
-          quantidade_processada: processados,
-        });
-      }
+      // === ETAPA 2: COMENTÁRIOS (com concorrência controlada) ===
+      await this.processarComentariosEmFila(legislacaoId, artigosSalvos, titulo, tipo || '');
 
       // === ETAPA 3: FINALIZAÇÃO ===
       await this.supabaseService.updateLegislacao(legislacaoId, { status: 'concluida' });
-      await this.supabaseService.upsertProcessamento(legislacaoId, 'comentarios', {
-        status: 'concluido',
-        quantidade_total: artigosSalvos.length,
-        quantidade_processada: processados,
-      });
       await this.supabaseService.upsertProcessamento(legislacaoId, 'finalizacao', { status: 'concluido' });
 
       this.logger.log(`[Legislação] ✅ Processamento completo para legislacaoId=${legislacaoId}`);
@@ -162,6 +192,110 @@ export class LegislacaoService {
         erro: err.message,
       });
     }
+  }
+
+  // ---------------------------------------------------------------
+  // Processamento concorrente de comentários com controle de fila
+  // ---------------------------------------------------------------
+  private async processarComentariosEmFila(
+    legislacaoId: string,
+    artigos: any[],
+    titulo: string,
+    tipo: string,
+    concorrencia = 1,
+  ) {
+    await this.supabaseService.updateLegislacao(legislacaoId, { status: 'comentando' });
+    const total = artigos.length;
+
+    // Busca comentários já concluídos para não reprocessar
+    const artigosComComentarios = await this.supabaseService.listArtigosByLegislacao(legislacaoId);
+    const concluidosMap = new Set<string>();
+    for (const art of artigosComComentarios) {
+      const comentarios = Array.isArray(art.legislacao_comentarios)
+        ? art.legislacao_comentarios
+        : art.legislacao_comentarios ? [art.legislacao_comentarios] : [];
+      if (comentarios.some((c: any) => c.status === 'concluido')) {
+        concluidosMap.add(art.id);
+      }
+    }
+
+    let processados = concluidosMap.size;
+    await this.supabaseService.upsertProcessamento(legislacaoId, 'comentarios', {
+      status: 'processando',
+      quantidade_total: total,
+      quantidade_processada: processados,
+    });
+
+    const pendentes = artigos.filter(a => !concluidosMap.has(a.id));
+    this.logger.log(`[Comentador] Iniciando fila: ${pendentes.length} artigos pendentes de ${total} totais (concorrência=${concorrencia})`);
+
+    let indice = 0;
+    const executarProximo = async (): Promise<void> => {
+      while (indice < pendentes.length) {
+        const artigoAtual = pendentes[indice++];
+        // Pacing suave para não bater no rate-limit por minuto
+        await new Promise(r => setTimeout(r, 1500));
+        await this.comentarArtigoIndividual(legislacaoId, artigoAtual, titulo, tipo);
+        processados++;
+        await this.supabaseService.upsertProcessamento(legislacaoId, 'comentarios', {
+          status: 'processando',
+          quantidade_total: total,
+          quantidade_processada: processados,
+        });
+      }
+    };
+
+    // Lança workers concorrentes
+    const workers = Array.from({ length: Math.min(concorrencia, pendentes.length) }, () => executarProximo());
+    await Promise.all(workers);
+
+    // Verifica se restou algum artigo com erro e faz uma segunda passada
+    const artigosFinais = await this.supabaseService.listArtigosByLegislacao(legislacaoId);
+    const comErro = artigosFinais.filter(art => {
+      const comentarios = Array.isArray(art.legislacao_comentarios)
+        ? art.legislacao_comentarios
+        : art.legislacao_comentarios ? [art.legislacao_comentarios] : [];
+      return !comentarios.some((c: any) => c.status === 'concluido');
+    });
+
+    if (comErro.length > 0) {
+      this.logger.log(`[Comentador] 🔄 Retentando ${comErro.length} artigos que falharam na primeira passada...`);
+      for (const art of comErro) {
+        await new Promise(r => setTimeout(r, 1500));
+        await this.comentarArtigoIndividual(legislacaoId, art, titulo, tipo);
+      }
+    }
+
+    const artigosConcluidosFinais = await this.supabaseService.listArtigosByLegislacao(legislacaoId);
+    const totalConcluidos = artigosConcluidosFinais.filter(art => {
+      const comentarios = Array.isArray(art.legislacao_comentarios)
+        ? art.legislacao_comentarios
+        : art.legislacao_comentarios ? [art.legislacao_comentarios] : [];
+      return comentarios.some((c: any) => c.status === 'concluido');
+    }).length;
+
+    await this.supabaseService.upsertProcessamento(legislacaoId, 'comentarios', {
+      status: 'concluido',
+      quantidade_total: total,
+      quantidade_processada: totalConcluidos,
+    });
+  }
+
+  /**
+   * Helper para formatar datas variadas em formato ISO (YYYY-MM-DD)
+   */
+  private formatDateIso(dateStr?: string | null): string | null {
+    if (!dateStr || typeof dateStr !== 'string') return null;
+    const trimmed = dateStr.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    const match = trimmed.match(/^(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{4})$/);
+    if (match) {
+      const day = match[1].padStart(2, '0');
+      const month = match[2].padStart(2, '0');
+      const year = match[3];
+      return `${year}-${month}-${day}`;
+    }
+    return null;
   }
 
   // ---------------------------------------------------------------
@@ -222,19 +356,49 @@ export class LegislacaoService {
   }
 
   // ---------------------------------------------------------------
+  // Retomar processamento de comentários para todos os artigos pendentes
+  // ---------------------------------------------------------------
+  async retomarProcessamentoComentarios(legislacaoId: string) {
+    const legislacao = await this.supabaseService.getLegislacaoById(legislacaoId);
+    if (!legislacao) throw new NotFoundException('Legislação não encontrada.');
+
+    const artigos = await this.supabaseService.listArtigosByLegislacao(legislacaoId);
+    if (!artigos || artigos.length === 0) {
+      throw new NotFoundException('Nenhum artigo encontrado para esta legislação.');
+    }
+
+    this.logger.log(`[Retomada] Retomando comentários para legislação ${legislacaoId} (${artigos.length} artigos)...`);
+    
+    // Inicia em background
+    this.processarComentariosEmFila(legislacaoId, artigos, legislacao.titulo, legislacao.tipo || '').then(async () => {
+      await this.supabaseService.updateLegislacao(legislacaoId, { status: 'concluida' });
+      await this.supabaseService.upsertProcessamento(legislacaoId, 'finalizacao', { status: 'concluido' });
+      this.logger.log(`[Retomada] ✅ Legislação ${legislacaoId} concluída com sucesso.`);
+    }).catch(err => {
+      this.logger.error(`[Retomada] ❌ Erro ao retomar comentários para ${legislacaoId}: ${err.message}`);
+    });
+
+    return { message: 'Retomada de comentários iniciada em background.' };
+  }
+
+  // ---------------------------------------------------------------
   // Listagem e detalhes
   // ---------------------------------------------------------------
   async listarPorUsuario(userId: string) {
     const legislacoes = await this.supabaseService.listLegislacoesByUser(userId);
+    if (!legislacoes || legislacoes.length === 0) return [];
 
-    // Para cada legislação, busca contadores de artigos/comentários
-    const result = await Promise.all(
-      legislacoes.map(async leg => {
-        const processamentos = await this.supabaseService.getProcessamentosByLegislacao(leg.id);
-        return { ...leg, processamentos };
-      }),
-    );
-    return result;
+    const legIds = legislacoes.map(l => l.id);
+    const [processamentosMap, artigosLidosMap] = await Promise.all([
+      this.supabaseService.getProcessamentosByLegislacoes(legIds),
+      this.supabaseService.getAllArtigosLidosByUser(userId),
+    ]);
+
+    return legislacoes.map(leg => ({
+      ...leg,
+      processamentos: processamentosMap[leg.id] || [],
+      artigos_lidos: artigosLidosMap[leg.id] || [],
+    }));
   }
 
   async detalhar(legislacaoId: string, userId?: string) {
@@ -262,12 +426,79 @@ export class LegislacaoService {
   }
 
   // ---------------------------------------------------------------
-  // Agente 3 — Geração e consulta do Plano de Cronograma de Estudos
+  // Agente 3 — Analista Estratégico de Concursos (Legislação)
+  // ---------------------------------------------------------------
+
+  /**
+   * Gera (ou regenera) a análise estratégica de concursos para uma legislação.
+   * Transforma artigos e comentários em priorização, riscos e metas de questões/flashcards.
+   */
+  async gerarAnaliseEstrategica(legislacaoId: string, userId: string) {
+    const legislacao = await this.supabaseService.getLegislacaoById(legislacaoId);
+    if (!legislacao) throw new NotFoundException('Legislação não encontrada.');
+
+    this.logger.log(`[Agente 3 - Analista] Iniciando análise estratégica para legislacaoId=${legislacaoId}, userId=${userId}`);
+
+    await this.supabaseService.upsertAnaliseEstrategica(legislacaoId, userId, {
+      status: 'processando',
+      erro: null,
+    });
+
+    try {
+      const artigosComComentarios = await this.supabaseService.listArtigosComComentarios(legislacaoId);
+      if (!artigosComComentarios || artigosComComentarios.length === 0) {
+        throw new Error('Nenhum artigo encontrado para esta legislação.');
+      }
+
+      const analiseJson = await this.langChainService.analisarEstrategiaConcurso(
+        {
+          id: legislacao.id,
+          titulo: legislacao.titulo,
+          tipo: legislacao.tipo,
+          numero: legislacao.numero,
+          ano: legislacao.ano,
+          ementa: legislacao.ementa,
+        },
+        artigosComComentarios,
+      );
+
+      const analiseSalva = await this.supabaseService.upsertAnaliseEstrategica(legislacaoId, userId, {
+        status: 'concluido',
+        meta_global: analiseJson.meta_global || { meta_questoes_total: 0, meta_flashcards_total: 0 },
+        analise_concurso: analiseJson.analise_concurso || [],
+        comparacoes_recomendadas: analiseJson.comparacoes_recomendadas || [],
+        erro: null,
+      });
+
+      this.logger.log(
+        `[Agente 3 - Analista] ✅ Análise estratégica concluída: ${analiseJson.analise_concurso?.length ?? 0} artigos analisados. Meta global: ${analiseJson.meta_global?.meta_questoes_total ?? 0} questões.`,
+      );
+
+      return analiseSalva;
+    } catch (err: any) {
+      this.logger.error(`[Agente 3 - Analista] ❌ Erro na análise estratégica de ${legislacaoId}: ${err.message}`);
+      await this.supabaseService.upsertAnaliseEstrategica(legislacaoId, userId, {
+        status: 'erro',
+        erro: err.message,
+      });
+      throw err;
+    }
+  }
+
+  /**
+   * Obtém a análise estratégica do Agente 3 para uma legislação e usuário.
+   */
+  async getAnaliseEstrategica(legislacaoId: string, userId: string) {
+    return this.supabaseService.getAnaliseEstrategicaByLegislacao(legislacaoId, userId);
+  }
+
+  // ---------------------------------------------------------------
+  // Agente 4 — Planejador e Gerenciador de Cronograma de Estudos
   // ---------------------------------------------------------------
 
   /**
    * Gera (ou regenera) o plano de cronograma para uma legislação.
-   * Chama o Agente 3 (LLM) com o contexto completo dos Agentes 1 e 2.
+   * Chama o Agente 4 com o contexto dos Agentes 1, 2 e 3.
    */
   async gerarPlano(
     legislacaoId: string,
@@ -282,13 +513,11 @@ export class LegislacaoService {
       prioridade_legislacao?: string;
     },
   ) {
-    // 1. Valida que a legislação existe
     const legislacao = await this.supabaseService.getLegislacaoById(legislacaoId);
     if (!legislacao) throw new NotFoundException('Legislação não encontrada.');
 
-    this.logger.log(`[Planejador] Iniciando geração de plano para legislacaoId=${legislacaoId}, userId=${userId}`);
+    this.logger.log(`[Agente 4 - Planejador] Iniciando geração de plano para legislacaoId=${legislacaoId}, userId=${userId}`);
 
-    // 2. Cria/atualiza o registro do plano com status=processando
     await this.supabaseService.upsertPlanoLegislacao(legislacaoId, userId, {
       status: 'processando',
       preferencias: preferencias || {},
@@ -296,14 +525,15 @@ export class LegislacaoService {
     });
 
     try {
-      // 3. Busca artigos com comentários completos
-      const artigosComComentarios = await this.supabaseService.listArtigosComComentarios(legislacaoId);
+      const [artigosComComentarios, analiseEstrategica] = await Promise.all([
+        this.supabaseService.listArtigosComComentarios(legislacaoId),
+        this.supabaseService.getAnaliseEstrategicaByLegislacao(legislacaoId, userId),
+      ]);
 
       if (!artigosComComentarios || artigosComComentarios.length === 0) {
-        throw new Error('Nenhum artigo encontrado para esta legislação. O processamento pode não ter sido concluído.');
+        throw new Error('Nenhum artigo encontrado para esta legislação. O processamento inicial pode não ter sido concluído.');
       }
 
-      // 4. Chama o Agente 3 (LLM)
       const planoJson = await this.langChainService.gerarPlanoCronograma(
         {
           id: legislacao.id,
@@ -315,9 +545,9 @@ export class LegislacaoService {
         },
         artigosComComentarios,
         preferencias || {},
+        analiseEstrategica,
       );
 
-      // 5. Salva o plano gerado com status=concluido
       const planoSalvo = await this.supabaseService.upsertPlanoLegislacao(legislacaoId, userId, {
         status: 'concluido',
         plano_estudo: planoJson.plano_estudo || {},
@@ -331,10 +561,10 @@ export class LegislacaoService {
         erro: null,
       });
 
-      this.logger.log(`[Planejador] ✅ Plano gerado: ${planoJson.blocos?.length ?? 0} blocos, ${planoJson.sessoes?.length ?? 0} sessões.`);
+      this.logger.log(`[Agente 4 - Planejador] ✅ Plano gerado: ${planoJson.blocos?.length ?? 0} blocos, ${planoJson.sessoes?.length ?? 0} sessões.`);
       return planoSalvo;
     } catch (err: any) {
-      this.logger.error(`[Planejador] ❌ Erro ao gerar plano para ${legislacaoId}: ${err.message}`);
+      this.logger.error(`[Agente 4 - Planejador] ❌ Erro ao gerar plano para ${legislacaoId}: ${err.message}`);
       await this.supabaseService.upsertPlanoLegislacao(legislacaoId, userId, {
         status: 'erro',
         erro: err.message,
@@ -374,5 +604,175 @@ export class LegislacaoService {
     const artigosLidos = await this.supabaseService.getArtigosLidos(legislacaoId, userId);
     return { ...plano, artigos_lidos: artigosLidos };
   }
+
+  // ---------------------------------------------------------------
+  // Agente 5 — Gerador de Questões e Material de Fixação
+  // ---------------------------------------------------------------
+
+  /**
+   * Gera (ou regenera) material completo de fixação e questões para uma legislação.
+   * Cumpre as metas de questões e flashcards definidas pelo Agente 3.
+   */
+  async gerarMaterialConcurso(
+    legislacaoId: string,
+    userId: string,
+    opcoes?: {
+      sessao_id?: string;
+      banca?: string;
+      artigo_id?: string;
+      artigos_filtro?: string[];
+      modo?: 'adicionar' | 'substituir';
+    },
+  ) {
+    const legislacao = await this.supabaseService.getLegislacaoById(legislacaoId);
+    if (!legislacao) throw new NotFoundException('Legislação não encontrada.');
+
+    const modo = opcoes?.modo || 'substituir';
+    this.logger.log(`[Agente 5 - Fixação] Iniciando geração de material (modo=${modo}) para legislacaoId=${legislacaoId}, userId=${userId}`);
+
+    // Se o modo for 'adicionar', busca o material prévio para mesclagem
+    let materialExistente: any = null;
+    if (modo === 'adicionar') {
+      materialExistente = await this.supabaseService.getMaterialConcursoByLegislacao(legislacaoId, userId);
+    }
+
+    await this.supabaseService.upsertMaterialConcurso(legislacaoId, userId, {
+      status: 'processando',
+      parametros: opcoes || {},
+      erro: null,
+    });
+
+    try {
+      const [artigosComComentarios, analiseEstrategica] = await Promise.all([
+        this.supabaseService.listArtigosComComentarios(legislacaoId),
+        this.supabaseService.getAnaliseEstrategicaByLegislacao(legislacaoId, userId),
+      ]);
+
+      if (!artigosComComentarios || artigosComComentarios.length === 0) {
+        throw new Error('Nenhum artigo encontrado para esta legislação.');
+      }
+
+      const materialJson = await this.langChainService.gerarMaterialFixacao(
+        {
+          id: legislacao.id,
+          titulo: legislacao.titulo,
+          tipo: legislacao.tipo,
+          numero: legislacao.numero,
+          ano: legislacao.ano,
+          ementa: legislacao.ementa,
+        },
+        artigosComComentarios,
+        analiseEstrategica,
+        {
+          ...opcoes,
+          questoes_existentes: materialExistente?.questoes || [],
+        },
+      );
+
+      const novasQuestoes = materialJson.conteudos?.questoes || materialJson.questoes || [];
+      const novosFlashcards = materialJson.conteudos?.flashcards || materialJson.flashcards || [];
+      const novosCasosPraticos = materialJson.conteudos?.casos_praticos || materialJson.casos_praticos || [];
+
+      let questoesFinal = novasQuestoes;
+      let flashcardsFinal = novosFlashcards;
+      let casosPraticosFinal = novosCasosPraticos;
+      let pegadinhasFinal = materialJson.pegadinhas || [];
+      let pontosProvaFinal = materialJson.pontos_de_prova || [];
+      let conceitosFinal = materialJson.conceitos_memorizacao || [];
+      let comparacoesFinal = materialJson.comparacoes || [];
+
+      if (modo === 'adicionar' && materialExistente) {
+        const questoesAntigas = materialExistente.questoes || [];
+        const flashcardsAntigos = materialExistente.flashcards || [];
+        const casosAntigos = materialExistente.casos_praticos || [];
+
+        // Renumera novas questões para IDs únicos sequenciais
+        const novasQuestoesAjustadas = novasQuestoes.map((q: any, idx: number) => ({
+          ...q,
+          id: `q-${questoesAntigas.length + idx + 1}`,
+        }));
+
+        const novosFlashcardsAjustados = novosFlashcards.map((f: any, idx: number) => ({
+          ...f,
+          id: `fc-${flashcardsAntigos.length + idx + 1}`,
+        }));
+
+        questoesFinal = [...questoesAntigas, ...novasQuestoesAjustadas];
+        flashcardsFinal = [...flashcardsAntigos, ...novosFlashcardsAjustados];
+        casosPraticosFinal = [...casosAntigos, ...novosCasosPraticos];
+
+        // Combina pegadinhas e pontos de prova sem duplicar
+        const pegadinhasAntigas = materialExistente.pegadinhas || [];
+        const pegadinhaTitulos = new Set(pegadinhasAntigas.map((p: any) => p.titulo || p.armadilha));
+        pegadinhasFinal = [
+          ...pegadinhasAntigas,
+          ...(materialJson.pegadinhas || []).filter((p: any) => !pegadinhaTitulos.has(p.titulo || p.armadilha)),
+        ];
+
+        const pontosAntigos = materialExistente.pontos_de_prova || [];
+        pontosProvaFinal = [...pontosAntigos, ...(materialJson.pontos_de_prova || [])];
+        conceitosFinal = [...(materialExistente.conceitos_memorizacao || []), ...(materialJson.conceitos_memorizacao || [])];
+        comparacoesFinal = [...(materialExistente.comparacoes || []), ...(materialJson.comparacoes || [])];
+      }
+
+      const totalArtigosComMaterial = new Set([
+        ...questoesFinal.map((q: any) => String(q.artigo_numero || q.artigo_id)),
+        ...flashcardsFinal.map((f: any) => String(f.artigo_numero || f.artigo_id)),
+      ]).size;
+
+      const materialSalvo = await this.supabaseService.upsertMaterialConcurso(legislacaoId, userId, {
+        status: 'concluido',
+        questoes: questoesFinal,
+        flashcards: flashcardsFinal,
+        casos_praticos: casosPraticosFinal,
+        pontos_de_prova: pontosProvaFinal,
+        pegadinhas: pegadinhasFinal,
+        conceitos_memorizacao: conceitosFinal,
+        comparacoes: comparacoesFinal,
+        metas: {
+          questoes_planejadas: materialJson.metas?.questoes_planejadas || questoesFinal.length,
+          questoes_geradas: questoesFinal.length,
+          flashcards_planejados: materialJson.metas?.flashcards_planejados || flashcardsFinal.length,
+          flashcards_gerados: flashcardsFinal.length,
+        },
+        cobertura: {
+          total_artigos_elegiveis: artigosComComentarios.length,
+          artigos_com_material: totalArtigosComMaterial,
+          artigos_sem_material: Math.max(0, artigosComComentarios.length - totalArtigosComMaterial),
+          percentual_cobertura: Math.min(100, Math.round((totalArtigosComMaterial / artigosComComentarios.length) * 100)),
+        },
+        resumo: {
+          total_questoes: questoesFinal.length,
+          total_flashcards: flashcardsFinal.length,
+          total_casos_praticos: casosPraticosFinal.length,
+        },
+        alertas: materialJson.alertas || [],
+        parametros: opcoes || {},
+        erro: null,
+      });
+
+      this.logger.log(
+        `[Agente 5 - Fixação] ✅ Material salvo com sucesso (modo=${modo}) para ${legislacaoId}: ` +
+        `Total consolidado: ${questoesFinal.length} questões, ${flashcardsFinal.length} flashcards.`,
+      );
+
+      return materialSalvo;
+    } catch (err: any) {
+      this.logger.error(`[Agente 5 - Fixação] ❌ Erro ao gerar material para ${legislacaoId}: ${err.message}`);
+      await this.supabaseService.upsertMaterialConcurso(legislacaoId, userId, {
+        status: 'erro',
+        erro: err.message,
+      });
+      throw err;
+    }
+  }
+
+  /**
+   * Obtém o material de concurso/fixação de uma legislação para um determinado usuário.
+   */
+  async getMaterialConcurso(legislacaoId: string, userId: string) {
+    return this.supabaseService.getMaterialConcursoByLegislacao(legislacaoId, userId);
+  }
 }
+
 

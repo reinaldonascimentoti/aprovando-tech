@@ -1000,6 +1000,7 @@ export class SupabaseService {
     tipo?: string;
     numero?: string;
     ano?: number;
+    fonte?: string;
   }) {
     if (!this.adminClient) return null;
     const { data: row, error } = await this.adminClient
@@ -1010,6 +1011,7 @@ export class SupabaseService {
         tipo: data.tipo || null,
         numero: data.numero || null,
         ano: data.ano || null,
+        fonte: data.fonte || null,
         status: 'pendente',
       })
       .select()
@@ -1221,6 +1223,25 @@ export class SupabaseService {
     return data ?? [];
   }
 
+  async getProcessamentosByLegislacoes(legislacaoIds: string[]): Promise<Record<string, any[]>> {
+    if (!this.adminClient || !legislacaoIds.length) return {};
+    const { data, error } = await this.adminClient
+      .from('legislacao_processamentos')
+      .select('*')
+      .in('legislacao_id', legislacaoIds)
+      .order('created_at', { ascending: true });
+    if (error) {
+      this.logger.error(`getProcessamentosByLegislacoes error: ${error.message}`);
+      return {};
+    }
+    const map: Record<string, any[]> = {};
+    for (const row of data || []) {
+      if (!map[row.legislacao_id]) map[row.legislacao_id] = [];
+      map[row.legislacao_id].push(row);
+    }
+    return map;
+  }
+
   // ----------------------------------------------------------------
   // PLANOS DE ESTUDO — Agente 3: Planejador de Cronograma
   // ----------------------------------------------------------------
@@ -1332,6 +1353,27 @@ export class SupabaseService {
   }
 
   /**
+   * Busca artigos lidos de todas as legislações para um determinado usuário, mapeados por legislacao_id.
+   */
+  async getAllArtigosLidosByUser(userId: string): Promise<Record<string, string[]>> {
+    if (!this.adminClient || !userId) return {};
+    const { data, error } = await this.adminClient
+      .from('legislacao_artigos_lidos')
+      .select('legislacao_id, artigo_numero')
+      .eq('user_id', userId);
+    if (error) {
+      this.logger.warn(`getAllArtigosLidosByUser error: ${error.message}`);
+      return {};
+    }
+    const map: Record<string, string[]> = {};
+    for (const row of data || []) {
+      if (!map[row.legislacao_id]) map[row.legislacao_id] = [];
+      map[row.legislacao_id].push(String(row.artigo_numero));
+    }
+    return map;
+  }
+
+  /**
    * Marca ou desmarca um artigo como lido pelo usuário.
    * Também sincroniza a coluna artigos_lidos em legislacao_planos.
    */
@@ -1390,5 +1432,132 @@ export class SupabaseService {
 
     return { lido: shouldBeLido, artigos_lidos: artigosLidos };
   }
+
+  // ----------------------------------------------------------------
+  // ANÁLISE ESTRATÉGICA — Agente 3: Analista Estratégico de Concursos
+  // ----------------------------------------------------------------
+
+  /**
+   * Salva ou atualiza a análise estratégica do Agente 3 para uma legislação e usuário.
+   */
+  async upsertAnaliseEstrategica(
+    legislacaoId: string,
+    userId: string,
+    updates: Record<string, any>,
+  ) {
+    if (!this.adminClient) return null;
+    const { data, error } = await this.adminClient
+      .from('legislacao_analises_estrategicas')
+      .upsert(
+        {
+          legislacao_id: legislacaoId,
+          user_id: userId,
+          ...updates,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'legislacao_id,user_id' },
+      )
+      .select()
+      .single();
+    if (error) {
+      this.logger.error(`upsertAnaliseEstrategica error: ${error.message}`);
+      return null;
+    }
+    return data;
+  }
+
+  /**
+   * Obtém a análise estratégica gerada pelo Agente 3 para uma legislação e usuário.
+   */
+  async getAnaliseEstrategicaByLegislacao(legislacaoId: string, userId: string) {
+    if (!this.adminClient) return null;
+    const { data, error } = await this.adminClient
+      .from('legislacao_analises_estrategicas')
+      .select('*')
+      .eq('legislacao_id', legislacaoId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) {
+      this.logger.warn(`getAnaliseEstrategicaByLegislacao error: ${error.message}`);
+      return null;
+    }
+    return data || null;
+  }
+
+  // ----------------------------------------------------------------
+  // MATERIAL DE FIXAÇÃO — Agente 5: Gerador de Questões e Material de Fixação
+  // ----------------------------------------------------------------
+
+  /**
+   * Salva ou atualiza o material de concurso consolidado da legislação para um usuário.
+   */
+  async upsertMaterialConcurso(
+    legislacaoId: string,
+    userId: string,
+    updates: Record<string, any>,
+  ) {
+    if (!this.adminClient) return null;
+
+    const { data: existente } = await this.adminClient
+      .from('legislacao_materiais_concurso')
+      .select('id')
+      .eq('legislacao_id', legislacaoId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (existente?.id) {
+      const { data, error } = await this.adminClient
+        .from('legislacao_materiais_concurso')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existente.id)
+        .select()
+        .single();
+
+      if (error) {
+        this.logger.error(`updateMaterialConcurso error: ${error.message}`);
+        return null;
+      }
+      return data;
+    } else {
+      const { data, error } = await this.adminClient
+        .from('legislacao_materiais_concurso')
+        .insert({
+          legislacao_id: legislacaoId,
+          user_id: userId,
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) {
+        this.logger.error(`insertMaterialConcurso error: ${error.message}`);
+        return null;
+      }
+      return data;
+    }
+  }
+
+  /**
+   * Obtém o material de concurso gerado pelo Agente 4 para uma legislação e usuário.
+   */
+  async getMaterialConcursoByLegislacao(legislacaoId: string, userId: string) {
+    if (!this.adminClient) return null;
+    const { data, error } = await this.adminClient
+      .from('legislacao_materiais_concurso')
+      .select('*')
+      .eq('legislacao_id', legislacaoId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) {
+      this.logger.warn(`getMaterialConcursoByLegislacao error: ${error.message}`);
+      return null;
+    }
+    return data || null;
+  }
 }
+
 

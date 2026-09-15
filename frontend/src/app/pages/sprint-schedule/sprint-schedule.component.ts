@@ -83,19 +83,19 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
         <!-- Proportion Legend -->
         <div class="flex flex-wrap gap-4 pt-2">
           <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded-sm bg-[#433fe5]"></div>
+            <div class="w-3 h-3 rounded-sm bg-[#3b82f6]"></div>
             <span class="text-[11px] font-bold text-[var(--on-surface-variant)]">Teoria (30%)</span>
           </div>
           <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded-sm bg-[#6b38d4]"></div>
+            <div class="w-3 h-3 rounded-sm bg-[#8b5cf6]"></div>
             <span class="text-[11px] font-bold text-[var(--on-surface-variant)]">Exercícios (50%)</span>
           </div>
           <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded-sm bg-[#00845a]"></div>
+            <div class="w-3 h-3 rounded-sm bg-[#22c55e]"></div>
             <span class="text-[11px] font-bold text-[var(--on-surface-variant)]">Revisão (20%)</span>
           </div>
           <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded-sm bg-[#e65100]"></div>
+            <div class="w-3 h-3 rounded-sm bg-[#f59e0b]"></div>
             <span class="text-[11px] font-bold text-[var(--on-surface-variant)]">Revisão Espaçada</span>
           </div>
         </div>
@@ -137,7 +137,7 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
             <div class="w-full rounded-t transition-all duration-500"
               [style.height.%]="day.heightPct"
               [style.min-height.px]="day.total > 0 ? 3 : 1"
-              [style.background]="day.isToday ? '#433fe5' : 'var(--surface-container-highest)'"
+              [style.background]="day.isToday ? '#3b82f6' : 'var(--surface-container-highest)'"
               [title]="day.label + ': ' + formatHorasMin(day.total)">
             </div>
             <span class="text-[8px] font-bold text-[var(--on-surface-variant)]" [class.text-[var(--primary)]]="day.isToday">{{ day.short }}</span>
@@ -171,9 +171,9 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
               <div class="flex items-center gap-1.5">
                 <span class="text-[10px] font-bold text-[var(--on-surface-variant)]">T/E/R:</span>
                 <div class="w-24 h-2 rounded-full overflow-hidden flex bg-[var(--surface-container)]">
-                  <div class="h-full bg-[#433fe5]" [style.width.%]="getProportionForSemana(semana, 'teoria')"></div>
-                  <div class="h-full bg-[#6b38d4]" [style.width.%]="getProportionForSemana(semana, 'exercicios')"></div>
-                  <div class="h-full bg-[#00845a]" [style.width.%]="getProportionForSemana(semana, 'revisao')"></div>
+                  <div class="h-full bg-[#3b82f6]" [style.width.%]="getProportionForSemana(semana, 'teoria')"></div>
+                  <div class="h-full bg-[#8b5cf6]" [style.width.%]="getProportionForSemana(semana, 'exercicios')"></div>
+                  <div class="h-full bg-[#22c55e]" [style.width.%]="getProportionForSemana(semana, 'revisao')"></div>
                 </div>
               </div>
               <span class="text-[11px] font-bold text-[var(--primary)]">{{ getSemanaProgress(si) }}%</span>
@@ -188,16 +188,16 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
               [class.neo-pressed]="!isBlocoCompleted(si, bi)"
               [ngClass]="{
                 'bg-emerald-500/15': isBlocoCompleted(si, bi),
-                'border-[#433fe5]': bloco.tipo_atividade === 'teoria',
-                'border-[#6b38d4]': bloco.tipo_atividade === 'exercicios',
-                'border-[#00845a]': bloco.tipo_atividade === 'revisao' && !bloco.semana_revisao_espacada,
-                'border-[#e65100]': bloco.tipo_atividade === 'revisao' && bloco.semana_revisao_espacada
+                'border-[#3b82f6]': bloco.tipo_atividade === 'teoria',
+                'border-[#8b5cf6]': bloco.tipo_atividade === 'exercicios',
+                'border-[#22c55e]': bloco.tipo_atividade === 'revisao' && !bloco.semana_revisao_espacada,
+                'border-[#f59e0b]': bloco.tipo_atividade === 'revisao' && bloco.semana_revisao_espacada
               }">
 
               <div class="flex items-center gap-3 flex-1 min-w-0">
                 <!-- Checkbox -->
                 <div class="w-5 h-5 rounded-md neo-raised flex items-center justify-center transition-colors shrink-0"
-                     [class.bg-[#00845a]]="isBlocoCompleted(si, bi)" [class.text-white]="isBlocoCompleted(si, bi)">
+                     [class.bg-[#22c55e]]="isBlocoCompleted(si, bi)" [class.text-white]="isBlocoCompleted(si, bi)">
                   <span *ngIf="isBlocoCompleted(si, bi)" class="material-symbols-outlined !text-[14px]">check</span>
                 </div>
 
@@ -272,7 +272,7 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
             <div *ngFor="let topic of sprint.topics" 
               (click)="toggleTopic(topic)"
               [ngClass]="{
-                'bg-emerald-500/15 border-l-4 border-[#00845a]': topic.completed,
+                'bg-emerald-500/15 border-l-4 border-[#22c55e]': topic.completed,
                 'neo-pressed': !topic.completed
               }"
               class="rounded-2xl p-4 flex items-center justify-between gap-4 cursor-pointer transition-all hover:scale-[1.002]">
@@ -280,7 +280,7 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
               <div class="flex items-center gap-4">
                 <!-- Neomorphic Checkbox Box -->
                 <div class="w-6 h-6 rounded-lg neo-raised flex items-center justify-center transition-colors shrink-0"
-                     [class.bg-[#00845a]]="topic.completed" [class.text-white]="topic.completed">
+                     [class.bg-[#22c55e]]="topic.completed" [class.text-white]="topic.completed">
                   <span *ngIf="topic.completed" class="material-symbols-outlined !text-[18px]">check</span>
                 </div>
 

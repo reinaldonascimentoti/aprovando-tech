@@ -512,13 +512,13 @@ export class StatsDashboardComponent implements OnInit, AfterViewInit, OnChanges
   }
 
   private get gridColor(): string {
-    return this.isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(15, 23, 42, 0.08)";
+    return this.isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(41, 37, 36, 0.08)";
   }
 
   private get labelColor(): string {
-    // Modo Claro: #0f172a (preto/slate escuro, 100% legível)
+    // Modo Claro: #292524 (stone-800, legível e quente)
     // Modo Escuro: #f1f5f9 (branco/slate contrastado)
-    return this.isDark ? "#f1f5f9" : "#0f172a";
+    return this.isDark ? "#f1f5f9" : "#292524";
   }
 
   private updateChartDefaults() {

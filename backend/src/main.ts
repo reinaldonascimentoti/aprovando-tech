@@ -17,35 +17,11 @@ async function bootstrap() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-  // Configuração de CORS dinâmica e robusta
+  // Configuração de CORS permissiva e robusta para desenvolvimento e produção
   app.enableCors({
-    origin: (origin, callback) => {
-      // Permite requisições sem header origin (ex: healthchecks internos, server-to-server, curl)
-      if (!origin) return callback(null, true);
-
-      // Se CORS_ORIGIN for '*' ou bater com domínios autorizados
-      if (
-        corsOriginEnv === '*' ||
-        origin.includes('linkpc.net') ||
-        origin.includes('aprovandotech') ||
-        origin.includes('localhost') ||
-        origin.includes('127.0.0.1')
-      ) {
-        return callback(null, true);
-      }
-
-      if (corsOriginEnv) {
-        const allowedList = corsOriginEnv.split(',').map((o) => o.trim());
-        if (allowedList.includes(origin)) {
-          return callback(null, true);
-        }
-      }
-
-      logger.warn(`CORS bloqueou requisição da origem: ${origin}`);
-      return callback(null, false);
-    },
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Range'],
+    allowedHeaders: '*',
     credentials: true,
   });
 
@@ -53,7 +29,7 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       transform: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false,
     }),
   );
 

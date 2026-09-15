@@ -97,10 +97,10 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
       <div *ngIf="!loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         <div
           *ngFor="let ed of filteredEditais"
-          class="rounded-3xl p-6 border transition-all duration-300 flex flex-col justify-between gap-3.5 relative overflow-hidden text-slate-800 dark:text-white group"
+          class="rounded-3xl p-6 border transition-all duration-300 flex flex-col justify-between gap-3.5 relative overflow-hidden text-slate-800 dark:text-[#e7e5e4] group"
           [ngClass]="isAlreadyAdded(ed.id)
-            ? 'bg-gradient-to-br from-[#f6f5ff] via-[#f9f8ff] to-[#edf0fe] dark:bg-gradient-to-br dark:from-[#13162d] dark:via-[#161a37] dark:to-[#1a1b3f] border-2 border-indigo-300/80 hover:border-indigo-500 dark:border-indigo-500/40 dark:hover:border-indigo-400/80 shadow-md shadow-indigo-500/5'
-            : 'bg-white dark:bg-[#0f1220] border-slate-200/90 dark:border-[#1f253d] shadow-sm hover:shadow-xl dark:shadow-xl hover:border-indigo-400/60 dark:hover:border-[#7c3aed]/50 hover:-translate-y-1'">
+            ? 'bg-gradient-to-br from-[#f6f5ff] via-[#f9f8ff] to-[#edf0fe] dark:bg-none dark:bg-[#0f172a] border-2 border-indigo-300/80 hover:border-indigo-500 dark:border-indigo-500/40 dark:hover:border-indigo-400/80 shadow-md shadow-indigo-500/5'
+            : 'bg-white dark:bg-[#0f172a] border-slate-200/90 dark:border-[#334155] shadow-sm hover:shadow-xl dark:shadow-xl hover:border-indigo-400/60 dark:hover:border-[#3b82f6]/50 hover:-translate-y-1'">
 
           <!-- Ambient Glows: Identificação sutil de edital do usuário -->
           <div *ngIf="isAlreadyAdded(ed.id)" class="absolute -right-12 -top-12 w-36 h-36 bg-indigo-500/10 dark:bg-indigo-500/15 rounded-full blur-2xl pointer-events-none"></div>
@@ -108,7 +108,7 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
 
           <!-- Top Accent Bar: Highlight for user's own editais -->
           <div *ngIf="isAlreadyAdded(ed.id)" class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#5d3bf6] via-[#7c3aed] to-[#38bdf8]"></div>
-          <div *ngIf="!isAlreadyAdded(ed.id)" class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500/70 dark:via-[#7c3aed]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div *ngIf="!isAlreadyAdded(ed.id)" class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500/70 dark:via-[#3b82f6]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
           <!-- Row 1: Orgao Badge & Status -->
           <div class="flex items-center justify-between gap-2.5 w-full flex-wrap">
@@ -119,13 +119,13 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
                 <span>Meu Edital</span>
               </span>
 
-              <div class="inline-flex items-center justify-center px-3 py-1 rounded-xl bg-purple-100 dark:bg-[#7c3aed]/20 border border-purple-300 dark:border-[#7c3aed] text-purple-900 dark:text-white font-extrabold text-xs tracking-tight shadow-xs shadow-purple-500/10 dark:shadow-[#7c3aed]/20">
+              <div class="inline-flex items-center justify-center px-3 py-1 rounded-xl bg-purple-100 dark:bg-[#334155] border border-purple-300 dark:border-[#334155] text-purple-900 dark:text-[#e7e5e4] font-extrabold text-xs tracking-tight shadow-xs shadow-purple-500/10">
                 <span>{{ getEditalOrgao(ed) }}</span>
               </div>
             </div>
 
-            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 dark:bg-[#7c3aed]/15 border border-purple-200 dark:border-[#a855f7]/40 text-purple-700 dark:text-[#c084fc] text-[11.5px] font-bold whitespace-nowrap">
-              <span class="material-symbols-outlined !text-[14px] text-purple-600 dark:text-[#a855f7]">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 dark:bg-[#3b82f6]/15 border border-purple-200 dark:border-[#3b82f6]/30 text-purple-700 dark:text-[#93c5fd] text-[11.5px] font-bold whitespace-nowrap">
+              <span class="material-symbols-outlined !text-[14px] text-purple-600 dark:text-[#3b82f6]">
                 {{ ed.status === 'completed' ? 'donut_large' : 'hourglass_top' }}
               </span>
               <span>{{ ed.status === 'completed' ? 'Pareto 80/20 Calculado' : 'Processando' }}</span>
@@ -144,29 +144,29 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
 
           <!-- Row 3: Edital para Análise (Nome Informado) + Cargo -->
           <div class="my-1.5 min-h-[48px] flex flex-col justify-center">
-            <h3 class="text-[15px] sm:text-base font-black text-slate-900 dark:text-white leading-snug line-clamp-2 flex items-center gap-1.5" [title]="ed.title || ed.cargo">
-              <span class="material-symbols-outlined !text-[17px] text-indigo-600 dark:text-indigo-400 shrink-0">description</span>
+            <h3 class="text-[15px] sm:text-base font-black text-slate-900 dark:text-[#e7e5e4] leading-snug line-clamp-2 flex items-center gap-1.5" [title]="ed.title || ed.cargo">
+              <span class="material-symbols-outlined !text-[17px] text-indigo-600 dark:text-[#3b82f6] shrink-0">description</span>
               <span>{{ ed.title || ed.cargo }}</span>
             </h3>
-            <p *ngIf="ed.cargo" class="text-xs font-semibold text-slate-500 dark:text-[#a78bfa] mt-0.5 truncate flex items-center gap-1" [title]="ed.cargo">
-              <span class="material-symbols-outlined !text-[14px] text-slate-400 dark:text-slate-400 shrink-0">badge</span>
+            <p *ngIf="ed.cargo" class="text-xs font-semibold text-slate-500 dark:text-[#cbd5e1] mt-0.5 truncate flex items-center gap-1" [title]="ed.cargo">
+              <span class="material-symbols-outlined !text-[14px] text-slate-400 dark:text-[#94a3b8] shrink-0">badge</span>
               <span>{{ ed.cargo }}</span>
             </p>
           </div>
 
           <!-- Row 4: Metrics Inset Box (3 Columns) -->
-          <div class="grid grid-cols-3 gap-1.5 p-3 rounded-2xl bg-white dark:bg-white/[0.025] border border-slate-200/80 dark:border-white/[0.06] text-center my-1">
+          <div class="grid grid-cols-3 gap-1.5 p-3 rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200/80 dark:border-[#334155] text-center my-1">
             <div class="flex flex-col items-center gap-1">
-              <span class="text-[10px] font-bold text-indigo-600 dark:text-[#818cf8] uppercase tracking-wider opacity-90">Tópicos IA</span>
-              <span class="text-base font-black text-slate-900 dark:text-white">{{ getEditalTopicosCount(ed) }}</span>
+              <span class="text-[10px] font-bold text-indigo-600 dark:text-[#93c5fd] uppercase tracking-wider opacity-90">Tópicos IA</span>
+              <span class="text-base font-black text-slate-900 dark:text-[#e7e5e4]">{{ getEditalTopicosCount(ed) }}</span>
             </div>
             <div class="flex flex-col items-center gap-1">
-              <span class="text-[10px] font-bold text-indigo-600 dark:text-[#818cf8] uppercase tracking-wider opacity-90">Questões</span>
-              <span class="text-base font-black text-slate-900 dark:text-white">{{ getEditalQuestoesCount(ed) }}</span>
+              <span class="text-[10px] font-bold text-indigo-600 dark:text-[#93c5fd] uppercase tracking-wider opacity-90">Questões</span>
+              <span class="text-base font-black text-slate-900 dark:text-[#e7e5e4]">{{ getEditalQuestoesCount(ed) }}</span>
             </div>
             <div class="flex flex-col items-center gap-1">
-              <span class="text-[10px] font-bold text-indigo-600 dark:text-[#818cf8] uppercase tracking-wider opacity-90">Precisão IA</span>
-              <span class="text-base font-black text-emerald-600 dark:text-[#00e599]">{{ getEditalScoreIA(ed) }}</span>
+              <span class="text-[10px] font-bold text-indigo-600 dark:text-[#93c5fd] uppercase tracking-wider opacity-90">Precisão IA</span>
+              <span class="text-base font-black text-emerald-600 dark:text-[#22c55e]">{{ getEditalScoreIA(ed) }}</span>
             </div>
           </div>
 

@@ -67,7 +67,43 @@ export class LegislacaoController {
 
 
   // ---------------------------------------------------------------
-  // Agente 3 — Plano de Cronograma de Estudos
+  // Agente 3 — Analista Estratégico de Concursos (Legislação)
+  // ---------------------------------------------------------------
+
+  /**
+   * Busca a análise estratégica de concursos para uma legislação.
+   * GET /api/legislacao/:id/analise-estrategica?userId=xxx
+   */
+  @Get(':id/analise-estrategica')
+  async getAnaliseEstrategica(
+    @Param('id') legislacaoId: string,
+    @Query('userId') userId: string,
+  ) {
+    if (!userId) throw new BadRequestException('userId é obrigatório.');
+    const analise = await this.legislacaoService.getAnaliseEstrategica(legislacaoId, userId);
+    return { data: analise };
+  }
+
+  /**
+   * Gera (ou regenera) a análise estratégica do Agente 3.
+   * POST /api/legislacao/:id/analise-estrategica
+   * Body: { userId }
+   */
+  @Post(':id/analise-estrategica')
+  async gerarAnaliseEstrategica(
+    @Param('id') legislacaoId: string,
+    @Body('userId') userId: string,
+  ) {
+    if (!userId) throw new BadRequestException('userId é obrigatório.');
+    const analise = await this.legislacaoService.gerarAnaliseEstrategica(legislacaoId, userId);
+    return {
+      message: 'Análise estratégica gerada com sucesso.',
+      data: analise,
+    };
+  }
+
+  // ---------------------------------------------------------------
+  // Agente 4 — Plano de Cronograma de Estudos
   // ---------------------------------------------------------------
 
   /**
@@ -122,22 +158,98 @@ export class LegislacaoController {
   }
 
   // ---------------------------------------------------------------
+  // Agente 4 — Especialista em Concursos (Legislação)
+  // ---------------------------------------------------------------
+
+  /**
+   * Busca o material de concursos existente para uma legislação.
+   * GET /api/legislacao/:id/concurso?userId=xxx
+   */
+  @Get(':id/concurso')
+  async getMaterialConcurso(
+    @Param('id') legislacaoId: string,
+    @Query('userId') userId: string,
+  ) {
+    if (!userId) throw new BadRequestException('userId é obrigatório.');
+    const material = await this.legislacaoService.getMaterialConcurso(legislacaoId, userId);
+    return { data: material };
+  }
+
+  /**
+   * Gera (ou regenera) material de concursos para uma legislação completa ou sessão de estudo.
+   * POST /api/legislacao/:id/concurso
+   * Body: { userId, sessao_id?, banca?, artigos_filtro? }
+   */
+  @Post(':id/concurso')
+  async gerarMaterialConcurso(
+    @Param('id') legislacaoId: string,
+    @Body('userId') userId: string,
+    @Body('sessao_id') sessaoId?: string,
+    @Body('banca') banca?: string,
+    @Body('artigos_filtro') artigosFiltro?: string[],
+    @Body('modo') modo?: 'adicionar' | 'substituir',
+  ) {
+    if (!userId) throw new BadRequestException('userId é obrigatório.');
+
+    const opcoes = {
+      sessao_id: sessaoId || undefined,
+      banca: banca || undefined,
+      artigos_filtro: Array.isArray(artigosFiltro) ? artigosFiltro : undefined,
+      modo: modo || 'substituir',
+    };
+
+    const material = await this.legislacaoService.gerarMaterialConcurso(legislacaoId, userId, opcoes);
+    return {
+      message: 'Material de concursos gerado com sucesso.',
+      data: material,
+    };
+  }
+
+  /**
+   * Gera material de concurso focado em um artigo específico.
+   * POST /api/legislacao/:id/artigos/:artigoId/concurso
+   * Body: { userId, banca? }
+   */
+  @Post(':id/artigos/:artigoId/concurso')
+  async gerarMaterialConcursoArtigo(
+    @Param('id') legislacaoId: string,
+    @Param('artigoId') artigoId: string,
+    @Body('userId') userId: string,
+    @Body('banca') banca?: string,
+  ) {
+    if (!userId) throw new BadRequestException('userId é obrigatório.');
+
+    const material = await this.legislacaoService.gerarMaterialConcurso(legislacaoId, userId, {
+      artigo_id: artigoId,
+      banca: banca || undefined,
+    });
+
+    return {
+      message: 'Material de concursos do artigo gerado com sucesso.',
+      data: material,
+    };
+  }
+
+  // ---------------------------------------------------------------
   // Upload de nova legislação + início do processamento
   // ---------------------------------------------------------------
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async upload(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: Express.Multer.File | undefined,
     @Body('userId') userId: string,
     @Body('titulo') titulo: string,
     @Body('tipo') tipo?: string,
     @Body('numero') numero?: string,
     @Body('ano') ano?: string,
+    @Body('url') url?: string,
   ) {
     if (!userId) throw new BadRequestException('userId é obrigatório.');
     if (!titulo || !titulo.trim()) throw new BadRequestException('Título é obrigatório.');
-    if (!file) throw new BadRequestException('Arquivo é obrigatório.');
+    if (!file && (!url || !url.trim())) {
+      throw new BadRequestException('Informe um arquivo (PDF/DOCX/TXT) ou um link/URL válido.');
+    }
 
     const legislacao = await this.legislacaoService.uploadEProcessar(
       file,
@@ -146,6 +258,7 @@ export class LegislacaoController {
       tipo?.trim() || undefined,
       numero?.trim() || undefined,
       ano ? parseInt(ano, 10) : undefined,
+      url?.trim() || undefined,
     );
 
     return {
@@ -162,6 +275,14 @@ export class LegislacaoController {
   ) {
     const result = await this.legislacaoService.reprocessarArtigo(legislacaoId, artigoId);
     return result;
+  }
+
+  // Retomar processamento de comentários para todos os artigos pendentes
+  @Post(':id/retomar-comentarios')
+  async retomarComentarios(
+    @Param('id') legislacaoId: string,
+  ) {
+    return this.legislacaoService.retomarProcessamentoComentarios(legislacaoId);
   }
 
   // Excluir legislação

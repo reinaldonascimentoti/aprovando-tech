@@ -485,6 +485,7 @@ Analise o texto a seguir extraído de um bloco do PDF de aula "${filename}" e ex
 ## REGRA FUNDAMENTAL
 - Extraia SOMENTE questões que existem LITERALMENTE no texto abaixo.
 - NÃO invente, NÃO complete, NÃO crie questões que não estejam no texto.
+- No campo "statement" (enunciado), se a questão possuir itens enumerados em algarismos romanos (ex: I, II, III, IV, etc.), insira quebras de linha (\\n) antes de cada item para que fiquem em linhas separadas e o texto fique bem formatado/justificado.
 - Se não houver questões no texto, retorne um array vazio: []
 
 Diferencie as questões pelo campo "tipo":
@@ -2197,14 +2198,14 @@ Estrutura obrigatória:
       .map(d => `  [${d.tipo}${d.numero ? ' ' + d.numero : ''}]: ${d.texto_original}`)
       .join('\n');
 
-    const PROMPT_COMENTADOR = `# AGENTE COMENTADOR DE LEGISLAÇÃO BRASILEIRA
+    const PROMPT_COMENTADOR = `# AGENTE 2 — COMENTADOR DE LEGISLAÇÃO BRASILEIRA
 
-Você é um **Agente Especialista em Comentários e Explicação de Legislação Brasileira para Estudo e Preparação para Concursos Públicos**.
+Você é o **Agente 2 — Comentador de Legislação Brasileira**.
 
-## LEGISLAÇÃO
+## 1. LEGISLAÇÃO
 ${legislacaoTipo || 'Legislação'}: ${legislacaoTitulo}
 
-## ARTIGO A COMENTAR
+## 2. ARTIGO A COMENTAR
 Art. ${artigo.numero}
 
 TEXTO ORIGINAL:
@@ -2213,26 +2214,24 @@ ${artigo.texto_original}
 DISPOSITIVOS:
 ${dispositivosTexto || '(sem dispositivos adicionais)'}
 
-## INSTRUÇÕES
-
-Para este artigo, produza uma análise didática completa.
+## 3. INSTRUÇÕES
+Explique o conteúdo jurídico de forma clara, didática, objetiva, tecnicamente correta e adequada à preparação para concursos públicos.
+Sua pergunta central é: "O que esse dispositivo significa?"
 
 ### REGRAS FUNDAMENTAIS
-- Baseie-se EXCLUSIVAMENTE no texto fornecido acima.
-- Não invente informações.
-- "poderá" ≠ "deverá" — preserve essa distinção.
-- Preencha apenas os campos que realmente existirem no texto.
-- Se um campo não se aplicar, use null ou [].
+- Baseie-se EXCLUSIVAMENTE no texto fornecido. Não substitua por conhecimento externo.
+- Rigor jurídico: preserve diferenças como poderá × deverá, pode × deve, até × a partir de, mínimo × máximo, regra × exceção.
+- Não produza o campo termos_juridicos.
+- Não invente jurisprudência, doutrina ou prazos.
+- Se um campo não se aplicar, use [] ou null.
 
-### FORMATO DE SAÍDA
-
-Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
+### FORMATO DE SAÍDA (EXCLUSIVAMENTE JSON VÁLIDO)
 
 {
   "artigo_numero": "${artigo.numero}",
-  "resumo": "Frase curta: sobre o que trata este artigo?",
-  "explicacao_simples": "Explicação em linguagem acessível, sem perder precisão jurídica.",
-  "comentario_tecnico": "Análise objetiva da estrutura normativa: sujeito, ação, obrigação, direito, condição, etc.",
+  "resumo": "Frase curta e objetiva sobre o tema do artigo",
+  "explicacao_simples": "Explicação em linguagem clara e acessível.",
+  "comentario_tecnico": "Análise da estrutura normativa, sujeitos, obrigações e efeitos.",
   "direitos": [],
   "obrigacoes": [],
   "proibicoes": [],
@@ -2245,7 +2244,6 @@ Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
   "consequencias": [],
   "pontos_importantes": [],
   "pontos_atencao": [],
-  "termos_juridicos": [],
   "referencias": [],
   "exemplo_pratico": null,
   "relevancia_concurso": "alta",
@@ -2255,40 +2253,48 @@ Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
 
 ### RELEVÂNCIA PARA CONCURSOS
 - "alta": prazos, competências, requisitos, exceções, proibições, penalidades, percentuais, números
-- "media": informações importantes mas menos específicas
-- "baixa": informações predominantemente contextuais
-
-### GRAU DE CONFIANÇA
-- "alta": conteúdo claramente determinado pelo texto
-- "media": existe dependência contextual
-- "baixa": dispositivo ambíguo ou depende de informação não fornecida`;
+- "media": informações importantes mas de menor densidade
+- "baixa": informações contextuais ou de baixa incidência`;
 
     const genAI = new GoogleGenerativeAI(googleKey);
-    const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+    const modelNames = [
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+    ];
 
     for (const modelName of modelNames) {
-      try {
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 8192,
-            responseMimeType: 'application/json',
-          },
-        });
+      for (let tentativa = 1; tentativa <= 2; tentativa++) {
+        try {
+          const model = genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: 8192,
+              responseMimeType: 'application/json',
+            },
+          });
 
-        const result = await model.generateContent(PROMPT_COMENTADOR);
-        const text = result.response.text();
+          const result = await model.generateContent(PROMPT_COMENTADOR);
+          const text = result.response.text();
 
-        if (text && text.trim().length > 10) {
-          const parsed = this.parseJsonResponse(text, `Comentador-Art.${artigo.numero}`);
-          if (parsed && parsed.resumo !== undefined) {
-            this.logger.log(`[Comentador] ✅ Art. ${artigo.numero} comentado com ${modelName}.`);
-            return parsed;
+          if (text && text.trim().length > 10) {
+            const parsed = this.parseJsonResponse(text, `Comentador-Art.${artigo.numero}`);
+            if (parsed && parsed.resumo !== undefined) {
+              this.logger.log(`[Comentador] ✅ Art. ${artigo.numero} comentado com ${modelName}.`);
+              return parsed;
+            }
+          }
+        } catch (err: any) {
+          const isRateLimit = err.message?.includes('429') || err.message?.includes('Quota') || err.message?.includes('503');
+          this.logger.warn(`[Comentador] Art. ${artigo.numero} com ${modelName} (tentativa ${tentativa}) falhou: ${err.message}`);
+          if (isRateLimit && tentativa === 1) {
+            this.logger.log(`[Comentador] ⏳ Aguardando 12s para resetar janela de cota do Gemini...`);
+            await new Promise(resolve => setTimeout(resolve, 12000));
           }
         }
-      } catch (err: any) {
-        this.logger.warn(`[Comentador] Art. ${artigo.numero} com ${modelName} falhou: ${err.message}`);
       }
     }
 
@@ -2296,8 +2302,192 @@ Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
   }
 
   // ===========================================================================
-  // AGENTE 3 — PLANEJADOR E GERENCIADOR DE CRONOGRAMA DE ESTUDOS
-  // Recebe a legislação (Agente 1) + comentários (Agente 2) e gera plano
+  // AGENTE 3 — ANALISTA ESTRATÉGICO DE CONCURSOS — LEGISLAÇÃO
+  // Transforma artigos comentados em estratégia de preparação, prioridade e metas
+  // ===========================================================================
+
+  async analisarEstrategiaConcurso(
+    legislacao: {
+      id: string;
+      titulo: string;
+      tipo?: string | null;
+      numero?: string | null;
+      ano?: number | null;
+      ementa?: string | null;
+    },
+    artigosComComentarios: any[],
+  ): Promise<any> {
+    const googleKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
+    if (!googleKey) {
+      throw new Error('GOOGLE_AI_API_KEY não configurada para o Agente Analista Estratégico.');
+    }
+
+    const artigosContexto = artigosComComentarios.map(a => {
+      const c = Array.isArray(a.legislacao_comentarios)
+        ? a.legislacao_comentarios[0]
+        : a.legislacao_comentarios;
+      return {
+        artigo_id: a.id,
+        artigo_numero: a.numero,
+        titulo: a.titulo || null,
+        texto_resumo: c?.resumo || (a.texto_original ? a.texto_original.slice(0, 300) : null),
+        status_dispositivo: a.status_dispositivo || 'vigente_no_documento',
+        relevancia_concurso: c?.relevancia_concurso || 'media',
+        prazos: c?.prazos?.length ? c.prazos : undefined,
+        competencias: c?.competencias?.length ? c.competencias : undefined,
+        requisitos: c?.requisitos?.length ? c.requisitos : undefined,
+        excecoes: c?.excecoes?.length ? c.excecoes : undefined,
+        pontos_atencao: c?.pontos_atencao?.length ? c.pontos_atencao : undefined,
+      };
+    });
+
+    const PROMPT_ANALISTA = `# AGENTE 3 — ANALISTA ESTRATÉGICO DE CONCURSOS — LEGISLAÇÃO
+
+## 1. PAPEL
+Você é o **Agente 3 — Analista Estratégico de Concursos**.
+Sua função é analisar estrategicamente o conteúdo para preparação para concursos públicos.
+Você responde: "O que merece mais atenção na prova e quanto treinamento esse conteúdo deve receber?"
+
+## 2. REGRAS FUNDAMENTAIS
+- **Cobertura praticamente total**: todo artigo elegível deve receber algum nível de cobertura e meta de questões/flashcards.
+- Para cada artigo, defina a prioridade ('alta', 'media', 'baixa'), potencial de cobrança, justificativa, riscos de erro, formas de cobrança, meta de questões e meta de flashcards.
+- **Metas de Referência**:
+  - Prioridade ALTA: meta de questões (min: 2, recomendado: 5, max: 8), flashcards (min: 1, recomendado: 2, max: 3).
+  - Prioridade MÉDIA: meta de questões (min: 2, recomendado: 4, max: 6), flashcards (min: 1, recomendado: 1, max: 2).
+  - Prioridade BAIXA: meta de questões (min: 1, recomendado: 2, max: 3), flashcards (min: 0, recomendado: 1, max: 1).
+- Defina a **meta global** (soma das metas recomendadas).
+- Identifique **comparações recomendadas** entre artigos semelhantes ou com risco de confusão.
+
+## 3. DADOS DA LEGISLAÇÃO
+${JSON.stringify({
+  legislacao_id: legislacao.id,
+  titulo: legislacao.titulo,
+  tipo: legislacao.tipo,
+  numero: legislacao.numero,
+  ano: legislacao.ano,
+  total_artigos: artigosContexto.length,
+}, null, 2)}
+
+## 4. ARTIGOS E COMENTÁRIOS DE ENTRADA
+\`\`\`json
+${JSON.stringify(artigosContexto, null, 2)}
+\`\`\`
+
+## 5. SAÍDA (EXCLUSIVAMENTE JSON VÁLIDO)
+Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
+
+{
+  "legislacao_id": "${legislacao.id}",
+  "meta_global": {
+    "meta_questoes_total": 0,
+    "meta_flashcards_total": 0
+  },
+  "analise_concurso": [
+    {
+      "artigo_id": "uuid-do-artigo",
+      "artigo_numero": "1º",
+      "prioridade": "alta",
+      "potencial_cobranca": "alto",
+      "justificativa": "...",
+      "riscos_de_erro": ["..."],
+      "formas_de_cobranca": ["alteração de prazo", "inversão de regra"],
+      "meta_questoes": {
+        "minimo": 4,
+        "recomendado": 6,
+        "maximo": 8
+      },
+      "meta_flashcards": {
+        "minimo": 1,
+        "recomendado": 2,
+        "maximo": 3
+      },
+      "tipos_recomendados": [
+        "questao_certo_errado",
+        "questao_multipla_escolha"
+      ]
+    }
+  ],
+  "comparacoes_recomendadas": [
+    {
+      "artigos": ["1º", "2º"],
+      "motivo": "...",
+      "foco": "...",
+      "tipo_questao": "comparativa"
+    }
+  ]
+}`;
+
+    const genAI = new GoogleGenerativeAI(googleKey);
+    const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+
+    for (const modelName of modelNames) {
+      try {
+        this.logger.log(`[Agente 3 - Analista] Tentando analisarEstrategiaConcurso com modelo ${modelName}...`);
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 65536,
+            responseMimeType: 'application/json',
+          },
+        });
+
+        const result = await model.generateContent(PROMPT_ANALISTA);
+        const text = result.response.text();
+
+        if (text && text.trim().length > 10) {
+          const parsed = this.parseJsonResponse(text, `AnalistaEstrategico-${modelName}`);
+          if (parsed && parsed.analise_concurso && Array.isArray(parsed.analise_concurso) && parsed.analise_concurso.length > 0) {
+            this.logger.log(`[Agente 3 - Analista] ✅ ${modelName}: ${parsed.analise_concurso.length} artigos analisados strategicamente.`);
+            return parsed;
+          }
+        }
+      } catch (err: any) {
+        this.logger.warn(`[Agente 3 - Analista] ${modelName} falhou: ${err.message}. Tentando próximo modelo...`);
+      }
+    }
+
+    // Fallback de alta disponibilidade com Groq
+    const groqKey = process.env.GROQ_API_KEY;
+    if (groqKey) {
+      const groqModels = ['qwen/qwen3.8-27b', 'groq/compound'];
+      for (const gm of groqModels) {
+        try {
+          this.logger.log(`[Agente 3 - Analista] Tentando fallback com Groq (${gm})...`);
+          const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${groqKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: gm,
+              messages: [{ role: 'user', content: PROMPT_ANALISTA }],
+              response_format: { type: 'json_object' },
+              temperature: 0.1,
+            }),
+          });
+          const data = await groqRes.json();
+          const content = data?.choices?.[0]?.message?.content;
+          if (content) {
+            const parsed = this.parseJsonResponse(content, `AnalistaEstrategico-Groq-${gm}`);
+            if (parsed && parsed.analise_concurso && Array.isArray(parsed.analise_concurso) && parsed.analise_concurso.length > 0) {
+              this.logger.log(`[Agente 3 - Analista] ✅ Fallback Groq (${gm}) sucesso: ${parsed.analise_concurso.length} artigos analisados.`);
+              return parsed;
+            }
+          }
+        } catch (groqErr: any) {
+          this.logger.warn(`[Agente 3 - Analista] Fallback Groq (${gm}) falhou: ${groqErr.message}`);
+        }
+      }
+    }
+
+    throw new Error('Todos os modelos de IA falharam ao gerar a análise estratégica de concursos.');
+  }
+
+  // ===========================================================================
+  // AGENTE 4 — PLANEJADOR E GERENCIADOR DE CRONOGRAMA DE ESTUDOS
+  // Transforma estratégia do Agente 3 + preferências em plano executável
   // ===========================================================================
 
   async gerarPlanoCronograma(
@@ -2319,15 +2509,13 @@ Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
       objetivo?: string;
       prioridade_legislacao?: string;
     },
+    analiseEstrategica?: any,
   ): Promise<any> {
     const googleKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
     if (!googleKey) {
       throw new Error('GOOGLE_AI_API_KEY não configurada para o Agente Planejador.');
     }
 
-    // -----------------------------------------------------------------------
-    // Monta o contexto da legislação para o prompt
-    // -----------------------------------------------------------------------
     const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     const diasStr = preferencias.dias_disponiveis?.length
       ? preferencias.dias_disponiveis.map(d => diasSemana[d] || d).join(', ')
@@ -2335,52 +2523,53 @@ Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
 
     const dataHoje = preferencias.data_inicio || new Date().toISOString().split('T')[0];
 
-    // Serializa artigos + comentários de forma concisa para o prompt
-    // Inclui apenas campos relevantes para planejamento (não o texto completo)
+    // Mapeia estratégia do Agente 3 por artigo se disponível
+    const estrategiaMap = new Map<string, any>();
+    if (analiseEstrategica?.analise_concurso && Array.isArray(analiseEstrategica.analise_concurso)) {
+      for (const item of analiseEstrategica.analise_concurso) {
+        if (item.artigo_id) estrategiaMap.set(String(item.artigo_id), item);
+        if (item.artigo_numero) estrategiaMap.set(String(item.artigo_numero), item);
+      }
+    }
+
     const artigosContexto = artigosComComentarios.map(a => {
       const c = Array.isArray(a.legislacao_comentarios)
         ? a.legislacao_comentarios[0]
         : a.legislacao_comentarios;
+      const est = estrategiaMap.get(String(a.id)) || estrategiaMap.get(String(a.numero)) || {};
       return {
         artigo_id: a.id,
         numero: a.numero,
         titulo: a.titulo,
         status_dispositivo: a.status_dispositivo,
-        // Comentário do Agente 2 (campos relevantes para planejamento)
         resumo: c?.resumo || null,
         relevancia_concurso: c?.relevancia_concurso || 'media',
-        grau_confianca: c?.grau_confianca || 'media',
+        prioridade_estrategica: est.prioridade || c?.relevancia_concurso || 'media',
+        potencial_cobranca: est.potencial_cobranca || 'medio',
+        meta_questoes_sugerida: est.meta_questoes?.recomendado || 4,
         prazos: c?.prazos?.length ? c.prazos : [],
         competencias: c?.competencias?.length ? c.competencias : [],
         requisitos: c?.requisitos?.length ? c.requisitos : [],
         excecoes: c?.excecoes?.length ? c.excecoes : [],
-        consequencias: c?.consequencias?.length ? c.consequencias : [],
         pontos_atencao: c?.pontos_atencao?.length ? c.pontos_atencao : [],
-        pontos_importantes: c?.pontos_importantes?.length ? c.pontos_importantes : [],
-        obrigacoes: c?.obrigacoes?.length ? c.obrigacoes : [],
-        proibicoes: c?.proibicoes?.length ? c.proibicoes : [],
-        comentario_tecnico: c?.comentario_tecnico || null,
-        comentario_status: c?.status || 'pendente',
       };
     });
 
-    const PROMPT_PLANEJADOR = `# AGENTE 3 — PLANEJADOR E GERENCIADOR DE CRONOGRAMA DE ESTUDOS
+    const PROMPT_PLANEJADOR = `# AGENTE 4 — PLANEJADOR E GERENCIADOR DE CRONOGRAMA DE ESTUDOS
 
-## 1. PAPEL DO AGENTE
+## 1. PAPEL
+Você é o **Agente 4 — Planejador e Gerenciador de Cronograma de Estudos**.
+Você transforma a legislação estruturada (Agente 1), os comentários (Agente 2) e a análise estratégica (Agente 3) em um cronograma executável.
+Você responde: "Quando, em que ordem e quanto tempo devo dedicar a cada conteúdo?"
 
-Você é um especialista em planejamento de estudos para concursos públicos brasileiros.
+## 2. REGRAS DE PLANEJAMENTO
+- Utilize os dados do Agente 3 (prioridade, potencial de cobrança, meta de questões).
+- Todo artigo elegível deve pertencer a um bloco temático.
+- Distribua o estudo em sessões nos dias disponíveis, respeitando o tempo diário de ${preferencias.tempo_diario_minutos || 60} minutos.
+- Incorpore nas sessões não apenas tempo de leitura, mas também a meta de questões para treinamento e revisões espaçadas (24h, 7 dias, 30 dias).
+- Distribua proporcionalmente mais tempo e revisões para os conteúdos de maior prioridade.
 
-Sua função é transformar a legislação estruturada e comentada recebida em um cronograma de estudos organizado, realista, progressivo e adaptável.
-
-Determine: o que estudar, em que ordem, quais artigos estudar juntos, quanto tempo dedicar, quando revisar, quais conteúdos priorizar e como distribuir o conteúdo até a data da prova.
-
-## 2. PRINCÍPIO FUNDAMENTAL
-
-Utilize EXCLUSIVAMENTE as informações fornecidas abaixo. NÃO invente artigos, assuntos, regras, prazos, frequência de cobrança ou informações sobre concursos.
-Se uma informação necessária não estiver disponível, utilize premissas claramente identificadas.
-
-## 3. DADOS DA LEGISLAÇÃO
-
+## 3. DADOS DA LEGISLAÇÃO E ESTRATÉGIA
 \`\`\`json
 ${JSON.stringify({
   legislacao_id: legislacao.id,
@@ -2389,59 +2578,24 @@ ${JSON.stringify({
   ano: legislacao.ano,
   titulo: legislacao.titulo,
   ementa: legislacao.ementa,
-  quantidade_artigos: artigosComComentarios.length,
+  total_artigos: artigosComComentarios.length,
+  preferencias: {
+    data_inicio: dataHoje,
+    data_prova: preferencias.data_prova || 'Não informada',
+    tempo_diario_minutos: preferencias.tempo_diario_minutos || 60,
+    dias_disponiveis: diasStr,
+    nivel_estudante: preferencias.nivel_estudante || 'intermediário',
+    objetivo: preferencias.objetivo || 'Aprovação em concurso',
+  },
 }, null, 2)}
 \`\`\`
 
-## 4. ARTIGOS E COMENTÁRIOS (Agentes 1 e 2)
-
-Total de artigos: ${artigosComComentarios.length}
-
+## 4. ARTIGOS COM COMENTÁRIOS E ESTRATÉGIA
 \`\`\`json
 ${JSON.stringify(artigosContexto, null, 2)}
 \`\`\`
 
-## 5. PREFERÊNCIAS DO ESTUDANTE
-
-- Data de início: ${dataHoje}
-- Data da prova: ${preferencias.data_prova || 'Não informada'}
-- Tempo disponível por dia: ${preferencias.tempo_diario_minutos || 60} minutos
-- Dias disponíveis: ${diasStr}
-- Nível de conhecimento: ${preferencias.nivel_estudante || 'Não informado'}
-- Objetivo: ${preferencias.objetivo || 'Aprovação em concurso público'}
-- Prioridade desta legislação: ${preferencias.prioridade_legislacao || 'Não informada'}
-
-## 6. INSTRUÇÕES DE PLANEJAMENTO
-
-### ANÁLISE
-Identifique: estrutura formal (títulos, capítulos, seções), artigos relacionados, artigos simples vs. complexos, artigos com prazos/requisitos/competências/exceções, artigos de alta/média/baixa relevância para concurso.
-
-### DIVISÃO EM BLOCOS
-Divida os artigos em blocos temáticos coerentes considerando: estrutura formal, proximidade temática, relação entre artigos, complexidade e relevância.
-Cada bloco deve ter explicitamente a lista de artigos que o compõem.
-
-REGRA: Não divida simplesmente em blocos com a mesma quantidade de artigos. A divisão deve ter coerência temática.
-
-### PRIORIZAÇÃO
-Classifique cada artigo em alta/média/baixa:
-- ALTA: artigos com prazos, competências, requisitos, exceções, proibições, penalidades, consequências, pontos de atenção, alta relevância para concurso
-- MÉDIA: conteúdo relevante mas de menor densidade
-- BAIXA: conteúdo complementar ou contextual
-
-### ESTIMATIVA DE TEMPO
-Estime o tempo de estudo de cada bloco considerando quantidade de artigos, complexidade, densidade normativa, necessidade de memorização. NÃO use tempo fixo por artigo.
-
-### SESSÕES E REVISÕES
-- Distribua as sessões nos dias disponíveis, respeitando o tempo diário informado
-- Inclua revisão espaçada: 24h, 7 dias, 30 dias (quando houver tempo)
-- Se não houver tempo para todo o conteúdo antes da prova, priorize os artigos de alta relevância e informe o que ficará pendente nos alertas
-
-## 7. COBERTURA TOTAL
-Todos os ${artigosComComentarios.length} artigos devem estar em algum bloco. Verifique antes de responder.
-
-## 8. SAÍDA
-
-Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
+## 5. SAÍDA (EXCLUSIVAMENTE JSON VÁLIDO)
 
 {
   "plano_estudo": {
@@ -2491,7 +2645,8 @@ Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
       "objetivo": "...",
       "artigos": ["1º", "2º"],
       "tempo_minutos": 40,
-      "prioridade": "alta"
+      "prioridade": "alta",
+      "meta_questoes": 6
     }
   ],
   "revisoes": [
@@ -2514,24 +2669,14 @@ Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
     "tempo_total_minutos": 0
   },
   "alertas": []
-}
-
-## 9. VALIDAÇÃO ANTES DE RESPONDER
-
-- Todos os ${artigosComComentarios.length} artigos estão em algum bloco?
-- Cada bloco tem a lista explícita de artigos?
-- As sessões respeitam o tempo diário de ${preferencias.tempo_diario_minutos || 60} minutos?
-- As datas são coerentes com a data de início ${dataHoje}?
-- O JSON é válido e completo?
-
-Se qualquer validação falhar, corrija antes de retornar o JSON.`;
+}`;
 
     const genAI = new GoogleGenerativeAI(googleKey);
     const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
 
     for (const modelName of modelNames) {
       try {
-        this.logger.log(`[Planejador] Tentando gerarPlanoCronograma com modelo ${modelName}...`);
+        this.logger.log(`[Agente 4 - Planejador] Tentando gerarPlanoCronograma com modelo ${modelName}...`);
         const model = genAI.getGenerativeModel({
           model: modelName,
           generationConfig: {
@@ -2547,15 +2692,309 @@ Se qualquer validação falhar, corrija antes de retornar o JSON.`;
         if (text && text.trim().length > 10) {
           const parsed = this.parseJsonResponse(text, `Planejador-${modelName}`);
           if (parsed && parsed.blocos && Array.isArray(parsed.blocos) && parsed.blocos.length > 0) {
-            this.logger.log(`[Planejador] ✅ ${modelName}: ${parsed.blocos.length} blocos, ${parsed.sessoes?.length ?? 0} sessões gerados.`);
+            this.logger.log(`[Agente 4 - Planejador] ✅ ${modelName}: ${parsed.blocos.length} blocos, ${parsed.sessoes?.length ?? 0} sessões gerados.`);
             return parsed;
           }
         }
       } catch (err: any) {
-        this.logger.warn(`[Planejador] ${modelName} falhou: ${err.message}. Tentando próximo modelo...`);
+        this.logger.warn(`[Agente 4 - Planejador] ${modelName} falhou: ${err.message}. Tentando próximo modelo...`);
       }
     }
 
     throw new Error('Todos os modelos Gemini falharam ao gerar o plano de cronograma.');
   }
+
+  // ===========================================================================
+  // AGENTE 5 — GERADOR DE QUESTÕES E MATERIAL DE FIXAÇÃO
+  // Cumpre as metas do Agente 3 com controle de cobertura e qualidade
+  // ===========================================================================
+
+  async gerarMaterialFixacao(
+    legislacao: {
+      id: string;
+      titulo: string;
+      tipo?: string | null;
+      numero?: string | null;
+      ano?: number | null;
+      ementa?: string | null;
+    },
+    artigosComComentarios: any[],
+    analiseEstrategica?: any,
+    opcoes?: {
+      sessao_id?: string;
+      banca?: string;
+      artigo_id?: string;
+      artigos_filtro?: string[];
+      questoes_existentes?: any[];
+      modo?: 'adicionar' | 'substituir';
+    },
+  ): Promise<any> {
+    const googleKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
+    if (!googleKey) {
+      throw new Error('GOOGLE_AI_API_KEY não configurada para o Agente de Fixação.');
+    }
+
+    let artigosFiltrados = artigosComComentarios;
+    if (opcoes?.artigos_filtro && opcoes.artigos_filtro.length > 0) {
+      artigosFiltrados = artigosComComentarios.filter(a =>
+        opcoes.artigos_filtro!.includes(String(a.numero)) || opcoes.artigos_filtro!.includes(String(a.id)),
+      );
+    } else if (opcoes?.artigo_id) {
+      artigosFiltrados = artigosComComentarios.filter(a => a.id === opcoes.artigo_id);
+    }
+
+    if (!artigosFiltrados.length) {
+      artigosFiltrados = artigosComComentarios;
+    }
+
+    // Mapeia estratégia do Agente 3 por artigo
+    const estrategiaMap = new Map<string, any>();
+    if (analiseEstrategica?.analise_concurso && Array.isArray(analiseEstrategica.analise_concurso)) {
+      for (const item of analiseEstrategica.analise_concurso) {
+        if (item.artigo_id) estrategiaMap.set(String(item.artigo_id), item);
+        if (item.artigo_numero) estrategiaMap.set(String(item.artigo_numero), item);
+      }
+    }
+
+    const artigosContexto = artigosFiltrados.map(a => {
+      const c = Array.isArray(a.legislacao_comentarios)
+        ? a.legislacao_comentarios[0]
+        : a.legislacao_comentarios;
+      const est = estrategiaMap.get(String(a.id)) || estrategiaMap.get(String(a.numero)) || {};
+      return {
+        artigo_id: a.id,
+        artigo_numero: a.numero,
+        titulo: a.titulo || null,
+        texto_original: a.texto_original,
+        status_dispositivo: a.status_dispositivo || 'vigente_no_documento',
+        resumo: c?.resumo || null,
+        explicacao_simples: c?.explicacao_simples || null,
+        comentario_tecnico: c?.comentario_tecnico || null,
+        direitos: c?.direitos || [],
+        obrigacoes: c?.obrigacoes || [],
+        proibicoes: c?.proibicoes || [],
+        permissoes: c?.permissoes || [],
+        requisitos: c?.requisitos || [],
+        condicoes: c?.condicoes || [],
+        competencias: c?.competencias || [],
+        prazos: c?.prazos || [],
+        excecoes: c?.excecoes || [],
+        consequencias: c?.consequencias || [],
+        pontos_importantes: c?.pontos_importantes || [],
+        pontos_atencao: c?.pontos_atencao || [],
+        relevancia_concurso: c?.relevancia_concurso || 'media',
+        // Entradas estratégicas do Agente 3
+        prioridade_agente3: est.prioridade || 'media',
+        potencial_cobranca: est.potencial_cobranca || 'medio',
+        riscos_de_erro: est.riscos_de_erro || [],
+        formas_de_cobranca: est.formas_de_cobranca || [],
+        meta_questoes: est.meta_questoes || { minimo: 2, recomendado: 4, maximo: 6 },
+        meta_flashcards: est.meta_flashcards || { minimo: 1, recomendado: 2, maximo: 2 },
+        tipos_recomendados: est.tipos_recomendados || ['questao_certo_errado', 'questao_multipla_escolha'],
+      };
+    });
+
+    const artigosJaAbordados = (opcoes as any)?.questoes_existentes?.length
+      ? (opcoes as any).questoes_existentes.map((q: any) => q.artigo_numero || q.artigo_id).slice(0, 50)
+      : [];
+
+    const instrucaoIncremental = (opcoes as any)?.questoes_existentes?.length
+      ? `\n## 2.1 MODO INCREMENTAL (GERAR MAIS QUESTÕES)
+- Já existem ${(opcoes as any).questoes_existentes.length} questões cadastradas no banco para esta lei.
+- Gere NOVAS questões inéditas, explorando outros parágrafos, incisos, exceções e artigos com menor cobertura.
+- NÃO repita os mesmos enunciados ou pegadinhas já trabalhados anteriormente.`
+      : '';
+
+    const PROMPT_AGENTE_5 = `# AGENTE 5 — GERADOR DE QUESTÕES E MATERIAL DE FIXAÇÃO
+
+## 1. PAPEL
+Você é o **Agente 5 — Gerador de Questões e Material de Fixação**.
+Sua função é transformar a legislação analisada pelos agentes anteriores em material de treinamento para concursos.
+Você responde: "Como o aluno vai praticar e fixar esse conteúdo?"
+
+## 2. REGRAS FUNDAMENTAIS
+- **Cumprimento de Metas do Agente 3**: cumpra a meta de questões e flashcards definida para cada artigo. Não produza apenas poucas questões genéricas.
+- **Cobertura praticamente integral**: trate praticamente toda a legislação elegível.
+- **Distribuição dos tipos**: mescle Múltipla Escolha (com 5 alternativas A, B, C, D, E e justificativas individuais para cada alternativa), Certo/Errado e Casos Práticos.
+- **Rigor de Qualidade**: 
+  1. Apenas 1 resposta correta por questão de múltipla escolha.
+  2. O artigo sustenta o gabarito.
+  3. A justificativa explica didaticamente o acerto/erro de cada alternativa.
+  4. Nunca invente jurisprudência ou doutrina externa inexistente.
+- **Controle de Cobertura e Metas**: produza os blocos \`cobertura\` e \`metas\` no JSON final.${instrucaoIncremental}
+
+## 3. DADOS DA LEGISLAÇÃO
+${JSON.stringify({
+  legislacao_id: legislacao.id,
+  tipo: legislacao.tipo,
+  numero: legislacao.numero,
+  ano: legislacao.ano,
+  titulo: legislacao.titulo,
+  ementa: legislacao.ementa,
+  total_artigos_analisados: artigosContexto.length,
+  banca: opcoes?.banca || 'Geral (estilo FCC/Cebraspe/FGV)',
+}, null, 2)}
+
+## 4. ARTIGOS, COMENTÁRIOS E METAS DO AGENTE 3
+\`\`\`json
+${JSON.stringify(artigosContexto, null, 2)}
+\`\`\`
+
+## 5. SAÍDA (EXCLUSIVAMENTE JSON VÁLIDO)
+
+{
+  "legislacao_id": "${legislacao.id}",
+  "metas": {
+    "questoes_planejadas": 0,
+    "questoes_geradas": 0,
+    "questoes_pendentes": 0,
+    "flashcards_planejados": 0,
+    "flashcards_gerados": 0
+  },
+  "cobertura": {
+    "total_artigos_elegiveis": ${artigosContexto.length},
+    "artigos_com_material": 0,
+    "artigos_sem_material": 0,
+    "percentual_cobertura": 0
+  },
+  "conteudos": {
+    "questoes": [
+      {
+        "id": "q-1",
+        "tipo": "multipla_escolha",
+        "artigo_id": "uuid-do-artigo",
+        "artigo_numero": "1º",
+        "assunto": "...",
+        "dificuldade": "medio",
+        "prioridade": "alta",
+        "enunciado": "...",
+        "alternativas": {
+          "A": "...",
+          "B": "...",
+          "C": "...",
+          "D": "...",
+          "E": "..."
+        },
+        "gabarito": "C",
+        "justificativa": "...",
+        "justificativas_alternativas": {
+          "A": "...",
+          "B": "...",
+          "C": "...",
+          "D": "...",
+          "E": "..."
+        }
+      },
+      {
+        "id": "q-2",
+        "tipo": "certo_errado",
+        "artigo_id": "uuid-do-artigo",
+        "artigo_numero": "2º",
+        "assunto": "...",
+        "dificuldade": "dificil",
+        "prioridade": "alta",
+        "enunciado": "...",
+        "gabarito": "errado",
+        "justificativa": "..."
+      }
+    ],
+    "flashcards": [
+      {
+        "id": "fc-1",
+        "artigo_id": "uuid-do-artigo",
+        "artigo_numero": "1º",
+        "pergunta": "...",
+        "resposta": "...",
+        "assunto": "...",
+        "dificuldade": "facil",
+        "prioridade": "alta"
+      }
+    ],
+    "casos_praticos": []
+  }
+}`;
+
+    const genAI = new GoogleGenerativeAI(googleKey);
+    const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+
+    for (const modelName of modelNames) {
+      try {
+        this.logger.log(`[Agente 5 - Fixação] Tentando gerarMaterialFixacao com modelo ${modelName}...`);
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 65536,
+            responseMimeType: 'application/json',
+          },
+        });
+
+        const result = await model.generateContent(PROMPT_AGENTE_5);
+        const text = result.response.text();
+
+        if (text && text.trim().length > 10) {
+          const parsed = this.parseJsonResponse(text, `Agente5-Fixacao-${modelName}`);
+          if (parsed && (parsed.conteudos || parsed.questoes || parsed.flashcards)) {
+            const questoesCount = parsed.conteudos?.questoes?.length || parsed.questoes?.length || 0;
+            const fcCount = parsed.conteudos?.flashcards?.length || parsed.flashcards?.length || 0;
+            this.logger.log(`[Agente 5 - Fixação] ✅ ${modelName}: ${questoesCount} questões, ${fcCount} flashcards gerados.`);
+            return parsed;
+          }
+        }
+      } catch (err: any) {
+        this.logger.warn(`[Agente 5 - Fixação] ${modelName} falhou: ${err.message}. Tentando próximo modelo...`);
+      }
+    }
+
+    // Fallback de alta disponibilidade com Groq
+    const groqKey = process.env.GROQ_API_KEY;
+    if (groqKey) {
+      const groqModels = ['qwen/qwen3.8-27b', 'groq/compound'];
+      for (const gm of groqModels) {
+        try {
+          this.logger.log(`[Agente 5 - Fixação] Tentando fallback com Groq (${gm})...`);
+          const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${groqKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: gm,
+              messages: [{ role: 'user', content: PROMPT_AGENTE_5 }],
+              response_format: { type: 'json_object' },
+              temperature: 0.2,
+            }),
+          });
+          const data = await groqRes.json();
+          const content = data?.choices?.[0]?.message?.content;
+          if (content) {
+            const parsed = this.parseJsonResponse(content, `Agente5-Fixacao-Groq-${gm}`);
+            if (parsed && (parsed.conteudos || parsed.questoes || parsed.flashcards)) {
+              this.logger.log(`[Agente 5 - Fixação] ✅ Fallback Groq (${gm}) gerou material com sucesso!`);
+              return parsed;
+            }
+          }
+        } catch (groqErr: any) {
+          this.logger.warn(`[Agente 5 - Fixação] Fallback Groq (${gm}) falhou: ${groqErr.message}`);
+        }
+      }
+    }
+
+    throw new Error('Todos os modelos de IA falharam ao gerar o material de fixação.');
+  }
+
+  /**
+   * Alias de compatibilidade para gerarMaterialConcurso
+   */
+  async gerarMaterialConcurso(
+    legislacao: any,
+    artigosComComentarios: any[],
+    opcoes?: any,
+    analiseEstrategica?: any,
+  ): Promise<any> {
+    return this.gerarMaterialFixacao(legislacao, artigosComComentarios, analiseEstrategica, opcoes);
+  }
 }
+
+

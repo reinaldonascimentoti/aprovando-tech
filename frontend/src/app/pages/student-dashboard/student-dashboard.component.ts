@@ -34,8 +34,8 @@ export interface AnalysisLogStep {
       <header class="neo-raised rounded-2xl p-3.5 sm:p-5 mb-6 md:mb-8 flex flex-wrap xl:flex-nowrap items-center justify-between gap-3 sm:gap-4">
         <!-- Title & Icon -->
         <div class="flex items-center gap-3 shrink-0 order-1">
-          <div class="w-10 h-10 sm:w-12 sm:h-12 neo-raised rounded-xl flex items-center justify-center text-[var(--primary)] shrink-0">
-            <span class="material-symbols-outlined !text-[24px] sm:!text-[28px] filled">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 neo-raised rounded-xl flex items-center justify-center text-[#5d3bf6] shrink-0">
+            <span class="material-symbols-outlined !text-[24px] sm:!text-[28px] filled text-[#5d3bf6]">
               {{ activeTab === 'questions' ? 'quiz' : 'school' }}
             </span>
           </div>
@@ -84,7 +84,7 @@ export interface AnalysisLogStep {
           <!-- Botão Meu Perfil -->
           <button
             (click)="activeTab = 'perfil'"
-            [class.text-[var(--primary)]]="activeTab === 'perfil'"
+            [ngClass]="{'text-[var(--primary)]': activeTab === 'perfil'}"
             class="btn-neo px-2.5 sm:px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shrink-0 text-[var(--on-surface-variant)] hover:text-[var(--primary)] transition-all cursor-pointer">
             <span class="material-symbols-outlined !text-[16px]">account_circle</span>
             <span class="hidden sm:inline">Meu Perfil</span>
@@ -131,7 +131,7 @@ export interface AnalysisLogStep {
       </div>
 
       <!-- Linha 1: Navigation Tabs Bar (Padrão Modern Pill & Squircles) -->
-      <div *ngIf="activeTab !== 'questions'" class="rounded-3xl p-2.5 sm:p-3.5 mb-6 md:mb-8 bg-white dark:bg-[var(--card-bg)] shadow-sm border border-slate-100 dark:border-[var(--outline-variant)]/40 transition-colors">
+      <div *ngIf="activeTab !== 'questions'" class="rounded-3xl p-2.5 sm:p-3.5 mb-6 md:mb-8 bg-[var(--card-bg)] shadow-xs border border-[var(--outline-variant)] transition-colors">
         <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3 sm:gap-4">
           <div class="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar w-full py-1">
             <!-- 1. Edital Tab -->
@@ -139,23 +139,23 @@ export interface AnalysisLogStep {
               type="button"
               (click)="activeTab = 'editais'"
               [ngClass]="activeTab === 'editais' ? 
-                'bg-[#eeebff] dark:bg-[#523bf6]/20 border border-[#ddd6fe] dark:border-[#523bf6]/40 rounded-[22px] sm:rounded-3xl p-1.5 sm:p-2 pr-4 sm:pr-5 shadow-xs' : 
-                'p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent'"
+                'bg-[#5d3bf6]/10 dark:bg-[#1e293b] border border-[#5d3bf6]/30 dark:border-[#7c3aed]/50 rounded-[22px] sm:rounded-3xl p-1.5 sm:p-2 pr-4 sm:pr-5 shadow-2xs' : 
+                'p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-[var(--surface-container-low)] dark:hover:bg-[#334155]/40 border border-transparent'"
               class="flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
               <div 
                 [ngClass]="activeTab === 'editais' ? 
-                  'bg-[#523bf6] text-white shadow-md shadow-[#523bf6]/30' : 
-                  'bg-[#f3f0ff] dark:bg-purple-950/40 text-[#523bf6] dark:text-purple-300 group-hover:scale-105'"
+                  'bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white shadow-md shadow-purple-500/30' : 
+                  'bg-[var(--surface-container-low)] dark:bg-[#334155] text-[var(--outline)] dark:text-[#94a3b8] group-hover:scale-105 group-hover:text-[#5d3bf6]'"
                 class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform">
                 <span class="material-symbols-outlined !text-[22px] sm:!text-[24px]">description</span>
               </div>
               <div class="flex flex-col justify-center">
                 <span 
-                  [ngClass]="activeTab === 'editais' ? 'font-extrabold text-[#2e1d74] dark:text-purple-200' : 'font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#523bf6]'"
+                  [ngClass]="activeTab === 'editais' ? 'font-extrabold text-[#5d3bf6] dark:text-[#e7e5e4]' : 'font-bold text-[var(--on-surface)] dark:text-[#cbd5e1] group-hover:text-[#5d3bf6]'"
                   class="text-sm sm:text-[15px] tracking-tight leading-tight whitespace-nowrap transition-colors">
                   Meu Edital
                 </span>
-                <span *ngIf="activeTab === 'editais'" class="text-xs font-semibold text-[#6f5ccf] dark:text-purple-300 leading-tight whitespace-nowrap">
+                <span *ngIf="activeTab === 'editais'" class="text-xs font-semibold text-[var(--on-surface-variant)] dark:text-[#a78bfa] leading-tight whitespace-nowrap">
                   Organize seus editais
                 </span>
               </div>
@@ -166,23 +166,23 @@ export interface AnalysisLogStep {
               type="button"
               (click)="activeTab = 'mapa'"
               [ngClass]="activeTab === 'mapa' ? 
-                'bg-[#eeebff] dark:bg-[#523bf6]/20 border border-[#ddd6fe] dark:border-[#523bf6]/40 rounded-[22px] sm:rounded-3xl p-1.5 sm:p-2 pr-4 sm:pr-5 shadow-xs' : 
-                'p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent'"
+                'bg-[#5d3bf6]/10 dark:bg-[#1e293b] border border-[#5d3bf6]/30 dark:border-[#7c3aed]/50 rounded-[22px] sm:rounded-3xl p-1.5 sm:p-2 pr-4 sm:pr-5 shadow-2xs' : 
+                'p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-[var(--surface-container-low)] dark:hover:bg-[#334155]/40 border border-transparent'"
               class="flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
               <div 
                 [ngClass]="activeTab === 'mapa' ? 
-                  'bg-[#523bf6] text-white shadow-md shadow-[#523bf6]/30' : 
-                  'bg-[#f3f0ff] dark:bg-purple-950/40 text-[#523bf6] dark:text-purple-300 group-hover:scale-105'"
+                  'bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white shadow-md shadow-purple-500/30' : 
+                  'bg-[var(--surface-container-low)] dark:bg-[#334155] text-[var(--outline)] dark:text-[#94a3b8] group-hover:scale-105 group-hover:text-[#5d3bf6]'"
                 class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform">
                 <span class="material-symbols-outlined !text-[22px] sm:!text-[24px]">map</span>
               </div>
               <div class="flex flex-col justify-center">
                 <span 
-                  [ngClass]="activeTab === 'mapa' ? 'font-extrabold text-[#2e1d74] dark:text-purple-200' : 'font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#523bf6]'"
+                  [ngClass]="activeTab === 'mapa' ? 'font-extrabold text-[#5d3bf6] dark:text-[#e7e5e4]' : 'font-bold text-[var(--on-surface)] dark:text-[#cbd5e1] group-hover:text-[#5d3bf6]'"
                   class="text-sm sm:text-[15px] tracking-tight leading-tight whitespace-nowrap transition-colors">
                   Mapa de Disciplinas
                 </span>
-                <span *ngIf="activeTab === 'mapa'" class="text-xs font-semibold text-[#6f5ccf] dark:text-purple-300 leading-tight whitespace-nowrap">
+                <span *ngIf="activeTab === 'mapa'" class="text-xs font-semibold text-[var(--on-surface-variant)] dark:text-[#a78bfa] leading-tight whitespace-nowrap">
                   Organize seus estudos
                 </span>
               </div>
@@ -193,23 +193,23 @@ export interface AnalysisLogStep {
               type="button"
               (click)="activeTab = 'cronogramas'"
               [ngClass]="activeTab === 'cronogramas' ? 
-                'bg-[#eeebff] dark:bg-[#523bf6]/20 border border-[#ddd6fe] dark:border-[#523bf6]/40 rounded-[22px] sm:rounded-3xl p-1.5 sm:p-2 pr-4 sm:pr-5 shadow-xs' : 
-                'p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent'"
+                'bg-[#5d3bf6]/10 dark:bg-[#1e293b] border border-[#5d3bf6]/30 dark:border-[#7c3aed]/50 rounded-[22px] sm:rounded-3xl p-1.5 sm:p-2 pr-4 sm:pr-5 shadow-2xs' : 
+                'p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-[var(--surface-container-low)] dark:hover:bg-[#334155]/40 border border-transparent'"
               class="flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
               <div 
                 [ngClass]="activeTab === 'cronogramas' ? 
-                  'bg-[#523bf6] text-white shadow-md shadow-[#523bf6]/30' : 
-                  'bg-[#f3f0ff] dark:bg-purple-950/40 text-[#523bf6] dark:text-purple-300 group-hover:scale-105'"
+                  'bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white shadow-md shadow-purple-500/30' : 
+                  'bg-[var(--surface-container-low)] dark:bg-[#334155] text-[var(--outline)] dark:text-[#94a3b8] group-hover:scale-105 group-hover:text-[#5d3bf6]'"
                 class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform">
                 <span class="material-symbols-outlined !text-[22px] sm:!text-[24px]">calendar_month</span>
               </div>
               <div class="flex flex-col justify-center">
                 <span 
-                  [ngClass]="activeTab === 'cronogramas' ? 'font-extrabold text-[#2e1d74] dark:text-purple-200' : 'font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#523bf6]'"
+                  [ngClass]="activeTab === 'cronogramas' ? 'font-extrabold text-[#5d3bf6] dark:text-[#e7e5e4]' : 'font-bold text-[var(--on-surface)] dark:text-[#cbd5e1] group-hover:text-[#5d3bf6]'"
                   class="text-sm sm:text-[15px] tracking-tight leading-tight whitespace-nowrap transition-colors">
                   Cronogramas
                 </span>
-                <span *ngIf="activeTab === 'cronogramas'" class="text-xs font-semibold text-[#6f5ccf] dark:text-purple-300 leading-tight whitespace-nowrap">
+                <span *ngIf="activeTab === 'cronogramas'" class="text-xs font-semibold text-[var(--on-surface-variant)] dark:text-[#a78bfa] leading-tight whitespace-nowrap">
                   Planejamento de estudos
                 </span>
               </div>
@@ -220,23 +220,23 @@ export interface AnalysisLogStep {
               type="button"
               (click)="activeTab = 'estatisticas'; loadStudySessions()"
               [ngClass]="activeTab === 'estatisticas' ? 
-                'bg-[#eeebff] dark:bg-[#523bf6]/20 border border-[#ddd6fe] dark:border-[#523bf6]/40 rounded-[22px] sm:rounded-3xl p-1.5 sm:p-2 pr-4 sm:pr-5 shadow-xs' : 
-                'p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent'"
+                'bg-[#5d3bf6]/10 dark:bg-[#1e293b] border border-[#5d3bf6]/30 dark:border-[#7c3aed]/50 rounded-[22px] sm:rounded-3xl p-1.5 sm:p-2 pr-4 sm:pr-5 shadow-2xs' : 
+                'p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-[var(--surface-container-low)] dark:hover:bg-[#334155]/40 border border-transparent'"
               class="flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
               <div 
                 [ngClass]="activeTab === 'estatisticas' ? 
-                  'bg-[#523bf6] text-white shadow-md shadow-[#523bf6]/30' : 
-                  'bg-[#f3f0ff] dark:bg-purple-950/40 text-[#523bf6] dark:text-purple-300 group-hover:scale-105'"
+                  'bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white shadow-md shadow-purple-500/30' : 
+                  'bg-[var(--surface-container-low)] dark:bg-[#334155] text-[var(--outline)] dark:text-[#94a3b8] group-hover:scale-105 group-hover:text-[#5d3bf6]'"
                 class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform">
                 <span class="material-symbols-outlined !text-[22px] sm:!text-[24px]">bar_chart</span>
               </div>
               <div class="flex flex-col justify-center">
                 <span 
-                  [ngClass]="activeTab === 'estatisticas' ? 'font-extrabold text-[#2e1d74] dark:text-purple-200' : 'font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#523bf6]'"
+                  [ngClass]="activeTab === 'estatisticas' ? 'font-extrabold text-[#5d3bf6] dark:text-[#e7e5e4]' : 'font-bold text-[var(--on-surface)] dark:text-[#cbd5e1] group-hover:text-[#5d3bf6]'"
                   class="text-sm sm:text-[15px] tracking-tight leading-tight whitespace-nowrap transition-colors">
                   Desempenho
                 </span>
-                <span *ngIf="activeTab === 'estatisticas'" class="text-xs font-semibold text-[#6f5ccf] dark:text-purple-300 leading-tight whitespace-nowrap">
+                <span *ngIf="activeTab === 'estatisticas'" class="text-xs font-semibold text-[var(--on-surface-variant)] dark:text-[#a78bfa] leading-tight whitespace-nowrap">
                   Métricas e evolução
                 </span>
               </div>
@@ -246,52 +246,52 @@ export interface AnalysisLogStep {
             <button 
               type="button"
               (click)="activeTab = 'questions'"
-              class="p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
-              <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#f3f0ff] dark:bg-purple-950/40 text-[#523bf6] dark:text-purple-300 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
+              class="p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-[var(--surface-container-low)] dark:hover:bg-[#334155]/40 border border-transparent flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
+              <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[var(--surface-container-low)] dark:bg-[#334155] text-[var(--outline)] dark:text-[#94a3b8] flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 group-hover:text-[#5d3bf6]">
                 <span class="material-symbols-outlined !text-[22px] sm:!text-[24px]">quiz</span>
               </div>
               <div class="flex flex-col justify-center">
-                <span class="text-sm sm:text-[15px] font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#523bf6] tracking-tight leading-tight whitespace-nowrap transition-colors">
+                <span class="text-sm sm:text-[15px] font-bold text-[var(--on-surface)] dark:text-[#cbd5e1] group-hover:text-[#5d3bf6] tracking-tight leading-tight whitespace-nowrap transition-colors">
                   Questões
                 </span>
-                <span class="text-xs font-medium text-slate-400 dark:text-slate-400 leading-tight whitespace-nowrap">
+                <span class="text-xs font-medium text-[var(--on-surface-variant)] dark:text-[#94a3b8] leading-tight whitespace-nowrap">
                   Banco de questões
                 </span>
               </div>
             </button>
 
-            <!-- 6. Pomodoro Tab -->
+            <!-- 6. Legislação Tab -->
             <button
               type="button"
-              (click)="navigateToPomodoro()"
-              class="p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
-              <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#f3f0ff] dark:bg-purple-950/40 text-[#523bf6] dark:text-purple-300 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
-                <span class="text-xl">🍅</span>
+              routerLink="/legislacao"
+              class="p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-[var(--surface-container-low)] dark:hover:bg-[#334155]/40 border border-transparent flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
+              <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[var(--surface-container-low)] dark:bg-[#334155] text-[var(--outline)] dark:text-[#94a3b8] flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 group-hover:text-[#5d3bf6]">
+                <span class="material-symbols-outlined !text-[22px] sm:!text-[24px]">gavel</span>
               </div>
               <div class="flex flex-col justify-center">
-                <span class="text-sm sm:text-[15px] font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#523bf6] tracking-tight leading-tight whitespace-nowrap transition-colors">
-                  Pomodoro
+                <span class="text-sm sm:text-[15px] font-bold text-[var(--on-surface)] dark:text-[#cbd5e1] group-hover:text-[#5d3bf6] tracking-tight leading-tight whitespace-nowrap transition-colors">
+                  Legislação
                 </span>
-                <span class="text-xs font-medium text-slate-400 dark:text-slate-400 leading-tight whitespace-nowrap">
-                  Ciclos de foco
+                <span class="text-xs font-medium text-[var(--on-surface-variant)] dark:text-[#94a3b8] leading-tight whitespace-nowrap">
+                  Comentada por IA
                 </span>
               </div>
             </button>
 
-            <!-- 7. Legislação Tab -->
+            <!-- 7. Pomodoro Tab -->
             <button
               type="button"
-              routerLink="/legislacao"
-              class="p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
-              <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#f3f0ff] dark:bg-purple-950/40 text-[#523bf6] dark:text-purple-300 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
-                <span class="material-symbols-outlined !text-[22px] sm:!text-[24px]">gavel</span>
+              (click)="navigateToPomodoro()"
+              class="p-1.5 sm:p-2 pr-3 sm:pr-4 rounded-[22px] hover:bg-[var(--surface-container-low)] dark:hover:bg-[#334155]/40 border border-transparent flex items-center gap-3 transition-all duration-200 cursor-pointer shrink-0 group text-left">
+              <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[var(--surface-container-low)] dark:bg-[#334155] text-[var(--outline)] dark:text-[#94a3b8] flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
+                <span class="text-xl">🍅</span>
               </div>
               <div class="flex flex-col justify-center">
-                <span class="text-sm sm:text-[15px] font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#523bf6] tracking-tight leading-tight whitespace-nowrap transition-colors">
-                  Legislação
+                <span class="text-sm sm:text-[15px] font-bold text-[var(--on-surface)] dark:text-[#cbd5e1] group-hover:text-[#5d3bf6] tracking-tight leading-tight whitespace-nowrap transition-colors">
+                  Pomodoro
                 </span>
-                <span class="text-xs font-medium text-slate-400 dark:text-slate-400 leading-tight whitespace-nowrap">
-                  Comentários com IA
+                <span class="text-xs font-medium text-[var(--on-surface-variant)] dark:text-[#94a3b8] leading-tight whitespace-nowrap">
+                  Ciclos de foco
                 </span>
               </div>
             </button>
@@ -301,7 +301,7 @@ export interface AnalysisLogStep {
           <button 
             type="button"
             (click)="openUploadModal()"
-            class="xl:ml-auto px-4 sm:px-5 py-3 rounded-2xl bg-gradient-to-r from-[#523bf6] to-indigo-600 hover:from-[#472fc2] hover:to-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-[#523bf6]/25 hover:shadow-lg transition-all flex items-center justify-center gap-2 whitespace-nowrap shrink-0 cursor-pointer self-start xl:self-auto">
+            class="xl:ml-auto px-4 sm:px-5 py-3 rounded-2xl bg-gradient-to-r from-[#5d3bf6] to-[#7c3aed] hover:opacity-90 text-white font-bold text-xs sm:text-sm shadow-md shadow-purple-500/25 hover:shadow-lg transition-all flex items-center justify-center gap-2 whitespace-nowrap shrink-0 cursor-pointer self-start xl:self-auto">
             <span class="material-symbols-outlined !text-[20px]">cloud_upload</span>
             <span>+ Enviar Novo Edital</span>
           </button>
@@ -337,9 +337,9 @@ export interface AnalysisLogStep {
       <div *ngIf="activeTab === 'editais'" class="space-y-8">
 
         <!-- ══ Container 1: Meus Editais ══ -->
-        <div class="neo-raised rounded-3xl p-5 sm:p-6 md:p-8 bg-[var(--card-bg)] border border-[var(--outline-variant)] shadow-lg">
-          <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center gap-2">
+        <div class="neo-raised rounded-3xl p-5 sm:p-6 md:p-8 bg-[var(--card-bg)] border border-[var(--outline-variant)] shadow-lg space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
               <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white flex items-center justify-center shadow-md">
                 <span class="material-symbols-outlined !text-[18px]">folder_special</span>
               </div>
@@ -363,7 +363,7 @@ export interface AnalysisLogStep {
             </div>
 
             <!-- Empty state -->
-            <div *ngIf="editais.length === 0" class="col-span-full w-full flex flex-col items-center justify-center py-10 text-center gap-3">
+            <div *ngIf="editais.length === 0" class="col-span-full w-full flex flex-col items-center justify-center py-10 text-center gap-3 neo-raised rounded-3xl p-6 bg-[var(--card-bg)] border border-[var(--outline-variant)]">
               <span class="material-symbols-outlined !text-[56px] text-[#c7c4d8]">folder_open</span>
               <p class="text-sm font-semibold text-[#767587]">Você ainda não adicionou nenhum edital ao seu perfil.</p>
               <p class="text-xs text-[#767587]">Adicione um edital abaixo ou envie um novo para análise.</p>
@@ -395,98 +395,98 @@ export interface AnalysisLogStep {
 
             <!-- Loading skeleton -->
             <div *ngIf="loadingRecentEditais" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              <div *ngFor="let _ of [1,2,3]" class="rounded-3xl p-6 bg-slate-100 dark:bg-[#0f1220] border border-slate-200 dark:border-[#1f253d] animate-pulse h-64"></div>
+              <div *ngFor="let _ of [1,2,3]" class="rounded-3xl p-6 bg-slate-100 dark:bg-[#0f172a] border border-slate-200 dark:border-[#1f253d] animate-pulse h-64"></div>
             </div>
 
             <!-- Recent Editais Cards (3 Cards por linha) -->
             <div *ngIf="!loadingRecentEditais" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <div
                 *ngFor="let ed of recentEditais"
-                class="rounded-3xl p-6 bg-white dark:bg-[#0f1220] border border-slate-200/90 dark:border-[#1f253d] shadow-sm hover:shadow-xl dark:shadow-xl hover:border-indigo-400/60 dark:hover:border-[#7c3aed]/50 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between gap-3.5 relative overflow-hidden text-slate-800 dark:text-white group">
+                class="rounded-3xl p-6 bg-[var(--card-bg)] border border-[var(--outline-variant)] shadow-sm hover:shadow-md hover:border-[var(--primary)]/50 hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between gap-3.5 relative overflow-hidden text-[var(--on-surface)] group">
                 
                 <!-- Glow Line Top -->
-                <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500/70 dark:via-[#7c3aed]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--primary)]/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                 <!-- Row 1: Orgao Badge (Left) & Pareto Status (Right) -->
                 <div class="flex items-center justify-between gap-3 w-full">
-                  <div class="inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl bg-purple-100 dark:bg-[#7c3aed]/20 border border-purple-300 dark:border-[#7c3aed] text-purple-900 dark:text-white font-extrabold text-xs sm:text-sm tracking-tight shadow-xs shadow-purple-500/10 dark:shadow-[#7c3aed]/20">
+                  <div class="inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl bg-[var(--surface-container-low)] border border-[var(--outline-variant)] text-[var(--on-surface)] font-extrabold text-xs sm:text-sm tracking-tight shadow-2xs">
                     <span>{{ getEditalOrgao(ed) }}</span>
                   </div>
 
-                  <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-purple-50 dark:bg-[#7c3aed]/15 border border-purple-200 dark:border-[#a855f7]/40 text-purple-700 dark:text-[#c084fc] text-xs font-bold whitespace-nowrap">
-                    <span class="material-symbols-outlined !text-[15px] text-purple-600 dark:text-[#a855f7]">donut_large</span>
+                  <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[var(--primary)]/10 border border-[var(--primary)]/20 text-[var(--primary)] text-xs font-bold whitespace-nowrap">
+                    <span class="material-symbols-outlined !text-[15px]">donut_large</span>
                     <span>Pareto 80/20 Calculado</span>
                   </div>
                 </div>
 
                 <!-- Row 2: Banca Logo & Year -->
                 <div class="flex items-center gap-2 mt-1">
-                  <span *ngIf="getEditalBancaLogo(ed)" class="inline-flex items-center justify-center h-5 w-9 bg-white border border-slate-200 dark:border-transparent rounded px-1 shadow-xs">
+                  <span *ngIf="getEditalBancaLogo(ed)" class="inline-flex items-center justify-center h-5 w-9 bg-white border border-[var(--outline-variant)] rounded px-1 shadow-2xs">
                     <img [src]="getEditalBancaLogo(ed)" [alt]="getEditalBancaName(ed)" class="max-h-full max-w-full object-contain" />
                   </span>
-                  <span class="text-xs sm:text-[13px] font-bold text-slate-600 dark:text-[#94a3b8]">
+                  <span class="text-xs sm:text-[13px] font-bold text-[var(--on-surface-variant)]">
                     {{ getEditalBancaName(ed) }} • {{ getEditalAno(ed) }}
                   </span>
                 </div>
 
                 <!-- Row 3: Edital para Análise (Nome Informado) + Cargo -->
                 <div class="my-1.5 min-h-[48px] flex flex-col justify-center">
-                  <h4 class="text-[15px] sm:text-base font-black text-slate-900 dark:text-white leading-snug line-clamp-2 flex items-center gap-1.5" [title]="ed.title || ed.cargo">
-                    <span class="material-symbols-outlined !text-[17px] text-indigo-600 dark:text-indigo-400 shrink-0">description</span>
+                  <h4 class="text-[15px] sm:text-base font-black text-[var(--on-surface)] leading-snug line-clamp-2 flex items-center gap-1.5" [title]="ed.title || ed.cargo">
+                    <span class="material-symbols-outlined !text-[17px] text-[var(--primary)] shrink-0">description</span>
                     <span>{{ ed.title || ed.cargo }}</span>
                   </h4>
-                  <p *ngIf="ed.cargo" class="text-xs font-semibold text-slate-500 dark:text-[#a78bfa] mt-0.5 truncate flex items-center gap-1" [title]="ed.cargo">
-                    <span class="material-symbols-outlined !text-[14px] text-slate-400 dark:text-slate-400 shrink-0">badge</span>
+                  <p *ngIf="ed.cargo" class="text-xs font-semibold text-[var(--on-surface-variant)] mt-0.5 truncate flex items-center gap-1" [title]="ed.cargo">
+                    <span class="material-symbols-outlined !text-[14px] text-[var(--outline)] shrink-0">badge</span>
                     <span>{{ ed.cargo }}</span>
                   </p>
                 </div>
 
                 <!-- Row 4: Metrics Inset Box (3 Columns) -->
-                <div class="grid grid-cols-3 gap-1.5 p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-white/[0.025] border border-slate-200/80 dark:border-white/[0.06] text-center my-1">
+                <div class="grid grid-cols-3 gap-1.5 p-3 sm:p-3.5 rounded-2xl bg-[var(--surface-container-low)] border border-[var(--outline-variant)] text-center my-1">
                   <div class="flex flex-col items-center gap-1">
-                    <span class="text-[10px] sm:text-[10.5px] font-bold text-indigo-600 dark:text-[#818cf8] uppercase tracking-wider opacity-90">Tópicos IA</span>
-                    <span class="text-base sm:text-lg font-black text-slate-900 dark:text-white">{{ getEditalTopicosCount(ed) }}</span>
+                    <span class="text-[10px] sm:text-[10.5px] font-bold text-[var(--primary)] uppercase tracking-wider opacity-90">Tópicos IA</span>
+                    <span class="text-base sm:text-lg font-black text-[var(--on-surface)]">{{ getEditalTopicosCount(ed) }}</span>
                   </div>
                   <div class="flex flex-col items-center gap-1">
-                    <span class="text-[10px] sm:text-[10.5px] font-bold text-indigo-600 dark:text-[#818cf8] uppercase tracking-wider opacity-90">Questões</span>
-                    <span class="text-base sm:text-lg font-black text-slate-900 dark:text-white">{{ getEditalQuestoesCount(ed) }}</span>
+                    <span class="text-[10px] sm:text-[10.5px] font-bold text-[var(--primary)] uppercase tracking-wider opacity-90">Questões</span>
+                    <span class="text-base sm:text-lg font-black text-[var(--on-surface)]">{{ getEditalQuestoesCount(ed) }}</span>
                   </div>
                   <div class="flex flex-col items-center gap-1">
-                    <span class="text-[10px] sm:text-[10.5px] font-bold text-indigo-600 dark:text-[#818cf8] uppercase tracking-wider opacity-90">Precisão IA</span>
-                    <span class="text-base sm:text-lg font-black text-emerald-600 dark:text-[#00e599]">{{ getEditalScoreIA(ed) }}</span>
+                    <span class="text-[10px] sm:text-[10.5px] font-bold text-[var(--primary)] uppercase tracking-wider opacity-90">Precisão IA</span>
+                    <span class="text-base sm:text-lg font-black text-emerald-600 dark:text-[#22c55e]">{{ getEditalScoreIA(ed) }}</span>
                   </div>
                 </div>
 
                 <!-- Row 5: Pareto Progress Section -->
                 <div class="flex flex-col gap-2 mt-1">
                   <div class="flex items-center justify-between text-xs font-semibold">
-                    <div class="inline-flex items-center gap-1 font-bold text-indigo-950 dark:text-[#c7d2fe]">
-                      <span class="material-symbols-outlined !text-[16px] text-amber-500 dark:text-[#f59e0b]">bolt</span>
+                    <div class="inline-flex items-center gap-1 font-bold text-[var(--on-surface)]">
+                      <span class="material-symbols-outlined !text-[16px] text-amber-500">bolt</span>
                       <span>Pareto 80/20:</span>
                     </div>
-                    <div class="text-slate-600 dark:text-[#94a3b8] text-[11.5px] sm:text-xs">
+                    <div class="text-[var(--on-surface-variant)] text-[11.5px] sm:text-xs">
                       <span>20% cobre </span>
-                      <strong class="text-indigo-600 dark:text-[#60a5fa] font-extrabold">{{ getEditalParetoPercent(ed) }}%</strong>
+                      <strong class="text-[var(--primary)] font-extrabold">{{ getEditalParetoPercent(ed) }}%</strong>
                       <span> da prova</span>
                     </div>
                   </div>
-                  <div class="w-full h-1.5 bg-slate-200 dark:bg-[#1c2237] rounded-full overflow-hidden">
-                    <div class="h-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-400 dark:from-[#6366f1] dark:via-[#8b5cf6] dark:to-[#38bdf8] transition-all duration-700"
+                  <div class="w-full h-1.5 bg-[var(--surface-container-high)] rounded-full overflow-hidden">
+                    <div class="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] transition-all duration-700"
                          [style.width.%]="getEditalParetoPercent(ed)"></div>
                   </div>
                 </div>
 
                 <!-- Row 6: Footer Action & Timestamp -->
-                <div class="flex items-center justify-between pt-3.5 border-t border-slate-100 dark:border-white/[0.06] mt-1 gap-2">
-                  <div class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-[#94a3b8]">
-                    <span class="material-symbols-outlined !text-[16px] text-slate-400 dark:text-[#64748b]">schedule</span>
+                <div class="flex items-center justify-between pt-3.5 border-t border-[var(--outline-variant)] mt-1 gap-2">
+                  <div class="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--on-surface-variant)]">
+                    <span class="material-symbols-outlined !text-[16px] text-[var(--outline)]">schedule</span>
                     <span>Analisado {{ getEditalDateText(ed) }}</span>
                   </div>
 
                   <button
                     (click)="addEditalToProfile(ed)"
                     [disabled]="addingEditalId === ed.id"
-                    class="inline-flex items-center gap-1.5 text-xs sm:text-[13px] font-bold text-indigo-600 hover:text-purple-700 dark:text-[#818cf8] dark:hover:text-[#c084fc] transition-all cursor-pointer disabled:opacity-50">
+                    class="inline-flex items-center gap-1.5 text-xs sm:text-[13px] font-bold text-[var(--primary)] hover:opacity-80 transition-all cursor-pointer disabled:opacity-50">
                     <span>{{ addingEditalId === ed.id ? 'Adicionando...' : '+ Adicionar ao Perfil' }}</span>
                     <span class="material-symbols-outlined !text-[16px] group-hover:translate-x-1 transition-transform">
                       {{ addingEditalId === ed.id ? 'hourglass_empty' : 'arrow_forward' }}
@@ -904,8 +904,7 @@ export interface AnalysisLogStep {
                 <div 
                   *ngFor="let ed of editais"
                   (click)="selectedCronogramaEditalId = ed.id"
-                  [class.border-2]="selectedCronogramaEditalId === ed.id"
-                  [class.border-[var(--primary)]]="selectedCronogramaEditalId === ed.id"
+                  [ngClass]="{'border-2 border-[var(--primary)]': selectedCronogramaEditalId === ed.id}"
                   class="neo-raised rounded-2xl p-3.5 cursor-pointer hover:border-[var(--primary)] transition-all flex items-center justify-between">
                   <div class="truncate">
                     <p class="text-xs font-bold text-[var(--on-surface)] truncate">{{ ed.cargo || ed.title }}</p>
@@ -1138,18 +1137,18 @@ export interface AnalysisLogStep {
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
               <!-- Assunto (Input texto) -->
               <div class="space-y-1">
-                <label class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
-                  <span class="material-symbols-outlined !text-[14px]">topic</span>
-                  Assunto
+                <label class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1.5">
+                  <span class="material-symbols-outlined !text-[15px] text-[var(--primary)]">topic</span>
+                  <span>Assunto</span>
                 </label>
-                <div class="neo-pressed rounded-xl px-3 py-2 flex items-center gap-2 bg-[var(--background)]">
+                <div class="rounded-xl px-3 py-2 flex items-center gap-2 bg-[var(--input-bg)] border border-[var(--input-border)] focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/15 transition-all shadow-2xs">
                   <span class="material-symbols-outlined text-[var(--outline)] !text-[16px]">topic</span>
                   <input 
                     type="text"
                     [(ngModel)]="filterAssunto" 
                     (ngModelChange)="onFilterChange()"
                     placeholder="Digite o termo do assunto..."
-                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--input-placeholder)]">
                   <button 
                     *ngIf="filterAssunto" 
                     type="button" 
@@ -1160,18 +1159,18 @@ export interface AnalysisLogStep {
 
               <!-- Palavra-chave no enunciado -->
               <div class="space-y-1">
-                <label class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1">
-                  <span class="material-symbols-outlined !text-[14px]">search</span>
-                  Termo no Enunciado
+                <label class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1.5">
+                  <span class="material-symbols-outlined !text-[15px] text-[var(--primary)]">search</span>
+                  <span>Termo no Enunciado</span>
                 </label>
-                <div class="neo-pressed rounded-xl px-3 py-2 flex items-center gap-2 bg-[var(--background)]">
+                <div class="rounded-xl px-3 py-2 flex items-center gap-2 bg-[var(--input-bg)] border border-[var(--input-border)] focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/15 transition-all shadow-2xs">
                   <span class="material-symbols-outlined text-[var(--outline)] !text-[16px]">search</span>
                   <input 
                     type="text"
                     [(ngModel)]="searchSubject" 
                     (ngModelChange)="onFilterChange()"
                     placeholder="Buscar palavra-chave..."
-                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+                    class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--input-placeholder)]">
                   <button 
                     *ngIf="searchSubject" 
                     type="button" 
@@ -1182,7 +1181,7 @@ export interface AnalysisLogStep {
             </div>
 
             <!-- Chips de Filtros Ativos -->
-            <div *ngIf="hasActiveFilterChips" class="flex items-center gap-1.5 flex-wrap pt-2.5 border-t border-[var(--outline-variant)]/20">
+            <div *ngIf="hasActiveFilterChips" class="flex items-center gap-1.5 flex-wrap pt-2.5 border-t border-[var(--outline-variant)]/60">
               <span class="text-[11px] font-bold text-[var(--on-surface-variant)] flex items-center gap-1 mr-1">
                 <span class="material-symbols-outlined !text-[14px] text-[var(--primary)]">filter_alt</span>
                 Filtros ativos:
@@ -1200,19 +1199,19 @@ export interface AnalysisLogStep {
                 <button type="button" (click)="removeFilterItem('banca', b)" class="hover:opacity-75 cursor-pointer ml-0.5 font-bold">✕</button>
               </span>
 
-              <span *ngFor="let a of selectedAnos" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+              <span *ngFor="let a of selectedAnos" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
                 <span class="opacity-70 text-[10px]">Ano:</span>
                 <strong class="font-bold">{{ a }}</strong>
                 <button type="button" (click)="removeFilterItem('ano', a)" class="hover:opacity-75 cursor-pointer ml-0.5 font-bold">✕</button>
               </span>
 
-              <span *ngFor="let o of selectedOrgaos" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <span *ngFor="let o of selectedOrgaos" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                 <span class="opacity-70 text-[10px]">Órgão:</span>
                 <strong class="font-bold">{{ o }}</strong>
                 <button type="button" (click)="removeFilterItem('orgao', o)" class="hover:opacity-75 cursor-pointer ml-0.5 font-bold">✕</button>
               </span>
 
-              <span *ngFor="let c of selectedCargos" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+              <span *ngFor="let c of selectedCargos" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20">
                 <span class="opacity-70 text-[10px]">Cargo:</span>
                 <strong class="font-bold">{{ c }}</strong>
                 <button type="button" (click)="removeFilterItem('cargo', c)" class="hover:opacity-75 cursor-pointer ml-0.5 font-bold">✕</button>
@@ -1234,9 +1233,9 @@ export interface AnalysisLogStep {
             <button
               (click)="questionStatusFilter = 'all'; onFilterChange()"
               [ngClass]="questionStatusFilter === 'all'
-                ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
-                : 'bg-[var(--background)] text-[var(--on-surface-variant)] border-[var(--outline-variant)] hover:border-[var(--primary)] hover:text-[var(--primary)]'"
-              class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer">
+                ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-2xs'
+                : 'bg-[var(--card-bg)] text-[var(--on-surface-variant)] border-[var(--outline-variant)] hover:border-[var(--primary)] hover:text-[var(--primary)]'"
+              class="px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer">
               <span class="material-symbols-outlined !text-[14px]">list</span>
               <span>Todas</span>
               <span class="font-extrabold opacity-70">({{ questions.length }})</span>
@@ -1245,9 +1244,9 @@ export interface AnalysisLogStep {
             <button
               (click)="questionStatusFilter = 'resolved'; onFilterChange()"
               [ngClass]="questionStatusFilter === 'resolved'
-                ? 'bg-[#16a34a] text-white border-[#16a34a]'
-                : 'bg-[var(--background)] text-[var(--on-surface-variant)] border-[var(--outline-variant)] hover:border-[#16a34a] hover:text-[#16a34a]'"
-              class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer">
+                ? 'bg-[#16a34a] text-white border-[#16a34a] shadow-2xs'
+                : 'bg-[var(--card-bg)] text-[var(--on-surface-variant)] border-[var(--outline-variant)] hover:border-[#16a34a] hover:text-[#16a34a]'"
+              class="px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer">
               <span class="material-symbols-outlined !text-[14px]">check_circle</span>
               <span>Resolvidas</span>
               <span class="font-extrabold opacity-70">({{ resolvedCount + wrongCount }})</span>
@@ -1256,9 +1255,9 @@ export interface AnalysisLogStep {
             <button
               (click)="questionStatusFilter = 'wrong'; onFilterChange()"
               [ngClass]="questionStatusFilter === 'wrong'
-                ? 'bg-[#dc2626] text-white border-[#dc2626]'
-                : 'bg-[var(--background)] text-[var(--on-surface-variant)] border-[var(--outline-variant)] hover:border-[#dc2626] hover:text-[#dc2626]'"
-              class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer">
+                ? 'bg-[#dc2626] text-white border-[#dc2626] shadow-2xs'
+                : 'bg-[var(--card-bg)] text-[var(--on-surface-variant)] border-[var(--outline-variant)] hover:border-[#dc2626] hover:text-[#dc2626]'"
+              class="px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer">
               <span class="material-symbols-outlined !text-[14px]">cancel</span>
               <span>Erradas</span>
               <span class="font-extrabold opacity-70">({{ wrongCount }})</span>
@@ -1296,7 +1295,7 @@ export interface AnalysisLogStep {
     <div *ngIf="showEditModal"
          class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
          style="background: rgba(10,12,20,0.65); backdrop-filter: blur(8px);">
-      <div class="neo-raised rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-fadeIn my-auto flex flex-col max-h-[92vh] bg-white dark:bg-[#141927] border border-[var(--outline-variant)]">
+      <div class="neo-raised rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-fadeIn my-auto flex flex-col max-h-[92vh] bg-white dark:bg-[#1e293b] border border-[var(--outline-variant)]">
 
         <!-- Modal Header -->
         <div class="flex items-center justify-between px-4 sm:px-6 pt-5 pb-4 border-b border-[var(--outline-variant)] shrink-0">
@@ -1395,15 +1394,15 @@ export interface AnalysisLogStep {
             <div class="flex gap-1.5 bg-slate-100 dark:bg-white/5 p-0.5 rounded-lg">
               <button type="button"
                 (click)="editUploadMode = 'none'"
-                [ngClass]="editUploadMode === 'none' ? 'bg-white dark:bg-[#1e2438] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
+                [ngClass]="editUploadMode === 'none' ? 'bg-white dark:bg-[#334155] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
                 class="flex-1 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all">Sem novo arquivo</button>
               <button type="button"
                 (click)="editUploadMode = 'link'"
-                [ngClass]="editUploadMode === 'link' ? 'bg-white dark:bg-[#1e2438] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
+                [ngClass]="editUploadMode === 'link' ? 'bg-white dark:bg-[#334155] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
                 class="flex-1 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all">Novo Link</button>
               <button type="button"
                 (click)="editUploadMode = 'pdf'"
-                [ngClass]="editUploadMode === 'pdf' ? 'bg-white dark:bg-[#1e2438] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
+                [ngClass]="editUploadMode === 'pdf' ? 'bg-white dark:bg-[#334155] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
                 class="flex-1 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all">Novo PDF</button>
             </div>
 
@@ -1458,10 +1457,10 @@ export interface AnalysisLogStep {
     <div *ngIf="showUploadModal"
          class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
          style="background: rgba(10, 12, 20, 0.65); backdrop-filter: blur(8px);">
-      <div class="neo-raised rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-fadeIn bg-white dark:bg-[#141927] border border-[var(--outline-variant)] my-auto flex flex-col max-h-[92vh]">
+      <div class="neo-raised rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-fadeIn bg-white dark:bg-[#1e293b] border border-[var(--outline-variant)] my-auto flex flex-col max-h-[92vh]">
 
         <!-- Modal Header -->
-        <div class="flex items-center justify-between px-4 sm:px-6 pt-5 pb-4 border-b border-[var(--outline-variant)] bg-gradient-to-r from-purple-50/70 dark:from-[#1b2238] to-white dark:to-[#141927] shrink-0">
+        <div class="flex items-center justify-between px-4 sm:px-6 pt-5 pb-4 border-b border-[var(--outline-variant)] bg-gradient-to-r from-purple-50/70 dark:from-[#1e293b] to-white dark:to-[#1e293b] shrink-0">
           <div class="flex items-center gap-3">
             <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center shadow-md shrink-0 transition-all duration-300"
                  [ngClass]="{
@@ -1634,7 +1633,7 @@ export interface AnalysisLogStep {
             <!-- Divisor -->
             <div class="relative flex items-center justify-center pt-2">
               <div class="w-full border-t border-[var(--outline-variant)]"></div>
-              <span class="absolute bg-white dark:bg-[#141927] px-3 text-[10px] font-extrabold text-[var(--on-surface-variant)] uppercase tracking-wider">
+              <span class="absolute bg-white dark:bg-[#1e293b] px-3 text-[10px] font-extrabold text-[var(--on-surface-variant)] uppercase tracking-wider">
                 Não encontrou seu concurso?
               </span>
             </div>
@@ -1728,14 +1727,14 @@ export interface AnalysisLogStep {
             <button
               type="button"
               (click)="editalUploadMode = 'link'"
-              [ngClass]="editalUploadMode === 'link' ? 'bg-white dark:bg-[#1e2438] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
+              [ngClass]="editalUploadMode === 'link' ? 'bg-white dark:bg-[#334155] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
               class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer">
               Link do Edital
             </button>
             <button
               type="button"
               (click)="editalUploadMode = 'pdf'"
-              [ngClass]="editalUploadMode === 'pdf' ? 'bg-white dark:bg-[#1e2438] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
+              [ngClass]="editalUploadMode === 'pdf' ? 'bg-white dark:bg-[#334155] shadow-sm text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'"
               class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer">
               Arquivo PDF
             </button>
@@ -2051,7 +2050,7 @@ export interface AnalysisLogStep {
          class="fixed inset-0 z-50 flex items-center justify-center p-4"
          (click)="closeScheduleModal()">
       <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-      <div class="relative bg-white dark:bg-[#141927] border border-[var(--outline-variant)] rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+      <div class="relative bg-white dark:bg-[#1e293b] border border-[var(--outline-variant)] rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
            (click)="$event.stopPropagation()">
 
         <!-- Header do modal -->

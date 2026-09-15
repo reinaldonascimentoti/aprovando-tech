@@ -37,7 +37,7 @@ import { Subscription } from 'rxjs';
             <span class="hidden sm:inline">Dashboard</span>
           </button>
           <button (click)="router.navigate(['/legislacao/nova'])"
-            class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#523bf6] to-indigo-600 hover:from-[#472fc2] hover:to-indigo-700 text-white font-bold text-xs shadow-md flex items-center gap-2 cursor-pointer">
+            class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#5d3bf6] to-[#7c3aed] hover:opacity-90 text-white font-bold text-xs shadow-md shadow-purple-500/25 flex items-center gap-2 cursor-pointer transition-all">
             <span class="material-symbols-outlined !text-[18px]">add</span>
             Nova Legislação
           </button>
@@ -53,7 +53,7 @@ import { Subscription } from 'rxjs';
       <!-- Empty state -->
       <div *ngIf="!loading && legislacoes.length === 0"
         class="neo-raised rounded-3xl p-12 flex flex-col items-center justify-center text-center gap-4">
-        <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#5d3bf6]/20 to-[#7c3aed]/20 flex items-center justify-center">
+        <div class="w-20 h-20 rounded-2xl bg-[var(--primary)]/15 flex items-center justify-center">
           <span class="material-symbols-outlined !text-[44px] text-[var(--primary)]">gavel</span>
         </div>
         <h2 class="text-lg font-black text-[var(--on-surface)]">Nenhuma legislação cadastrada</h2>
@@ -61,7 +61,7 @@ import { Subscription } from 'rxjs';
           Envie uma lei, decreto ou instrução normativa para gerar comentários didáticos artigo por artigo.
         </p>
         <button (click)="router.navigate(['/legislacao/nova'])"
-          class="mt-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#523bf6] to-indigo-600 text-white font-bold text-sm shadow-md flex items-center gap-2 cursor-pointer">
+          class="mt-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#5d3bf6] to-[#7c3aed] hover:opacity-90 text-white font-bold text-sm shadow-md shadow-purple-500/25 flex items-center gap-2 cursor-pointer transition-all">
           <span class="material-symbols-outlined !text-[20px]">upload_file</span>
           Enviar primeira legislação
         </button>
@@ -74,20 +74,20 @@ import { Subscription } from 'rxjs';
           (click)="router.navigate(['/legislacao', leg.id])">
 
           <!-- Glow top -->
-          <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#7c3aed]/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--primary)]/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
           <!-- Tipo + Status badge -->
           <div class="flex items-center justify-between gap-2">
-            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#7c3aed]/15 text-[#7c3aed] dark:text-purple-300 border border-[#7c3aed]/30">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[var(--primary)]/15 text-[var(--primary)] border border-[var(--primary)]/30">
               {{ leg.tipo || 'Legislação' }}
             </span>
             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border"
-              [style.background-color]="getStatusBg(leg.status)"
-              [style.color]="legislacaoService.getStatusColor(leg.status)"
-              [style.border-color]="legislacaoService.getStatusColor(leg.status) + '40'">
+              [style.background-color]="getUserStatusBg(leg)"
+              [style.color]="getUserStatusColor(leg)"
+              [style.border-color]="getUserStatusColor(leg) + '40'">
               <span *ngIf="isProcessing(leg.status)" class="inline-block w-1.5 h-1.5 rounded-full animate-pulse"
-                [style.background-color]="legislacaoService.getStatusColor(leg.status)"></span>
-              {{ legislacaoService.getStatusLabel(leg.status) }}
+                [style.background-color]="getUserStatusColor(leg)"></span>
+              {{ getUserStatusLabel(leg) }}
             </span>
           </div>
 
@@ -99,17 +99,40 @@ import { Subscription } from 'rxjs';
           <!-- Título -->
           <h3 class="text-sm font-black text-[var(--on-surface)] leading-snug line-clamp-2">{{ leg.titulo }}</h3>
 
-          <!-- Progresso de comentários -->
-          <div *ngIf="getComentariosProcessamento(leg)" class="flex flex-col gap-1.5 mt-1">
+          <!-- Progresso de comentários (Exibido apenas para Admin, para controle) -->
+          <div *ngIf="isAdmin && getComentariosProcessamento(leg)" class="flex flex-col gap-1.5 mt-1">
             <div class="flex justify-between text-[11px] font-semibold text-[var(--on-surface-variant)]">
-              <span>Comentários</span>
+              <span class="flex items-center gap-1">
+                <span class="material-symbols-outlined !text-[13px] text-[var(--primary)]">admin_panel_settings</span>
+                <span>Comentários</span>
+              </span>
               <span class="font-bold text-[var(--primary)]">
                 {{ getComentariosProcessamento(leg)?.quantidade_processada || 0 }} / {{ getComentariosProcessamento(leg)?.quantidade_total || 0 }}
               </span>
             </div>
             <div class="w-full h-1.5 bg-[var(--surface-container)] rounded-full overflow-hidden">
-              <div class="h-full rounded-full bg-gradient-to-r from-[#523bf6] to-[#7c3aed] transition-all duration-700"
+              <div class="h-full rounded-full bg-gradient-to-r from-[#5d3bf6] to-[#7c3aed] transition-all duration-700"
                 [style.width.%]="getComentariosPercent(leg)"></div>
+            </div>
+          </div>
+
+          <!-- Progresso de Estudo da Legislação (Para o Usuário, mesma lógica e visual do cronograma) -->
+          <div *ngIf="!isAdmin" class="flex flex-col gap-1.5 mt-1">
+            <div class="flex justify-between items-center text-[11px] font-semibold">
+              <span class="text-[var(--on-surface-variant)] flex items-center gap-1">
+                <span class="material-symbols-outlined !text-[13px] text-[var(--primary)]">checklist_rtl</span>
+                <span>Progresso do Estudo</span>
+              </span>
+              <span class="text-[var(--primary)] font-black text-xs">
+                {{ getEstudoPercent(leg) }}% Concluído
+              </span>
+            </div>
+            <div class="w-full h-2 bg-[var(--surface-container)] rounded-full overflow-hidden p-0.5">
+              <div class="h-full rounded-full bg-gradient-to-r from-[#5d3bf6] to-[#7c3aed] transition-all duration-500"
+                [style.width.%]="getEstudoPercent(leg)"></div>
+            </div>
+            <div class="flex justify-between items-center text-[10px] text-[var(--on-surface-variant)]">
+              <span>{{ getEstudoLidos(leg) }} de {{ getEstudoTotal(leg) }} artigos concluídos</span>
             </div>
           </div>
 
@@ -194,9 +217,66 @@ export class LegislacaoListComponent implements OnInit, OnDestroy {
     this.subs.push(sub);
   }
 
+  get isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
+
   getStatusBg(status: string): string {
     const color = this.legislacaoService.getStatusColor(status);
     return color + '15';
+  }
+
+  getUserStatusLabel(leg: Legislacao): string {
+    if (this.isAdmin) {
+      return this.legislacaoService.getStatusLabel(leg.status);
+    }
+    if (leg.status === 'pendente') return 'Pendente';
+    if (leg.status === 'extraindo' || leg.status === 'comentando') return 'Processando...';
+    if (leg.status === 'erro') return 'Indisponível';
+    if (leg.status === 'concluida') {
+      const pct = this.getEstudoPercent(leg);
+      if (pct === 100) return 'Concluída';
+      if (pct > 0) return 'Em Estudo';
+      return 'Disponível';
+    }
+    return this.legislacaoService.getStatusLabel(leg.status);
+  }
+
+  getUserStatusColor(leg: Legislacao): string {
+    if (this.isAdmin) {
+      return this.legislacaoService.getStatusColor(leg.status);
+    }
+    if (leg.status === 'pendente') return '#94a3b8';
+    if (leg.status === 'extraindo' || leg.status === 'comentando') return '#f59e0b';
+    if (leg.status === 'erro') return '#ef4444';
+    if (leg.status === 'concluida') {
+      const pct = this.getEstudoPercent(leg);
+      if (pct === 100) return '#10b981';
+      if (pct > 0) return '#7c3aed';
+      return '#10b981';
+    }
+    return this.legislacaoService.getStatusColor(leg.status);
+  }
+
+  getUserStatusBg(leg: Legislacao): string {
+    return this.getUserStatusColor(leg) + '15';
+  }
+
+  getEstudoTotal(leg: Legislacao): number {
+    const proc = (leg.processamentos || []).find(p => p.etapa === 'comentarios')
+      || (leg.processamentos || []).find(p => p.etapa === 'extracao');
+    return proc?.quantidade_total || 0;
+  }
+
+  getEstudoLidos(leg: Legislacao): number {
+    return Array.isArray(leg.artigos_lidos) ? leg.artigos_lidos.length : 0;
+  }
+
+  getEstudoPercent(leg: Legislacao): number {
+    const total = this.getEstudoTotal(leg);
+    if (!total) return 0;
+    const lidos = this.getEstudoLidos(leg);
+    return Math.min(100, Math.round((lidos / total) * 100));
   }
 
   isProcessing(status: string): boolean {

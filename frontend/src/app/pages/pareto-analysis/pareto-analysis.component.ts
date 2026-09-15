@@ -24,7 +24,7 @@ import { ParetoAnalysisModalComponent } from '../../components/pareto-analysis-m
             <span>{{ themeService.isDark() ? 'Claro' : 'Escuro' }}</span>
           </button>
         </div>
-        <span class="bg-[#e9ddff] text-[#5516be] text-xs font-extrabold px-3 py-1 rounded-full">
+        <span class="bg-[var(--secondary)]/15 text-[var(--secondary)] text-xs font-extrabold px-3 py-1 rounded-full border border-[var(--secondary)]/20">
           Pareto 3 Camadas (Macro → Meso → Micro)
         </span>
       </div>
@@ -36,15 +36,15 @@ import { ParetoAnalysisModalComponent } from '../../components/pareto-analysis-m
             <h1 class="text-2xl md:text-3xl font-black text-[var(--on-surface)] mb-2">{{ edital?.title || 'Análise de Edital' }}</h1>
             <!-- Concurso Info Badges -->
             <div class="flex flex-wrap gap-2 mb-2" *ngIf="concursoInfo">
-              <span *ngIf="concursoInfo.concurso" class="inline-flex items-center gap-1 bg-[#e1dfff] text-[#2b20d2] text-[11px] font-extrabold px-3 py-1 rounded-full">
+              <span *ngIf="concursoInfo.concurso" class="inline-flex items-center gap-1 bg-[var(--primary)]/15 text-[var(--primary)] text-[11px] font-extrabold px-3 py-1 rounded-full border border-[var(--primary)]/20">
                 <span class="material-symbols-outlined !text-[13px]">emoji_events</span>
                 {{ concursoInfo.concurso }}
               </span>
-              <span *ngIf="concursoInfo.cargo" class="inline-flex items-center gap-1 bg-[#e9ddff] text-[#5516be] text-[11px] font-extrabold px-3 py-1 rounded-full">
+              <span *ngIf="concursoInfo.cargo" class="inline-flex items-center gap-1 bg-[var(--secondary)]/15 text-[var(--secondary)] text-[11px] font-extrabold px-3 py-1 rounded-full border border-[var(--secondary)]/20">
                 <span class="material-symbols-outlined !text-[13px]">badge</span>
                 {{ concursoInfo.cargo }}
               </span>
-              <span *ngIf="concursoInfo.data_prova" class="inline-flex items-center gap-1 bg-[#eefff2] text-[#005236] text-[11px] font-extrabold px-3 py-1 rounded-full">
+              <span *ngIf="concursoInfo.data_prova" class="inline-flex items-center gap-1 bg-[var(--tertiary)]/15 text-[var(--tertiary)] text-[11px] font-extrabold px-3 py-1 rounded-full border border-[var(--tertiary)]/20">
                 <span class="material-symbols-outlined !text-[13px]">event</span>
                 Prova: {{ concursoInfo.data_prova }}
               </span>
@@ -65,7 +65,7 @@ import { ParetoAnalysisModalComponent } from '../../components/pareto-analysis-m
               <span class="material-symbols-outlined !text-[18px] text-purple-600">refresh</span>
               <span>Nova Análise Pareto</span>
             </button>
-            <a [routerLink]="['/disciplinas', editalId]" class="py-3 px-5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 bg-[#e9ddff] text-[#5516be] hover:bg-[#ddd0ff] transition-all whitespace-nowrap shadow-sm">
+            <a [routerLink]="['/disciplinas', editalId]" class="py-3 px-5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 bg-[var(--secondary)]/15 text-[var(--secondary)] hover:bg-[var(--secondary)]/25 border border-[var(--secondary)]/20 transition-all whitespace-nowrap shadow-sm">
               <span class="material-symbols-outlined">grid_view</span>
               <span>Mapa Geral das Disciplinas</span>
             </a>
@@ -76,9 +76,9 @@ import { ParetoAnalysisModalComponent } from '../../components/pareto-analysis-m
           </div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-[#eefff2] border border-[#6ffbbe] text-xs text-[#005236] flex items-start gap-3">
-          <span class="material-symbols-outlined text-[#00845a] !text-[20px] shrink-0 mt-0.5">lightbulb</span>
-          <div class="flex-1 summary-content" [innerHTML]="formattedRelevanceSummary"></div>
+        <div class="p-4 rounded-2xl bg-[var(--tertiary)]/10 border border-[var(--tertiary)]/20 text-xs text-[var(--tertiary)] flex items-start gap-3">
+          <span class="material-symbols-outlined !text-[20px] shrink-0 mt-0.5" style="color: var(--tertiary)">lightbulb</span>
+          <div class="flex-1 summary-content text-[var(--on-surface-variant)]" [innerHTML]="formattedRelevanceSummary"></div>
         </div>
       </div>
 
@@ -96,12 +96,12 @@ import { ParetoAnalysisModalComponent } from '../../components/pareto-analysis-m
         </div>
         <div class="neo-raised rounded-2xl p-5 flex flex-col justify-center items-center text-center">
           <span class="text-[11px] font-bold text-[var(--on-surface)] mb-1">Cobertura</span>
-          <span class="text-3xl font-black text-[#00845a]">{{ paretoData?.coverage_percentage || 0 }}%</span>
+          <span class="text-3xl font-black text-[var(--tertiary)]">{{ paretoData?.coverage_percentage || 0 }}%</span>
           <span class="text-[10px] text-[var(--on-surface-variant)] mt-0.5">Dos pontos</span>
         </div>
         <div class="neo-raised rounded-2xl p-5 flex flex-col justify-center items-center text-center">
           <span class="text-[11px] font-bold text-[var(--on-surface)] mb-1">Tópicos 🔥</span>
-          <span class="text-3xl font-black text-[#ba1a1a]">{{ paretoData?.total_hot_topics || 0 }}</span>
+          <span class="text-3xl font-black text-[var(--error)]">{{ paretoData?.total_hot_topics || 0 }}</span>
           <span class="text-[10px] text-[var(--on-surface-variant)] mt-0.5">Quentes</span>
         </div>
         <div class="neo-raised rounded-2xl p-5 flex flex-col justify-center items-center text-center">

@@ -11,13 +11,13 @@ import { FormsModule } from '@angular/forms';
     <div class="space-y-1 relative" #containerRef>
       <!-- Label e contador -->
       <div class="flex items-center justify-between text-[11px] font-bold text-[var(--on-surface-variant)]">
-        <label class="flex items-center gap-1 cursor-pointer" (click)="toggleDropdown($event)">
-          <span class="material-symbols-outlined !text-[14px] text-[var(--primary)]">{{ icon }}</span>
+        <label class="flex items-center gap-1.5 cursor-pointer" (click)="toggleDropdown($event)">
+          <span class="material-symbols-outlined !text-[15px] text-[var(--primary)]">{{ icon }}</span>
           <span>{{ label }}</span>
         </label>
         <span 
           *ngIf="selected.length > 0" 
-          class="text-[10px] font-extrabold text-[var(--primary)] bg-[var(--primary)]/15 px-1.5 py-0.5 rounded-md leading-none">
+          class="text-[10px] font-extrabold text-[var(--primary)] bg-[var(--primary)]/10 px-1.5 py-0.5 rounded-md leading-none border border-[var(--primary)]/20">
           {{ selected.length }}
         </span>
       </div>
@@ -26,15 +26,17 @@ import { FormsModule } from '@angular/forms';
       <button
         type="button"
         (click)="toggleDropdown($event)"
-        class="neo-pressed rounded-xl px-3 py-2 flex items-center justify-between bg-[var(--background)] border transition-all text-xs w-full text-[var(--on-surface)] cursor-pointer font-medium gap-1.5 text-left select-none"
-        [class.border-[var(--primary)]]="isOpen || selected.length > 0"
-        [class.border-[var(--outline-variant)]]="!isOpen && selected.length === 0"
-        [class.shadow-sm]="isOpen">
+        class="rounded-xl px-3 py-2 flex items-center justify-between bg-[var(--input-bg)] border transition-all text-xs w-full text-[var(--on-surface)] cursor-pointer font-medium gap-1.5 text-left select-none shadow-2xs"
+        [ngClass]="{
+          'border-[var(--primary)] ring-2 ring-[var(--primary)]/15': isOpen,
+          'border-[var(--primary)]': !isOpen && selected.length > 0,
+          'border-[var(--input-border)]': !isOpen && selected.length === 0
+        }">
         
         <!-- Conteúdo do seletor -->
         <div class="flex items-center gap-1.5 truncate flex-1 min-w-0">
           <!-- Quando nada selecionado -->
-          <span *ngIf="selected.length === 0" class="text-[var(--outline)] truncate font-normal">
+          <span *ngIf="selected.length === 0" class="text-[var(--input-placeholder)] truncate font-normal">
             {{ placeholder }}
           </span>
 
@@ -46,7 +48,7 @@ import { FormsModule } from '@angular/forms';
           <!-- Quando 2 ou mais selecionados -->
           <div *ngIf="selected.length > 1" class="flex items-center gap-1.5 truncate">
             <span class="font-bold text-[var(--on-surface)] truncate">{{ selected[0] }}</span>
-            <span class="text-[10px] font-extrabold bg-[var(--primary)]/20 text-[var(--primary)] px-1.5 py-0.5 rounded-full shrink-0">
+            <span class="text-[10px] font-extrabold bg-[var(--primary)]/15 text-[var(--primary)] px-1.5 py-0.5 rounded-full shrink-0">
               +{{ selected.length - 1 }}
             </span>
           </div>
@@ -73,17 +75,17 @@ import { FormsModule } from '@angular/forms';
       <div
         *ngIf="isOpen"
         (click)="$event.stopPropagation()"
-        class="absolute left-0 top-full mt-1.5 w-full min-w-[240px] max-w-[340px] rounded-2xl bg-[var(--card-bg)] border border-[var(--outline-variant)] shadow-2xl z-[70] p-2.5 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
+        class="absolute left-0 top-full mt-1.5 w-full min-w-[240px] max-w-[340px] rounded-2xl bg-[var(--card-bg)] border border-[var(--outline-variant)] shadow-xl z-[70] p-2.5 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
         
         <!-- Campo de Pesquisa interna se houver mais de 5 opções ou permitir custom -->
-        <div *ngIf="options.length > 4 || allowCustom" class="neo-pressed rounded-lg px-2.5 py-1.5 mb-2 flex items-center gap-1.5 bg-[var(--background)] border border-[var(--outline-variant)]/40">
+        <div *ngIf="options.length > 4 || allowCustom" class="rounded-lg px-2.5 py-1.5 mb-2 flex items-center gap-1.5 bg-[var(--surface-container-low)] border border-[var(--outline-variant)]">
           <span class="material-symbols-outlined text-[var(--outline)] !text-[15px]">search</span>
           <input
             type="text"
             [(ngModel)]="searchTerm"
             (click)="$event.stopPropagation()"
             [placeholder]="'Filtrar ' + label.toLowerCase() + '...'"
-            class="bg-transparent border-none outline-none text-[11px] w-full text-[var(--on-surface)] placeholder:text-[var(--outline)]">
+            class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--input-placeholder)]">
           <button
             *ngIf="searchTerm"
             type="button"
@@ -94,7 +96,7 @@ import { FormsModule } from '@angular/forms';
         </div>
 
         <!-- Barra de Ações Rápidas: Marcar Todos / Limpar / Contagem -->
-        <div class="flex items-center justify-between px-1 pb-1.5 mb-1.5 border-b border-[var(--outline-variant)]/30 text-[10px] font-bold">
+        <div class="flex items-center justify-between px-1 pb-1.5 mb-1.5 border-b border-[var(--outline-variant)]/40 text-[10px] font-bold">
           <span class="text-[var(--on-surface-variant)]">
             <strong class="text-[var(--primary)]">{{ selected.length }}</strong> de {{ options.length }}
           </span>
@@ -105,7 +107,7 @@ import { FormsModule } from '@angular/forms';
               class="text-[var(--primary)] hover:underline cursor-pointer">
               Todos
             </button>
-            <span class="text-[var(--outline)] opacity-50">•</span>
+            <span class="text-[var(--outline)] opacity-40">•</span>
             <button
               type="button"
               (click)="clearAll($event)"
@@ -134,12 +136,12 @@ import { FormsModule } from '@angular/forms';
 
           <label
             *ngFor="let opt of filteredOptions"
-            class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[var(--surface-container-high)]/70 text-[11px] font-semibold text-[var(--on-surface)] cursor-pointer transition-colors select-none">
+            class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-[var(--surface-container)] text-xs font-medium text-[var(--on-surface)] cursor-pointer transition-colors select-none">
             <input
               type="checkbox"
               [checked]="isSelected(opt)"
               (change)="toggleOption(opt)"
-              class="rounded border-[var(--outline-variant)] text-[var(--primary)] focus:ring-0 cursor-pointer w-3.5 h-3.5 shrink-0" />
+              class="rounded border-[var(--input-border)] text-[var(--primary)] focus:ring-0 cursor-pointer w-3.5 h-3.5 shrink-0" />
             <span class="truncate flex-1" [title]="opt">{{ opt }}</span>
           </label>
         </div>
