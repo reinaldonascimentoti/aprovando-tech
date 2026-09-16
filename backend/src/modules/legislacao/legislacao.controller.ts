@@ -11,11 +11,29 @@ export class LegislacaoController {
 
   constructor(private readonly legislacaoService: LegislacaoService) {}
 
-  // Lista legislações do usuário
   @Get()
-  async listar(@Query('userId') userId: string) {
+  async listar(@Query('userId') userId?: string) {
+    return this.legislacaoService.listar(userId);
+  }
+
+  // Associa a legislação ao Vade Mecum do usuário
+  @Post(':id/assign')
+  async assignToUser(
+    @Param('id') legislacaoId: string,
+    @Body('userId') userId: string,
+  ) {
     if (!userId) throw new BadRequestException('userId é obrigatório.');
-    return this.legislacaoService.listarPorUsuario(userId);
+    return this.legislacaoService.sendLegislacaoToUser(legislacaoId, userId);
+  }
+
+  // Remove a legislação do Vade Mecum do usuário
+  @Delete(':id/unassign')
+  async unassignFromUser(
+    @Param('id') legislacaoId: string,
+    @Body('userId') userId: string,
+  ) {
+    if (!userId) throw new BadRequestException('userId é obrigatório.');
+    return this.legislacaoService.removeLegislacaoFromUser(legislacaoId, userId);
   }
 
   // Detalhes de uma legislação (inclui artigos, processamentos e artigos lidos)

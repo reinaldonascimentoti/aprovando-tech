@@ -23,6 +23,8 @@ export interface Legislacao {
   updated_at: string;
   processamentos?: LegislacaoProcessamento[];
   artigos_lidos?: string[];
+  total_questoes?: number;
+  total_flashcards?: number;
 }
 
 export interface LegislacaoArtigo {
@@ -368,11 +370,33 @@ export class LegislacaoService {
   // Backend API calls — Gerais
   // ---------------------------------------------------------------
 
-  listar(): Observable<Legislacao[]> {
+  listar(global: boolean = false): Observable<Legislacao[]> {
     const userId = this.supabaseService.currentUser?.id;
-    if (!userId) return from(Promise.resolve([]));
-    return this.http.get<Legislacao[]>(`${this.baseUrl}/legislacao?userId=${userId}`, {
+    let url = `${this.baseUrl}/legislacao`;
+    if (!global && userId) {
+      url += `?userId=${userId}`;
+    }
+    return this.http.get<Legislacao[]>(url, {
       headers: this.getHeaders(),
+    });
+  }
+
+  adicionarAoVadeMecum(legislacaoId: string): Observable<any> {
+    const userId = this.supabaseService.currentUser?.id;
+    if (!userId) throw new Error('Usuário não autenticado.');
+    return this.http.post<any>(
+      `${this.baseUrl}/legislacao/${legislacaoId}/assign`,
+      { userId },
+      { headers: this.getHeaders() }
+    );
+  }
+
+  removerDoVadeMecum(legislacaoId: string): Observable<any> {
+    const userId = this.supabaseService.currentUser?.id;
+    if (!userId) throw new Error('Usuário não autenticado.');
+    return this.http.request('delete', `${this.baseUrl}/legislacao/${legislacaoId}/unassign`, {
+      body: { userId },
+      headers: this.getHeaders()
     });
   }
 

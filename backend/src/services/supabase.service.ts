@@ -488,6 +488,13 @@ export class SupabaseService {
   async dismissEdital(editalId: string, userId: string) {
     if (!this.adminClient) return null;
 
+    // Primeiro remove da lista de assinalados (se estiver lá)
+    await this.adminClient
+      .from('user_edital_assignments')
+      .delete()
+      .eq('user_id', userId)
+      .eq('edital_id', editalId);
+
     const { data, error } = await this.adminClient
       .from('user_edital_dismissals')
       .insert({ user_id: userId, edital_id: editalId })
@@ -876,14 +883,22 @@ export class SupabaseService {
   async getRecentCompletedEditais(limit = 4, userId?: string): Promise<any[]> {
     if (!this.adminClient) return [];
 
-    // IDs já adicionados pelo user
-    let assignedIds: string[] = [];
+    // IDs já adicionados e dispensados pelo user
+    let excludeIds: string[] = [];
     if (userId) {
-      const { data: assigned } = await this.adminClient
-        .from('user_edital_assignments')
-        .select('edital_id')
-        .eq('user_id', userId);
-      assignedIds = (assigned ?? []).map((a: any) => a.edital_id);
+      const [{ data: assigned }, { data: dismissed }] = await Promise.all([
+        this.adminClient
+          .from('user_edital_assignments')
+          .select('edital_id')
+          .eq('user_id', userId),
+        this.adminClient
+          .from('user_edital_dismissals')
+          .select('edital_id')
+          .eq('user_id', userId)
+      ]);
+      const aIds = (assigned ?? []).map((a: any) => a.edital_id);
+      const dIds = (dismissed ?? []).map((d: any) => d.edital_id);
+      excludeIds = [...aIds, ...dIds];
     }
 
     let query = this.adminClient
@@ -891,7 +906,7 @@ export class SupabaseService {
       .select('id, title, cargo, concurso, data_prova, uploader_name, created_at, status, pareto_data')
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
-      .limit(limit + assignedIds.length + 10); // busca extra para compensar exclusão
+      .limit(limit + excludeIds.length + 10); // busca extra para compensar exclusão
 
     const { data, error } = await query;
     if (error) {
@@ -899,7 +914,11 @@ export class SupabaseService {
       return [];
     }
 
-    const results = (data ?? []).filter((e: any) => !assignedIds.includes(e.id));
+    let results = data ?? [];
+    if (excludeIds.length > 0) {
+      results = results.filter(e => !excludeIds.includes(e.id));
+    }
+
     return results.slice(0, limit);
   }
 
@@ -1017,6 +1036,19 @@ export class SupabaseService {
       .select()
       .single();
     if (error) { this.logger.error(`createLegislacao error: ${error.message}`); return null; }
+    
+    // Assinala automaticamente ao criador
+    if (row?.id && row.user_id) {
+      try {
+        await this.adminClient.from('user_legislacao_assignments').upsert({
+          user_id: row.user_id,
+          legislacao_id: row.id,
+        }, { onConflict: 'user_id,legislacao_id' });
+      } catch (e) {
+        this.logger.warn(`createLegislacao - falha no auto-assign: ${e.message}`);
+      }
+    }
+    
     return row;
   }
 
@@ -1043,15 +1075,83 @@ export class SupabaseService {
     return data;
   }
 
-  async listLegislacoesByUser(userId: string) {
+  async listLegislacoes(userId?: string) {
     if (!this.adminClient) return [];
-    const { data, error } = await this.adminClient
-      .from('legislacoes')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    if (error) { this.logger.error(`listLegislacoesByUser error: ${error.message}`); return []; }
-    return data ?? [];
+    
+    try {
+      if (userId) {
+        // Retorna apenas as legislações assinaladas ao usuário
+        const { data, error } = await this.adminClient
+          .from('user_legislacao_assignments')
+          .select('legislacao_id, assigned_at, legislacoes(*)')
+          .eq('user_id', userId)
+          .order('assigned_at', { ascending: false });
+        if (error) throw error;
+        
+        return data.map(item => {
+          const leg = Array.isArray(item.legislacoes) ? item.legislacoes[0] : item.legislacoes;
+          return {
+            ...(leg as any),
+            assigned_at: item.assigned_at
+          };
+        }).filter(item => item.id); // Garante que a legislação existe
+      } else {
+        // Retorna todas as legislações para o catálogo global
+        const { data, error } = await this.adminClient
+          .from('legislacoes')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data || [];
+      }
+    } catch (e) {
+      this.logger.error(`listLegislacoes error: ${e.message}`);
+      return [];
+    }
+  }
+
+  async sendLegislacaoToUser(legislacaoId: string, userId: string) {
+    if (!this.adminClient) return null;
+
+    // Verifica se a legislação existe
+    const leg = await this.getLegislacaoById(legislacaoId);
+    if (!leg) return null;
+
+    try {
+      const { data, error } = await this.adminClient
+        .from('user_legislacao_assignments')
+        .upsert({
+          user_id: userId,
+          legislacao_id: legislacaoId,
+          assigned_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,legislacao_id' })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (error: any) {
+      this.logger.error(`sendLegislacaoToUser error: ${error.message}`);
+      return null;
+    }
+  }
+
+  async removeLegislacaoFromUser(legislacaoId: string, userId: string) {
+    if (!this.adminClient) return null;
+    try {
+      const { data, error } = await this.adminClient
+        .from('user_legislacao_assignments')
+        .delete()
+        .eq('user_id', userId)
+        .eq('legislacao_id', legislacaoId)
+        .select();
+      
+      if (error) throw error;
+      return data;
+    } catch (error: any) {
+      this.logger.error(`removeLegislacaoFromUser error: ${error.message}`);
+      return null;
+    }
   }
 
   async deleteLegislacao(id: string) {
@@ -1251,6 +1351,23 @@ export class SupabaseService {
     for (const row of data || []) {
       if (!map[row.legislacao_id]) map[row.legislacao_id] = [];
       map[row.legislacao_id].push(row);
+    }
+    return map;
+  }
+
+  async getMateriaisResumoByLegislacoes(legislacaoIds: string[]): Promise<Record<string, any>> {
+    if (!this.adminClient || !legislacaoIds.length) return {};
+    const { data, error } = await this.adminClient
+      .from('legislacao_materiais_concurso')
+      .select('legislacao_id, resumo')
+      .in('legislacao_id', legislacaoIds);
+    if (error) {
+      this.logger.error(`getMateriaisResumoByLegislacoes error: ${error.message}`);
+      return {};
+    }
+    const map: Record<string, any> = {};
+    for (const row of data || []) {
+      map[row.legislacao_id] = row.resumo;
     }
     return map;
   }

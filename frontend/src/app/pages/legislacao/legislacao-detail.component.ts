@@ -524,11 +524,11 @@ import { Subscription } from 'rxjs';
                   <div class="flex items-center gap-2">
                     <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 flex items-center gap-1">
                       <span class="material-symbols-outlined !text-[12px]">quiz</span>
-                      Meta: {{ item.meta_questoes?.recomendado || item.meta_questoes?.minimo || 2 }} questões
+                      Meta: {{ item.meta_questoes.recomendado || item.meta_questoes.minimo || 2 }} questões
                     </span>
                     <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center gap-1">
                       <span class="material-symbols-outlined !text-[12px]">style</span>
-                      Meta: {{ item.meta_flashcards?.recomendado || item.meta_flashcards?.minimo || 1 }} cards
+                      Meta: {{ item.meta_flashcards.recomendado || item.meta_flashcards.minimo || 1 }} cards
                     </span>
                     <button (click)="irParaArtigo(item.artigo_numero || '')"
                       title="Ver comentários e texto integral"
@@ -1200,7 +1200,7 @@ import { Subscription } from 'rxjs';
                   </span>
                 </div>
                 <p class="text-xs text-[var(--on-surface-variant)]">
-                  Banca de referência: <strong class="text-[var(--on-surface)]">{{ materialConcurso.parametros?.banca || 'Geral' }}</strong>
+                  Banca de referência: <strong class="text-[var(--on-surface)]">{{ materialConcurso.parametros.banca || 'Geral' }}</strong>
                 </p>
               </div>
             </div>
@@ -1231,7 +1231,7 @@ import { Subscription } from 'rxjs';
               <span class="material-symbols-outlined !text-[16px]">quiz</span>
               <span>Questões</span>
               <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-[var(--primary)]/10 text-[var(--primary)]">
-                {{ materialConcurso.questoes?.length || 0 }}
+                {{ materialConcurso.questoes.length || 0 }}
               </span>
             </button>
 
@@ -1243,7 +1243,7 @@ import { Subscription } from 'rxjs';
               <span class="material-symbols-outlined !text-[16px]">style</span>
               <span>Flashcards</span>
               <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400">
-                {{ materialConcurso.flashcards?.length || 0 }}
+                {{ materialConcurso.flashcards.length || 0 }}
               </span>
             </button>
 
@@ -2362,7 +2362,6 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
     { key: 'consequencias', label: 'Consequências', icon: 'gavel', itemIcon: 'arrow_right', color: '#7c3aed' },
     { key: 'pontos_importantes', label: 'Pontos Importantes', icon: 'lightbulb', itemIcon: 'star', color: '#10b981' },
     { key: 'pontos_atencao', label: 'Atenção', icon: 'warning', itemIcon: 'warning', color: '#f59e0b' },
-    { key: 'termos_juridicos', label: 'Termos Jurídicos', icon: 'book', itemIcon: 'label', color: '#64748b' },
   ];
 
   opcoesPrincipais = [
@@ -2371,7 +2370,6 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
     { key: 'obrigacoes', label: 'Obrigações', icon: 'assignment', color: '#ef4444' },
     { key: 'pontos_importantes', label: 'Pontos Importantes', icon: 'lightbulb', color: '#10b981' },
     { key: 'direitos', label: 'Direitos', icon: 'shield', color: '#22c55e' },
-    { key: 'termos_juridicos', label: 'Termos Jurídicos', icon: 'book', color: '#64748b' },
   ];
 
   secoesSelecionadas: { [key: string]: boolean } = {
@@ -2380,7 +2378,6 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
     obrigacoes: false,
     pontos_importantes: false,
     direitos: false,
-    termos_juridicos: false,
   };
 
   dropdownArtigosAberto = false;
@@ -2583,7 +2580,6 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
       obrigacoes: false,
       pontos_importantes: false,
       direitos: false,
-      termos_juridicos: false,
     };
   }
 
@@ -2602,11 +2598,27 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
   }
 
   getOpcoesDisponiveis() {
-    const list = [...this.opcoesPrincipais];
+    const list = [];
+    const resumoOp = this.opcoesPrincipais.find(o => o.key === 'resumo');
+    if (resumoOp) {
+      list.push(resumoOp);
+    }
+
     if (this.comentarioAtivo) {
+      for (const op of this.opcoesPrincipais) {
+        if (op.key === 'resumo') continue;
+        const count = this.getBadgeCount(op.key);
+        if (count && count > 0) {
+          list.push(op);
+        }
+      }
+      
       for (const cat of this.categorias) {
-        if (!this.opcoesPrincipais.some(o => o.key === cat.key) && this.getCategoria(cat.key).length > 0) {
-          list.push({ key: cat.key, label: cat.label, icon: cat.icon, color: cat.color });
+        if (!this.opcoesPrincipais.some(o => o.key === cat.key)) {
+          const count = this.getBadgeCount(cat.key);
+          if (count && count > 0) {
+            list.push({ key: cat.key, label: cat.label, icon: cat.icon, color: cat.color });
+          }
         }
       }
     }

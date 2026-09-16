@@ -204,7 +204,7 @@ const TIPOS_LEGISLACAO = [
               Cancelar
             </button>
             <button (click)="enviar()"
-              [disabled]="enviando || !form.titulo || (modo === 'arquivo' && !arquivoSelecionado) || (modo === 'link' && !form.url?.trim())"
+              [disabled]="enviando || !form.titulo || (modo === 'arquivo' && !arquivoSelecionado) || (modo === 'link' && !form.url.trim())"
               class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#5d3bf6] to-[#7c3aed] hover:opacity-90 text-white font-bold text-sm shadow-md shadow-purple-500/25 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all">
               <span *ngIf="!enviando" class="material-symbols-outlined !text-[18px]">rocket_launch</span>
               <span *ngIf="enviando" class="material-symbols-outlined !text-[18px] animate-spin">sync</span>

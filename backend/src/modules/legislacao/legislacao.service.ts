@@ -60,7 +60,7 @@ export class LegislacaoService {
 
   async reprocessarLegislacao(legislacaoId: string, userId: string) {
     this.logger.log(`[Legislação] Reprocessando legislacaoId=${legislacaoId} para userId=${userId}`);
-    const legislacao = await this.supabaseService.getLegislacaoDetails(legislacaoId, userId);
+    const legislacao = await this.supabaseService.getLegislacaoById(legislacaoId);
     if (!legislacao) {
       throw new NotFoundException('Legislação não encontrada');
     }
@@ -410,21 +410,30 @@ export class LegislacaoService {
   // ---------------------------------------------------------------
   // Listagem e detalhes
   // ---------------------------------------------------------------
-  async listarPorUsuario(userId: string) {
-    const legislacoes = await this.supabaseService.listLegislacoesByUser(userId);
+  async listar(userId?: string) {
+    const legislacoes = await this.supabaseService.listLegislacoes(userId);
     if (!legislacoes || legislacoes.length === 0) return [];
 
     const legIds = legislacoes.map(l => l.id);
-    const [processamentosMap, artigosLidosMap] = await Promise.all([
-      this.supabaseService.getProcessamentosByLegislacoes(legIds),
-      this.supabaseService.getAllArtigosLidosByUser(userId),
-    ]);
+    const processamentosMap = await this.supabaseService.getProcessamentosByLegislacoes(legIds);
+    const artigosLidosMap = userId ? await this.supabaseService.getAllArtigosLidosByUser(userId) : {};
+    const materiaisResumoMap = await this.supabaseService.getMateriaisResumoByLegislacoes(legIds);
 
     return legislacoes.map(leg => ({
       ...leg,
       processamentos: processamentosMap[leg.id] || [],
       artigos_lidos: artigosLidosMap[leg.id] || [],
+      total_questoes: materiaisResumoMap[leg.id]?.total_questoes || 0,
+      total_flashcards: materiaisResumoMap[leg.id]?.total_flashcards || 0,
     }));
+  }
+
+  async sendLegislacaoToUser(legislacaoId: string, userId: string) {
+    return this.supabaseService.sendLegislacaoToUser(legislacaoId, userId);
+  }
+
+  async removeLegislacaoFromUser(legislacaoId: string, userId: string) {
+    return this.supabaseService.removeLegislacaoFromUser(legislacaoId, userId);
   }
 
   async detalhar(legislacaoId: string, userId?: string) {
