@@ -3001,7 +3001,6 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
     if (art) {
       this.selecionarArtigo(art);
       this.abaAtiva = 'artigos';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 
@@ -3109,7 +3108,6 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
     const idx = this.indiceArtigoAtual;
     if (idx > 0) {
       this.selecionarArtigo(this.artigos[idx - 1]);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 
@@ -3117,7 +3115,6 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
     const idx = this.indiceArtigoAtual;
     if (idx >= 0 && idx < this.artigos.length - 1) {
       this.selecionarArtigo(this.artigos[idx + 1]);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 
