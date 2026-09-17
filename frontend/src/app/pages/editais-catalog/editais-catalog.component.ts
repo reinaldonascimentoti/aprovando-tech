@@ -46,14 +46,23 @@ import { getBancaLogo, getBancaInfo, BancaInfo } from '../../utils/banca.utils';
             </div>
           </div>
 
-          <!-- Search bar -->
-          <div class="neo-pressed rounded-2xl px-4 py-3 flex items-center gap-2 md:w-72">
-            <span class="material-symbols-outlined text-[var(--on-surface-variant)] !text-[20px]">search</span>
-            <input
-              [(ngModel)]="searchQuery"
-              type="text"
-              placeholder="Buscar edital, cargo ou concurso..."
-              class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--on-surface-variant)]">
+          <!-- Search & Action -->
+          <div class="flex items-center gap-3 w-full md:w-auto flex-col md:flex-row">
+            <!-- Search bar -->
+            <div class="neo-pressed rounded-2xl px-4 py-3 flex items-center gap-2 md:w-72 w-full">
+              <span class="material-symbols-outlined text-[var(--on-surface-variant)] !text-[20px]">search</span>
+              <input
+                [(ngModel)]="searchQuery"
+                type="text"
+                placeholder="Buscar edital, cargo ou concurso..."
+                class="bg-transparent border-none outline-none text-xs w-full text-[var(--on-surface)] placeholder:text-[var(--on-surface-variant)]">
+            </div>
+            
+            <!-- Upload Button -->
+            <button (click)="goToUpload()" class="btn-mesh btn-cta w-full md:w-auto whitespace-nowrap px-4 py-3 flex items-center justify-center gap-2 rounded-2xl bg-[var(--primary)] text-white font-bold hover:brightness-110 transition-all cursor-pointer shadow-md">
+              <span class="material-symbols-outlined !text-[18px]">cloud_upload</span>
+              <span>+ Enviar Novo Edital</span>
+            </button>
           </div>
         </div>
 
@@ -328,6 +337,10 @@ export class EditaisCatalogComponent implements OnInit {
 
   goBack() {
     this.router.navigate(['/student']);
+  }
+
+  goToUpload() {
+    this.router.navigate(['/student'], { state: { openUpload: true } });
   }
 
   getEditalBancaName(edital: any): string {

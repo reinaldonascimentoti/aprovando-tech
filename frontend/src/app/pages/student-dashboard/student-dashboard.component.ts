@@ -371,6 +371,16 @@ export interface AnalysisLogStep {
           </div>
         </div>
 
+          <!-- Botão Consultar Editais já analisados -->
+          <div class="flex items-center justify-center mt-2 mb-4">
+            <button
+              (click)="goToCatalog()"
+              class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-[#6b38d4] via-[#5d3bf6] to-[#7c3aed] text-white font-extrabold text-sm flex items-center gap-2.5 shadow-xl shadow-[#5d3bf6]/30 hover:shadow-[#5d3bf6]/50 hover:scale-105 active:scale-95 transition-all cursor-pointer">
+              <span class="material-symbols-outlined !text-[22px] animate-pulse">auto_awesome</span>
+              <span>Consultar Editais já analisados</span>
+            </button>
+          </div>
+
         <!-- ══ Container 2: Editais Recentes Analisados (Separado) ══ -->
         <div *ngIf="recentEditais.length > 0 || loadingRecentEditais" class="neo-raised rounded-3xl p-5 sm:p-6 md:p-8 bg-[var(--card-bg)] border border-[var(--outline-variant)] shadow-lg">
             <!-- Header -->
@@ -1621,14 +1631,14 @@ export interface AnalysisLogStep {
 
           <!-- Ações Inferiores: Consultar Catálogo Completo ou Enviar Novo -->
           <div class="pt-2 flex flex-col gap-3">
-            <div class="flex items-center justify-between text-xs px-1">
-              <button (click)="goToCatalogAndClose()"
-                      class="text-[var(--primary)] hover:underline font-bold flex items-center gap-1 cursor-pointer">
-                <span class="material-symbols-outlined !text-[16px]">apps</span>
-                <span>Consultar acervo completo no Catálogo de Editais</span>
-                <span class="material-symbols-outlined !text-[14px]">arrow_forward</span>
-              </button>
-            </div>
+            <!-- Botão Catálogo de Editais -->
+            <button
+              (click)="goToCatalogAndClose()"
+              class="w-full mt-2 py-3 px-4 rounded-2xl border border-[var(--primary)] bg-transparent hover:bg-[var(--primary)] text-[var(--primary)] hover:text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-xs group">
+              <span class="material-symbols-outlined !text-[18px]">apps</span>
+              <span>Consultar acervo completo no Catálogo de Editais</span>
+              <span class="material-symbols-outlined !text-[18px] transition-transform group-hover:translate-x-1">arrow_forward</span>
+            </button>
 
             <!-- Divisor -->
             <div class="relative flex items-center justify-center pt-2">
@@ -1641,8 +1651,8 @@ export interface AnalysisLogStep {
             <!-- Botão para avançar para o upload de novo edital -->
             <button
               (click)="goToUploadForm()"
-              class="w-full py-3 px-4 rounded-2xl border-2 border-dashed border-purple-400/80 dark:border-purple-500/60 hover:border-purple-600 dark:hover:border-purple-400 bg-purple-50/40 dark:bg-purple-950/10 text-purple-900 dark:text-purple-200 font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-xs">
-              <span class="material-symbols-outlined !text-[18px] text-purple-600 dark:text-purple-400">cloud_upload</span>
+              class="w-full py-3 px-4 rounded-2xl border-2 border-dashed border-purple-400/80 dark:border-purple-500/60 hover:border-purple-600 dark:hover:border-purple-400 bg-transparent hover:bg-purple-600 dark:hover:bg-purple-500 text-purple-700 dark:text-purple-300 hover:text-white dark:hover:text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-xs group">
+              <span class="material-symbols-outlined !text-[18px]">cloud_upload</span>
               <span>Enviar Novo Edital (PDF ou Link) para Análise</span>
             </button>
           </div>
@@ -2597,6 +2607,11 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     this.loadAccuracyStats();
     this.loadUserAnswerMap();
     this.loadStudySessions();
+
+    // Check if we should open the upload modal (coming from EditaisCatalog)
+    if (typeof history !== 'undefined' && history.state && history.state.openUpload) {
+      setTimeout(() => this.openUploadModal(), 100);
+    }
 
     // Listener para detectar quando o usuário sai do fullscreen via Esc
     document.addEventListener('fullscreenchange', this._fullscreenChangeHandler);
