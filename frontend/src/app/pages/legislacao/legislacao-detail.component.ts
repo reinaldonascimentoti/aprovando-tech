@@ -767,15 +767,6 @@ import { Subscription } from 'rxjs';
             </button>
           </div>
 
-          <!-- Alertas -->
-          <div *ngIf="plano?.alertas?.length" class="flex flex-col gap-2">
-            <div *ngFor="let alerta of plano?.alertas"
-              class="rounded-xl p-3 bg-amber-500/10 border border-amber-400/30 text-xs text-amber-600 dark:text-amber-400 flex items-start gap-2">
-              <span class="material-symbols-outlined !text-[16px] flex-shrink-0 mt-0.5">warning</span>
-              {{ alerta }}
-            </div>
-          </div>
-
           <!-- Cards de Resumo com Progresso em Tempo Real -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div class="neo-raised rounded-xl p-4 bg-[var(--card-bg)] flex flex-col gap-1 border-l-4 border-emerald-500">
@@ -899,6 +890,15 @@ import { Subscription } from 'rxjs';
               </div>
             </div>
 
+          </div>
+
+          <!-- Alertas -->
+          <div *ngIf="plano?.alertas?.length" class="flex flex-col gap-2 mb-2">
+            <div *ngFor="let alerta of plano?.alertas"
+              class="rounded-xl p-3 bg-amber-500/10 border border-amber-400/30 text-xs text-amber-600 dark:text-amber-400 flex items-start gap-2">
+              <span class="material-symbols-outlined !text-[16px] flex-shrink-0 mt-0.5">warning</span>
+              {{ alerta }}
+            </div>
           </div>
 
           <!-- Sessões agrupadas por data -->
@@ -1475,14 +1475,18 @@ import { Subscription } from 'rxjs';
                   </div>
 
                   <!-- Status de Resposta da Questão -->
-                  <div *ngIf="questoesRespondidas[q.id]">
-                    <span *ngIf="isQuestaoAcertou(q)" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500 text-white shadow-sm">
+                  <div *ngIf="questoesRespondidas[q.id] || questoesResolvidasAnteriormente[q.id]">
+                    <span *ngIf="questoesRespondidas[q.id] && isQuestaoAcertou(q)" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500 text-white shadow-sm">
                       <span class="material-symbols-outlined !text-[16px]">check_circle</span>
                       Você Acertou!
                     </span>
-                    <span *ngIf="!isQuestaoAcertou(q)" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-500 text-white shadow-sm">
+                    <span *ngIf="questoesRespondidas[q.id] && !isQuestaoAcertou(q)" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-500 text-white shadow-sm">
                       <span class="material-symbols-outlined !text-[16px]">cancel</span>
                       Você Errou
+                    </span>
+                    <span *ngIf="!questoesRespondidas[q.id] && questoesResolvidasAnteriormente[q.id]" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-[var(--tertiary)]/10 text-[var(--tertiary)] border border-[var(--tertiary)]/30 shadow-sm">
+                      <span class="material-symbols-outlined !text-[16px]">history</span>
+                      Resolvida
                     </span>
                   </div>
                 </div>
@@ -1989,9 +1993,9 @@ import { Subscription } from 'rxjs';
                     <span *ngIf="artigoSelecionado.titulo" class="text-xs text-[var(--on-surface-variant)] font-normal">{{ artigoSelecionado.titulo }}</span>
                   </h3>
                   <span *ngIf="isArtigoLido(artigoSelecionado.numero)"
-                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                    class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                    title="Estudado">
                     <span class="material-symbols-outlined !text-[12px]">check</span>
-                    Estudado
                   </span>
                 </div>
 
@@ -2079,10 +2083,6 @@ import { Subscription } from 'rxjs';
                     }">
                     <span class="material-symbols-outlined !text-[14px]">school</span>
                     Relevância {{ legislacaoService.getRelevanciaLabel(comentarioAtivo.relevancia_concurso) }}
-                  </span>
-                  <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                    <span class="material-symbols-outlined !text-[14px]">verified</span>
-                    Confiança {{ legislacaoService.getRelevanciaLabel(comentarioAtivo.grau_confianca) }}
                   </span>
                 </div>
 
@@ -2241,6 +2241,14 @@ import { Subscription } from 'rxjs';
 
               <!-- Ações da Direita: Marcar como Lido + Próximo Artigo -->
               <div class="flex items-center gap-2">
+                <!-- Botão Questões -->
+                <button type="button" (click)="irParaQuestoes(artigoSelecionado.numero)"
+                  class="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all border shadow-sm select-none active:scale-95 border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 cursor-pointer"
+                  title="Ver questões deste artigo">
+                  <span class="material-symbols-outlined !text-[18px]">quiz</span>
+                  <span>Questões</span>
+                </button>
+
                 <!-- Botão Marcar como Lido -->
                 <button type="button"
                   (click)="toggleArtigoLido(artigoSelecionado)"
@@ -2338,8 +2346,11 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
   paginaAtual: number = 1;
   itensPorPagina: number = 10;
   feedbackGeracao: { novasQuestoes: number; novosFlashcards: number; totalQuestoes: number } | null = null;
-  respostasUsuario: { [questaoId: string]: string } = {};
   questoesRespondidas: { [questaoId: string]: boolean } = {};
+  questoesResolvidasAnteriormente: { [questaoId: string]: boolean } = {};
+  respostasUsuarioAnteriores: { [questaoId: string]: string } = {};
+  explicacoesAbertasAnteriores: { [questaoId: string]: boolean } = {};
+  respostasUsuario: { [questaoId: string]: string } = {};
   explicacoesAbertas: { [questaoId: string]: boolean } = {};
 
   // Flashcards Interativos
@@ -2996,6 +3007,16 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
     return Math.round((this.totalSessoesConcluidas / this.plano.sessoes.length) * 100);
   }
 
+  irParaQuestoes(artigoNumero: string | number) {
+    this.abaAtiva = 'concurso';
+    if (!this.materialConcurso || (!this.materialConcurso.questoes?.length && !this.loadingMaterialConcurso)) {
+      this.carregarMaterialConcurso();
+    }
+    this.subAbaConcurso = 'questoes';
+    this.filtroArtigoQuestao = String(artigoNumero).trim();
+    this.onFiltroQuestaoChange();
+  }
+
   irParaArtigo(artigoNumero: string) {
     const art = this.artigos.find(a => String(a.numero).trim() === String(artigoNumero).trim());
     if (art) {
@@ -3203,9 +3224,17 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
       const raw = localStorage.getItem(this.getStorageKey());
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed.respostasUsuario) this.respostasUsuario = { ...this.respostasUsuario, ...parsed.respostasUsuario };
-        if (parsed.questoesRespondidas) this.questoesRespondidas = { ...this.questoesRespondidas, ...parsed.questoesRespondidas };
-        if (parsed.explicacoesAbertas) this.explicacoesAbertas = { ...this.explicacoesAbertas, ...parsed.explicacoesAbertas };
+        // Não carregamos respostasUsuario e questoesRespondidas para a sessão atual para que o usuário possa resolver novamente
+        // Apenas guardamos no histórico para não perder os dados salvos de outras questões
+        if (parsed.respostasUsuario) {
+          this.respostasUsuarioAnteriores = { ...parsed.respostasUsuario };
+        }
+        if (parsed.questoesRespondidas) {
+          this.questoesResolvidasAnteriormente = { ...parsed.questoesRespondidas };
+        }
+        if (parsed.explicacoesAbertas) {
+          this.explicacoesAbertasAnteriores = { ...parsed.explicacoesAbertas };
+        }
       }
     } catch (e) {
       console.warn('Erro ao ler respostas salvas do localStorage:', e);
@@ -3216,9 +3245,9 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
     if (!this.legislacao?.id) return;
     try {
       localStorage.setItem(this.getStorageKey(), JSON.stringify({
-        respostasUsuario: this.respostasUsuario,
-        questoesRespondidas: this.questoesRespondidas,
-        explicacoesAbertas: this.explicacoesAbertas,
+        respostasUsuario: { ...this.respostasUsuarioAnteriores, ...this.respostasUsuario },
+        questoesRespondidas: { ...this.questoesResolvidasAnteriormente, ...this.questoesRespondidas },
+        explicacoesAbertas: { ...this.explicacoesAbertasAnteriores, ...this.explicacoesAbertas },
       }));
     } catch (e) {
       console.warn('Erro ao salvar respostas no localStorage:', e);
@@ -3251,7 +3280,8 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
   }
 
   isQuestaoAcertou(questao: QuestaoConcurso): boolean {
-    const resposta = this.respostasUsuario[questao.id];
+    let resposta = this.respostasUsuario[questao.id];
+    if (!resposta) resposta = this.respostasUsuarioAnteriores[questao.id];
     if (!resposta) return false;
     return String(resposta).trim().toLowerCase() === String(questao.gabarito).trim().toLowerCase();
   }
@@ -3279,9 +3309,9 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
       list = list.filter(q => String(q.artigo_numero).trim() === String(this.filtroArtigoQuestao).trim());
     }
     if (this.filtroStatusResolucao === 'pendentes') {
-      list = list.filter(q => !this.questoesRespondidas[q.id]);
+      list = list.filter(q => !this.questoesRespondidas[q.id] && !this.questoesResolvidasAnteriormente[q.id]);
     } else if (this.filtroStatusResolucao === 'resolvidas') {
-      list = list.filter(q => !!this.questoesRespondidas[q.id]);
+      list = list.filter(q => !!this.questoesRespondidas[q.id] || !!this.questoesResolvidasAnteriormente[q.id]);
     } else if (this.filtroStatusResolucao === 'erros') {
       list = list.filter(q => !!this.questoesRespondidas[q.id] && !this.isQuestaoAcertou(q));
     }
@@ -3344,7 +3374,7 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
     const num = String(artigoNumero).trim();
     const questoesDoArt = (this.materialConcurso?.questoes || []).filter(q => String(q.artigo_numero).trim() === num);
     if (!questoesDoArt.length) return null;
-    const respondidas = questoesDoArt.filter(q => !!this.questoesRespondidas[q.id]);
+    const respondidas = questoesDoArt.filter(q => !!this.questoesRespondidas[q.id] || !!this.questoesResolvidasAnteriormente[q.id]);
     const acertos = respondidas.filter(q => this.isQuestaoAcertou(q));
     return {
       total: questoesDoArt.length,
@@ -3355,15 +3385,15 @@ export class LegislacaoDetailComponent implements OnInit, OnDestroy {
   }
 
   get totalQuestoesRespondidas(): number {
-    return Object.keys(this.questoesRespondidas).filter(id => this.questoesRespondidas[id]).length;
+    return this.questoesList.filter(q => !!this.questoesRespondidas[q.id] || !!this.questoesResolvidasAnteriormente[q.id]).length;
   }
 
   get totalQuestoesAcertos(): number {
-    return this.questoesList.filter(q => this.questoesRespondidas[q.id] && this.isQuestaoAcertou(q)).length;
+    return this.questoesList.filter(q => (this.questoesRespondidas[q.id] || this.questoesResolvidasAnteriormente[q.id]) && this.isQuestaoAcertou(q)).length;
   }
 
   get totalQuestoesErros(): number {
-    return this.questoesList.filter(q => this.questoesRespondidas[q.id] && !this.isQuestaoAcertou(q)).length;
+    return this.questoesList.filter(q => (this.questoesRespondidas[q.id] || this.questoesResolvidasAnteriormente[q.id]) && !this.isQuestaoAcertou(q)).length;
   }
 
   get percentualAcertos(): number {
