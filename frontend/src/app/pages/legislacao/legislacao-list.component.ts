@@ -151,7 +151,7 @@ import { Subscription } from 'rxjs';
               [style.background]="hoveredRamo === grupo.ramo ? 'rgba(93,59,246,0.08)' : 'transparent'">
             <div class="flex items-center gap-3">
               <div class="w-8 h-8 rounded-lg bg-[#5d3bf6]/10 flex items-center justify-center text-[#5d3bf6]">
-                <span class="material-symbols-outlined !text-[20px]">books_movies_and_music</span>
+                <span class="material-symbols-outlined !text-[20px]">book_ribbon</span>
               </div>
               {{ grupo.ramo }}
               <span class="text-xs font-bold text-[#5d3bf6] px-2.5 py-0.5 bg-[#5d3bf6]/15 rounded-full ml-1">{{ grupo.legislacoes.length }}</span>
@@ -295,7 +295,7 @@ import { Subscription } from 'rxjs';
               [style.background]="hoveredRamo === grupo.ramo ? 'rgba(93,59,246,0.08)' : 'transparent'">
             <div class="flex items-center gap-3">
               <div class="w-8 h-8 rounded-lg bg-[#5d3bf6]/10 flex items-center justify-center text-[#5d3bf6]">
-                <span class="material-symbols-outlined !text-[20px]">books_movies_and_music</span>
+                <span class="material-symbols-outlined !text-[20px]">book_ribbon</span>
               </div>
               {{ grupo.ramo }}
               <span class="text-xs font-bold text-[#5d3bf6] px-2.5 py-0.5 bg-[#5d3bf6]/15 rounded-full ml-1">{{ grupo.legislacoes.length }}</span>
@@ -309,36 +309,32 @@ import { Subscription } from 'rxjs';
           </div>
           <div class="flex flex-col gap-4 mb-6" *ngIf="isRamoExpanded(grupo.ramo)">
             <div *ngFor="let leg of grupo.legislacoes"
-              class="rounded-3xl p-4 sm:p-5 bg-[var(--card-bg)] border border-[var(--outline-variant)] shadow-sm hover:shadow-md hover:border-[var(--primary)]/30 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group">
+              class="rounded-2xl p-3 sm:p-4 bg-[var(--card-bg)] border border-[var(--outline-variant)] shadow-sm hover:shadow-md hover:border-[var(--primary)]/30 transition-all flex items-center justify-between gap-3 sm:gap-4 group">
           
-          <div class="flex items-start sm:items-center gap-4 w-full">
-            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#5d3bf6]/10 to-[#7c3aed]/10 border border-[#5d3bf6]/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform text-[#5d3bf6]">
-              <span class="material-symbols-outlined !text-[24px]" *ngIf="leg.tipo === 'Lei'">policy</span>
-              <span class="material-symbols-outlined !text-[24px]" *ngIf="leg.tipo === 'Decreto'">history_edu</span>
-              <span class="material-symbols-outlined !text-[24px]" *ngIf="leg.tipo === 'Constituição'">account_balance</span>
-              <span class="material-symbols-outlined !text-[24px]" *ngIf="leg.tipo !== 'Lei' && leg.tipo !== 'Decreto' && leg.tipo !== 'Constituição'">gavel</span>
+          <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-[#5d3bf6]/10 to-[#7c3aed]/10 border border-[#5d3bf6]/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform text-[#5d3bf6]">
+              <span class="material-symbols-outlined !text-[20px] sm:!text-[24px]" *ngIf="leg.tipo === 'Lei'">policy</span>
+              <span class="material-symbols-outlined !text-[20px] sm:!text-[24px]" *ngIf="leg.tipo === 'Decreto'">history_edu</span>
+              <span class="material-symbols-outlined !text-[20px] sm:!text-[24px]" *ngIf="leg.tipo === 'Constituição'">account_balance</span>
+              <span class="material-symbols-outlined !text-[20px] sm:!text-[24px]" *ngIf="leg.tipo !== 'Lei' && leg.tipo !== 'Decreto' && leg.tipo !== 'Constituição'">gavel</span>
             </div>
 
             <!-- Informações Principais -->
-            <div class="flex-1 min-w-0">
-              <div class="inline-flex flex-wrap items-center gap-2.5 mb-2.5 px-3 py-1.5 rounded-lg bg-[#5d3bf6]/5 dark:bg-black/20">
-                <span class="text-[11.5px] font-medium uppercase text-[#475569] dark:text-[#94a3b8]">
+            <div class="flex-1 min-w-0 flex items-center gap-3">
+              <div class="hidden sm:inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-[#5d3bf6]/5 dark:bg-black/20 shrink-0 whitespace-nowrap">
+                <span class="text-[11px] font-bold uppercase text-[#475569] dark:text-[#94a3b8]">
                   {{ leg.tipo || 'Legislação' }}
                 </span>
-                <span *ngIf="leg.numero || leg.ano" class="text-[11.5px] font-medium text-[#475569] dark:text-[#94a3b8]">
+                <span *ngIf="leg.numero || leg.ano" class="text-[11px] font-bold text-[#475569] dark:text-[#94a3b8]">
                   {{ leg.numero ? 'Nº ' + leg.numero : '' }}{{ leg.numero && leg.ano ? ' / ' : '' }}{{ leg.ano || '' }}
                 </span>
-                <span class="text-[11.5px] font-medium text-[#475569] dark:text-[#94a3b8] flex items-center gap-1">
-                  <span class="material-symbols-outlined !text-[13px]">calendar_today</span>
-                  {{ formatDate(leg.created_at) }}
-                </span>
               </div>
-              <h3 class="text-sm sm:text-base font-black text-[var(--on-surface)] leading-snug line-clamp-2" [title]="leg.titulo">{{ leg.titulo }}</h3>
+              <h3 class="text-sm sm:text-base font-black text-[var(--on-surface)] truncate" [title]="leg.titulo">{{ leg.titulo }}</h3>
             </div>
           </div>
 
           <!-- Metadados e Ação -->
-          <div class="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0 border-[var(--outline-variant)]/30 shrink-0">
+          <div class="flex items-center justify-end gap-3 sm:gap-4 shrink-0">
             <!-- Quantidade de Artigos -->
             <div class="flex flex-col items-center sm:items-end justify-center">
               <span class="text-[10px] font-bold text-[var(--primary)] uppercase tracking-wider opacity-90">Artigos</span>
