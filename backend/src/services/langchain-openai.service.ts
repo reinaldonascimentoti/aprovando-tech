@@ -2079,9 +2079,47 @@ Estrutura obrigatória:
 }`;
 
     const genAI = new GoogleGenerativeAI(googleKey);
+    // gemini-2.5-flash-lite é o nome correto do modelo lite; gemini-1.5-flash como último fallback
     const modelNames = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-flash'];
+    // Limite real de output da API Gemini (65536 tokens)
+    const MAX_OUTPUT_TOKENS = 65536;
 
-    // Tenta com Gemini File API (upload do PDF binário) se buffer disponível
+    // -------------------------------------------------------------------------
+    // Helper: chama um modelo com texto e retorna artigos extraídos
+    // -------------------------------------------------------------------------
+    const callModelWithText = async (modelName: string, textoBloco: string, ordemOffset: number): Promise<any> => {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+          temperature: 0.0,
+          maxOutputTokens: MAX_OUTPUT_TOKENS,
+          responseMimeType: 'application/json',
+        },
+      });
+
+      const prompt = `${PROMPT_EXTRATOR}\n\n## LEGISLAÇÃO PARA EXTRAIR:\n\n${textoBloco}`;
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+
+      if (!text || text.trim().length < 10) return null;
+
+      const parsed = this.parseJsonResponse(text, `Extrator-${modelName}`);
+      if (!parsed || !Array.isArray(parsed.artigos)) return null;
+
+      // Ajusta a ordem dos artigos pelo offset do chunk
+      if (ordemOffset > 0) {
+        parsed.artigos = parsed.artigos.map((a: any) => ({
+          ...a,
+          ordem: (a.ordem ?? 0) + ordemOffset,
+        }));
+      }
+
+      return parsed;
+    };
+
+    // -------------------------------------------------------------------------
+    // CAMINHO 1: Gemini File API com PDF binário (melhor qualidade, sem chunking)
+    // -------------------------------------------------------------------------
     if (pdfBuffer && pdfBuffer.length > 0) {
       const { GoogleAIFileManager } = await import('@google/generative-ai/server');
       const fileManager = new GoogleAIFileManager(googleKey);
@@ -2092,7 +2130,6 @@ Estrutura obrigatória:
         try {
           this.logger.log(`[Extrator] Tentando Gemini File API com modelo ${modelName}...`);
 
-          // Salva temporariamente o buffer para upload
           const os = await import('os');
           const path = await import('path');
           const fs = await import('fs');
@@ -2104,7 +2141,6 @@ Estrutura obrigatória:
             displayName: fileName,
           });
 
-          // Cleanup local file immediately
           try { fs.unlinkSync(tmpPath); tmpPath = null; } catch {}
 
           const fileUri = uploadResult.file.uri;
@@ -2114,7 +2150,7 @@ Estrutura obrigatória:
             model: modelName,
             generationConfig: {
               temperature: 0.0,
-              maxOutputTokens: 8192000, // Máximo suportado — necessário para leis extensas
+              maxOutputTokens: MAX_OUTPUT_TOKENS,
               responseMimeType: 'application/json',
             },
           });
@@ -2145,31 +2181,78 @@ Estrutura obrigatória:
       }
     }
 
-    // Fallback: texto bruto
-    this.logger.warn('[Extrator] Usando fallback com texto bruto...');
-    const textoTruncado = pdfText.substring(0, 800000); // Aumentado para cobrir leis extensas (Gemini suporta >1M tokens de entrada)
+    // -------------------------------------------------------------------------
+    // CAMINHO 2: Fallback com texto bruto — processa em chunks para leis extensas
+    // Cada chunk: ~55.000 chars (~14k tokens de entrada), deixando espaço para output
+    // -------------------------------------------------------------------------
+    this.logger.warn('[Extrator] Usando fallback com texto bruto (chunking)...');
 
+    // Divide o texto em blocos respeitando quebras de parágrafo
+    const CHUNK_SIZE = 55000; // chars por bloco
+    const chunks: string[] = [];
+
+    if (pdfText.length <= CHUNK_SIZE) {
+      chunks.push(pdfText);
+    } else {
+      let pos = 0;
+      while (pos < pdfText.length) {
+        let end = Math.min(pos + CHUNK_SIZE, pdfText.length);
+        // Tenta não cortar no meio de um artigo — recua até a última quebra de linha dupla
+        if (end < pdfText.length) {
+          const lastBreak = pdfText.lastIndexOf('\n\n', end);
+          if (lastBreak > pos + CHUNK_SIZE * 0.5) {
+            end = lastBreak;
+          }
+        }
+        chunks.push(pdfText.slice(pos, end).trim());
+        pos = end;
+      }
+    }
+
+    this.logger.log(`[Extrator] Texto dividido em ${chunks.length} chunk(s) para processamento.`);
+
+    // Tenta processar todos os chunks com o primeiro modelo que funcionar
     for (const modelName of modelNames) {
       try {
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            temperature: 0.0,
-            maxOutputTokens: 8192000, // Máximo suportado — necessário para leis extensas
-            responseMimeType: 'application/json',
-          },
-        });
+        const todosArtigos: any[] = [];
+        let metaLegislacao: any = null;
+        let estrutura: any = null;
+        let ordemOffset = 0;
 
-        const prompt = `${PROMPT_EXTRATOR}\n\n## LEGISLAÇÃO PARA EXTRAIR:\n\n${textoTruncado}`;
-        const result = await model.generateContent(prompt);
-        const text = result.response.text();
+        for (let i = 0; i < chunks.length; i++) {
+          this.logger.log(`[Extrator] Processando chunk ${i + 1}/${chunks.length} com ${modelName}...`);
+          const resultado = await callModelWithText(modelName, chunks[i], ordemOffset);
 
-        if (text && text.trim().length > 10) {
-          const parsed = this.parseJsonResponse(text, 'Extrator-TextFallback');
-          if (parsed && parsed.artigos) {
-            this.logger.log(`[Extrator] ✅ Fallback texto com ${modelName}: ${parsed.artigos?.length ?? 0} artigos.`);
-            return parsed;
+          if (!resultado) {
+            this.logger.warn(`[Extrator] Chunk ${i + 1} retornou vazio com ${modelName}.`);
+            continue;
           }
+
+          // Captura metadados apenas do primeiro chunk (contém o cabeçalho da lei)
+          if (i === 0) {
+            metaLegislacao = resultado.legislacao;
+            estrutura = resultado.estrutura;
+          }
+
+          if (Array.isArray(resultado.artigos) && resultado.artigos.length > 0) {
+            todosArtigos.push(...resultado.artigos);
+            ordemOffset += resultado.artigos.length;
+          }
+
+          // Pequena pausa entre chunks para evitar rate-limit
+          if (i < chunks.length - 1) {
+            await new Promise(r => setTimeout(r, 500));
+          }
+        }
+
+        if (todosArtigos.length > 0) {
+          this.logger.log(`[Extrator] ✅ Fallback texto com ${modelName}: ${todosArtigos.length} artigos (${chunks.length} chunk(s)).`);
+          return {
+            legislacao: metaLegislacao,
+            estrutura: estrutura,
+            artigos: todosArtigos,
+            qualidade_extracao: { status: chunks.length > 1 ? 'parcial' : 'completa', problemas: [] },
+          };
         }
       } catch (err: any) {
         this.logger.warn(`[Extrator] Fallback texto com ${modelName} falhou: ${err.message}`);
@@ -2178,6 +2261,7 @@ Estrutura obrigatória:
 
     throw new Error('Todos os modelos Gemini falharam na extração da legislação.');
   }
+
 
   // ===========================================================================
   // AGENTE 2 — COMENTADOR DE LEGISLAÇÃO BRASILEIRA
