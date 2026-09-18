@@ -2079,7 +2079,7 @@ Estrutura obrigatória:
 }`;
 
     const genAI = new GoogleGenerativeAI(googleKey);
-    const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+    const modelNames = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-flash'];
 
     // Tenta com Gemini File API (upload do PDF binário) se buffer disponível
     if (pdfBuffer && pdfBuffer.length > 0) {
@@ -2114,7 +2114,7 @@ Estrutura obrigatória:
             model: modelName,
             generationConfig: {
               temperature: 0.0,
-              maxOutputTokens: 65536,
+              maxOutputTokens: 8192000, // Máximo suportado — necessário para leis extensas
               responseMimeType: 'application/json',
             },
           });
@@ -2147,7 +2147,7 @@ Estrutura obrigatória:
 
     // Fallback: texto bruto
     this.logger.warn('[Extrator] Usando fallback com texto bruto...');
-    const textoTruncado = pdfText.substring(0, 180000); // Limita para evitar overflow de contexto
+    const textoTruncado = pdfText.substring(0, 800000); // Aumentado para cobrir leis extensas (Gemini suporta >1M tokens de entrada)
 
     for (const modelName of modelNames) {
       try {
@@ -2155,7 +2155,7 @@ Estrutura obrigatória:
           model: modelName,
           generationConfig: {
             temperature: 0.0,
-            maxOutputTokens: 65536,
+            maxOutputTokens: 8192000, // Máximo suportado — necessário para leis extensas
             responseMimeType: 'application/json',
           },
         });
