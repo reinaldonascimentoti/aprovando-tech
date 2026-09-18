@@ -151,7 +151,7 @@ import { Subscription } from 'rxjs';
               [style.background]="hoveredRamo === grupo.ramo ? 'rgba(93,59,246,0.08)' : 'transparent'">
             <div class="flex items-center gap-3">
               <div class="w-8 h-8 rounded-lg bg-[#5d3bf6]/10 flex items-center justify-center text-[#5d3bf6]">
-                <span class="material-symbols-outlined !text-[20px]">folder_open</span>
+                <span class="material-symbols-outlined !text-[20px]">books_movies_and_music</span>
               </div>
               {{ grupo.ramo }}
               <span class="text-xs font-bold text-[#5d3bf6] px-2.5 py-0.5 bg-[#5d3bf6]/15 rounded-full ml-1">{{ grupo.legislacoes.length }}</span>
@@ -295,7 +295,7 @@ import { Subscription } from 'rxjs';
               [style.background]="hoveredRamo === grupo.ramo ? 'rgba(93,59,246,0.08)' : 'transparent'">
             <div class="flex items-center gap-3">
               <div class="w-8 h-8 rounded-lg bg-[#5d3bf6]/10 flex items-center justify-center text-[#5d3bf6]">
-                <span class="material-symbols-outlined !text-[20px]">account_balance</span>
+                <span class="material-symbols-outlined !text-[20px]">books_movies_and_music</span>
               </div>
               {{ grupo.ramo }}
               <span class="text-xs font-bold text-[#5d3bf6] px-2.5 py-0.5 bg-[#5d3bf6]/15 rounded-full ml-1">{{ grupo.legislacoes.length }}</span>

@@ -22,6 +22,7 @@ Transformar uma legislação brasileira fornecida em:
 - documento;
 - texto;
 - arquivo;
+- link;
 - ou outra fonte documental;
 
 em uma estrutura JSON organizada, preservando fielmente o conteúdo original.
