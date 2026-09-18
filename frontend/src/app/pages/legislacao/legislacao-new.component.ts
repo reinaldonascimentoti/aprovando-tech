@@ -11,6 +11,15 @@ const TIPOS_LEGISLACAO = [
   'Regulamento', 'Regimento', 'Constituição', 'Outro',
 ];
 
+const RAMOS_DIREITO = [
+  'Direito Constitucional', 'Direito Administrativo', 'Direito Civil', 'Direito Penal',
+  'Direito Processual Civil', 'Direito Processual Penal', 'Direito Processual do Trabalho',
+  'Direito do Trabalho', 'Direito Tributário', 'Direito Empresarial', 'Direito do Consumidor',
+  'Direito Previdenciário', 'Direito Ambiental', 'Direito Digital', 'Direito Internacional (Público e Privado)',
+  'Direito de Família e Sucessões', 'Direito Imobiliário', 'Direito Eleitoral', 'Direito Financeiro',
+  'Direito da Propriedade Intelectual', 'Direito Médico e da Saúde'
+];
+
 @Component({
   selector: 'app-legislacao-new',
   standalone: true,
@@ -98,6 +107,17 @@ const TIPOS_LEGISLACAO = [
               placeholder="Ex: Lei nº 8.112/1990 — Regime Jurídico dos Servidores Federais"
               class="w-full px-4 py-3 rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container-low)] text-[var(--on-surface)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)] placeholder:text-[var(--on-surface-variant)]/50 transition-all"
             />
+          </div>
+
+          <!-- Campo: Ramo do Direito -->
+          <div class="flex flex-col gap-1.5 mt-2">
+            <label class="text-sm font-bold text-[var(--on-surface)]">Ramo do Direito *</label>
+            <select
+              [(ngModel)]="form.ramo_direito"
+              class="w-full px-4 py-3 rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container-low)] text-[var(--on-surface)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)] transition-all">
+              <option value="">Selecione o ramo</option>
+              <option *ngFor="let r of ramosDireito" [value]="r">{{ r }}</option>
+            </select>
           </div>
 
           <!-- Tipo + Número + Ano (linha) -->
@@ -204,7 +224,7 @@ const TIPOS_LEGISLACAO = [
               Cancelar
             </button>
             <button (click)="enviar()"
-              [disabled]="enviando || !form.titulo || (modo === 'arquivo' && !arquivoSelecionado) || (modo === 'link' && !form.url.trim())"
+              [disabled]="enviando || !form.titulo || !form.ramo_direito || (modo === 'arquivo' && !arquivoSelecionado) || (modo === 'link' && !form.url.trim())"
               class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#5d3bf6] to-[#7c3aed] hover:opacity-90 text-white font-bold text-sm shadow-md shadow-purple-500/25 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all">
               <span *ngIf="!enviando" class="material-symbols-outlined !text-[18px]">rocket_launch</span>
               <span *ngIf="enviando" class="material-symbols-outlined !text-[18px] animate-spin">sync</span>
@@ -218,6 +238,7 @@ const TIPOS_LEGISLACAO = [
 })
 export class LegislacaoNewComponent {
   tipos = TIPOS_LEGISLACAO;
+  ramosDireito = RAMOS_DIREITO;
   modo: 'arquivo' | 'link' = 'arquivo';
   form = {
     titulo: '',
@@ -225,6 +246,7 @@ export class LegislacaoNewComponent {
     numero: '',
     ano: null as number | null,
     url: '',
+    ramo_direito: '',
   };
   arquivoSelecionado: File | null = null;
   enviando = false;
@@ -254,6 +276,11 @@ export class LegislacaoNewComponent {
   enviar() {
     if (!this.form.titulo.trim()) {
       this.erro = 'Título é obrigatório.';
+      return;
+    }
+
+    if (!this.form.ramo_direito) {
+      this.erro = 'O ramo do direito é obrigatório.';
       return;
     }
 
@@ -288,6 +315,7 @@ export class LegislacaoNewComponent {
       this.form.numero || undefined,
       this.form.ano || undefined,
       url,
+      this.form.ramo_direito,
     ).subscribe({
       next: (res: any) => {
         const id = res?.data?.id;

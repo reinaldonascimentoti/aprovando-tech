@@ -262,6 +262,7 @@ export class LegislacaoController {
     @Body('numero') numero?: string,
     @Body('ano') ano?: string,
     @Body('url') url?: string,
+    @Body('ramo_direito') ramoDireito?: string,
   ) {
     if (!userId) throw new BadRequestException('userId é obrigatório.');
     if (!titulo || !titulo.trim()) throw new BadRequestException('Título é obrigatório.');
@@ -277,6 +278,7 @@ export class LegislacaoController {
       numero?.trim() || undefined,
       ano ? parseInt(ano, 10) : undefined,
       url?.trim() || undefined,
+      ramoDireito?.trim() || undefined,
     );
 
     return {

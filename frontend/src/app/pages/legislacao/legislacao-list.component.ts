@@ -140,10 +140,36 @@ import { Subscription } from 'rxjs';
       </div>
 
       <!-- Lista de cards (Meu Vade Mecum) -->
-      <div *ngIf="!loading && legislacoesVadeMecum.length > 0 && abaAtiva === 'vade_mecum'" class="flex flex-col gap-5 px-2 md:px-6 xl:px-12">
-        <div *ngFor="let leg of legislacoesVadeMecum"
-          class="bg-gradient-to-br from-[#f8f9ff] via-[#fbfbfe] to-[#edf2fe] dark:bg-gradient-to-br dark:from-[#13162d] dark:via-[#161a37] dark:to-[#1a1b3f] rounded-3xl p-4 sm:p-6 flex flex-col justify-between border-2 border-indigo-200/90 dark:border-indigo-500/40 hover:border-indigo-400 dark:hover:border-indigo-400/80 shadow-md shadow-indigo-500/5 hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group cursor-pointer"
-          (click)="router.navigate(['/legislacao', leg.id])">
+      <div *ngIf="!loading && legislacoesVadeMecum.length > 0 && abaAtiva === 'vade_mecum'" class="flex flex-col px-2 md:px-6 xl:px-12">
+        <div *ngFor="let grupo of getVadeMecumGroupedByRamo()"
+             class="mb-2"
+             [class.border-b-2]="!isRamoExpanded(grupo.ramo)"
+             [class.border-[#5d3bf6]/40]="!isRamoExpanded(grupo.ramo)"
+             [class.mb-6]="!isRamoExpanded(grupo.ramo)"
+             [class.pb-1]="!isRamoExpanded(grupo.ramo)">
+          <h2 (click)="toggleRamo(grupo.ramo)"
+              (mouseenter)="hoveredRamo = grupo.ramo"
+              (mouseleave)="hoveredRamo = null"
+              class="cursor-pointer text-xl font-black text-[var(--on-surface)] mb-4 flex items-center justify-between px-4 py-3 rounded-2xl select-none"
+              [style.background]="hoveredRamo === grupo.ramo ? 'rgba(93,59,246,0.08)' : 'transparent'">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-[#5d3bf6]/10 flex items-center justify-center text-[#5d3bf6]">
+                <span class="material-symbols-outlined !text-[20px]">folder_open</span>
+              </div>
+              {{ grupo.ramo }}
+              <span class="text-xs font-bold text-[#5d3bf6] px-2.5 py-0.5 bg-[#5d3bf6]/15 rounded-full ml-1">{{ grupo.legislacoes.length }}</span>
+            </div>
+            <div class="w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-transform duration-300 pointer-events-none"
+                 [class.rotate-180]="isRamoExpanded(grupo.ramo)"
+                 [style.background]="(hoveredRamo === grupo.ramo || isRamoExpanded(grupo.ramo)) ? '#5d3bf6' : 'var(--surface-container-low)'"
+                 [style.color]="(hoveredRamo === grupo.ramo || isRamoExpanded(grupo.ramo)) ? 'white' : 'var(--on-surface-variant)'">
+              <span class="material-symbols-outlined !text-[20px]">expand_more</span>
+            </div>
+          </h2>
+          <div class="flex flex-col gap-5 mb-6" *ngIf="isRamoExpanded(grupo.ramo)">
+            <div *ngFor="let leg of grupo.legislacoes"
+              class="bg-gradient-to-br from-[#f8f9ff] via-[#fbfbfe] to-[#edf2fe] dark:bg-gradient-to-br dark:from-[#13162d] dark:via-[#161a37] dark:to-[#1a1b3f] rounded-3xl p-4 sm:p-6 flex flex-col justify-between border-2 border-indigo-200/90 dark:border-indigo-500/40 hover:border-indigo-400 dark:hover:border-indigo-400/80 shadow-md shadow-indigo-500/5 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 relative overflow-hidden group cursor-pointer"
+              (click)="router.navigate(['/legislacao', leg.id])">
 
           <!-- Ambient Glows -->
           <div class="absolute -right-12 -top-12 w-40 h-40 bg-indigo-500/10 dark:bg-indigo-500/15 rounded-full blur-2xl pointer-events-none"></div>
@@ -251,16 +277,45 @@ import { Subscription } from 'rxjs';
               </div>
             </div>
           </div>
+          </div>
+        </div>
         </div>
       </div>
 
       <!-- Lista (Catálogo Global) -->
-      <div *ngIf="!loading && abaAtiva === 'catalogo'" class="flex flex-col gap-4 px-2 md:px-6 xl:px-12">
+      <div *ngIf="!loading && abaAtiva === 'catalogo'" class="flex flex-col px-2 md:px-6 xl:px-12">
         <div *ngIf="legislacoesCatalogoFiltradas.length === 0" class="neo-raised rounded-3xl p-10 text-center text-sm font-semibold text-[var(--on-surface-variant)]">
           Nenhuma legislação encontrada para a sua busca.
         </div>
-        <div *ngFor="let leg of legislacoesCatalogoFiltradas"
-          class="rounded-3xl p-4 sm:p-5 bg-[var(--card-bg)] border border-[var(--outline-variant)] shadow-sm hover:shadow-md hover:border-[var(--primary)]/30 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group">
+
+        <div *ngFor="let grupo of getCatalogoGroupedByRamo()"
+             class="mb-2"
+             [class.border-b-2]="!isRamoExpanded(grupo.ramo)"
+             [class.border-[#5d3bf6]/40]="!isRamoExpanded(grupo.ramo)"
+             [class.mb-6]="!isRamoExpanded(grupo.ramo)"
+             [class.pb-1]="!isRamoExpanded(grupo.ramo)">
+          <h2 (click)="toggleRamo(grupo.ramo)"
+              (mouseenter)="hoveredRamo = grupo.ramo"
+              (mouseleave)="hoveredRamo = null"
+              class="cursor-pointer text-lg font-black text-[var(--on-surface)] mb-4 flex items-center justify-between px-4 py-3 rounded-2xl select-none"
+              [style.background]="hoveredRamo === grupo.ramo ? 'rgba(93,59,246,0.08)' : 'transparent'">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-[#5d3bf6]/10 flex items-center justify-center text-[#5d3bf6]">
+                <span class="material-symbols-outlined !text-[20px]">account_balance</span>
+              </div>
+              {{ grupo.ramo }}
+              <span class="text-xs font-bold text-[#5d3bf6] px-2.5 py-0.5 bg-[#5d3bf6]/15 rounded-full ml-1">{{ grupo.legislacoes.length }}</span>
+            </div>
+            <div class="w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-transform duration-300 pointer-events-none"
+                 [class.rotate-180]="isRamoExpanded(grupo.ramo)"
+                 [style.background]="(hoveredRamo === grupo.ramo || isRamoExpanded(grupo.ramo)) ? '#5d3bf6' : 'var(--surface-container-low)'"
+                 [style.color]="(hoveredRamo === grupo.ramo || isRamoExpanded(grupo.ramo)) ? 'white' : 'var(--on-surface-variant)'">
+              <span class="material-symbols-outlined !text-[20px]">expand_more</span>
+            </div>
+          </h2>
+          <div class="flex flex-col gap-4 mb-6" *ngIf="isRamoExpanded(grupo.ramo)">
+            <div *ngFor="let leg of grupo.legislacoes"
+              class="rounded-3xl p-4 sm:p-5 bg-[var(--card-bg)] border border-[var(--outline-variant)] shadow-sm hover:shadow-md hover:border-[var(--primary)]/30 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group">
           
           <div class="flex items-start sm:items-center gap-4 w-full">
             <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#5d3bf6]/10 to-[#7c3aed]/10 border border-[#5d3bf6]/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform text-[#5d3bf6]">
@@ -348,6 +403,8 @@ import { Subscription } from 'rxjs';
             </div>
           </div>
         </div>
+        </div>
+      </div>
       </div>
 
       <!-- Modal de confirmação de exclusão -->
@@ -411,6 +468,10 @@ export class LegislacaoListComponent implements OnInit, OnDestroy {
   searchQuery: string = '';
   abaAtiva: 'vade_mecum' | 'catalogo' = 'vade_mecum';
   addingLegId: string | null = null;
+  expandedRamos: Set<string> = new Set();
+  hoveredRamo: string | null = null;
+  vadeMecumGroups: { ramo: string; legislacoes: Legislacao[] }[] = [];
+  catalogoGroups: { ramo: string; legislacoes: Legislacao[] }[] = [];
   
   loading = true;
   excluindoLeg: Legislacao | null = null;
@@ -444,6 +505,7 @@ export class LegislacaoListComponent implements OnInit, OnDestroy {
       next: (data: any) => {
         this.legislacoesVadeMecum = Array.isArray(data) ? data : (data?.data || []);
         this.vadeMecumIds = new Set(this.legislacoesVadeMecum.map(l => l.id));
+        this.vadeMecumGroups = this.groupByRamo(this.legislacoesVadeMecum);
         this.loading = false;
       },
       error: () => { this.loading = false; }
@@ -465,6 +527,21 @@ export class LegislacaoListComponent implements OnInit, OnDestroy {
     this.abaAtiva = aba;
   }
 
+  toggleRamo(ramo: string) {
+    const next = new Set(this.expandedRamos);
+    if (next.has(ramo)) {
+      next.delete(ramo);
+    } else {
+      next.add(ramo);
+    }
+    this.expandedRamos = next;
+  }
+
+  isRamoExpanded(ramo: string): boolean {
+    if (this.searchQuery.trim() !== '') return true;
+    return this.expandedRamos.has(ramo);
+  }
+
   getLegislacoesExibidas() {
     if (this.abaAtiva === 'catalogo') return this.legislacoesCatalogoFiltradas;
     return this.legislacoesVadeMecum;
@@ -473,15 +550,41 @@ export class LegislacaoListComponent implements OnInit, OnDestroy {
   filterCatalogo() {
     if (!this.searchQuery.trim()) {
       this.legislacoesCatalogoFiltradas = [...this.legislacoesCatalogo];
-      return;
+    } else {
+      const q = this.searchQuery.toLowerCase().trim();
+      this.legislacoesCatalogoFiltradas = this.legislacoesCatalogo.filter(leg =>
+        (leg.titulo && String(leg.titulo).toLowerCase().includes(q)) ||
+        (leg.numero && String(leg.numero).toLowerCase().includes(q)) ||
+        (leg.ano && String(leg.ano).toLowerCase().includes(q)) ||
+        (leg.tipo && String(leg.tipo).toLowerCase().includes(q)) ||
+        (leg.ramo_direito && String(leg.ramo_direito).toLowerCase().includes(q))
+      );
     }
-    const q = this.searchQuery.toLowerCase().trim();
-    this.legislacoesCatalogoFiltradas = this.legislacoesCatalogo.filter(leg => 
-      (leg.titulo && String(leg.titulo).toLowerCase().includes(q)) ||
-      (leg.numero && String(leg.numero).toLowerCase().includes(q)) ||
-      (leg.ano && String(leg.ano).toLowerCase().includes(q)) ||
-      (leg.tipo && String(leg.tipo).toLowerCase().includes(q))
-    );
+    this.catalogoGroups = this.groupByRamo(this.legislacoesCatalogoFiltradas);
+  }
+
+  getVadeMecumGroupedByRamo() {
+    return this.vadeMecumGroups;
+  }
+
+  getCatalogoGroupedByRamo() {
+    return this.catalogoGroups;
+  }
+
+  private groupByRamo(list: Legislacao[]) {
+    const map = new Map<string, Legislacao[]>();
+    for (const leg of list) {
+      const ramo = leg.ramo_direito || 'Sem Classificação';
+      if (!map.has(ramo)) map.set(ramo, []);
+      map.get(ramo)!.push(leg);
+    }
+    return Array.from(map.entries())
+      .map(([ramo, legislacoes]) => ({ ramo, legislacoes }))
+      .sort((a, b) => {
+        if (a.ramo === 'Sem Classificação') return 1;
+        if (b.ramo === 'Sem Classificação') return -1;
+        return a.ramo.localeCompare(b.ramo);
+      });
   }
 
   isAlreadyAdded(id: string): boolean {

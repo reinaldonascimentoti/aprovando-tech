@@ -19,6 +19,7 @@ export interface Legislacao {
   arquivo_path: string | null;
   arquivo_nome: string | null;
   status: 'pendente' | 'extraindo' | 'extraida' | 'comentando' | 'concluida' | 'erro';
+  ramo_direito?: string | null;
   created_at: string;
   updated_at: string;
   processamentos?: LegislacaoProcessamento[];
@@ -429,7 +430,7 @@ export class LegislacaoService {
     );
   }
 
-  upload(file: File | null, titulo: string, tipo?: string, numero?: string, ano?: number, url?: string): Observable<{ data: Legislacao }> {
+  upload(file: File | null, titulo: string, tipo?: string, numero?: string, ano?: number, url?: string, ramoDireito?: string): Observable<{ data: Legislacao }> {
     const userId = this.supabaseService.currentUser?.id;
     if (!userId) throw new Error('Usuário não autenticado.');
     const form = new FormData();
@@ -440,6 +441,7 @@ export class LegislacaoService {
     if (numero) form.append('numero', numero);
     if (ano) form.append('ano', String(ano));
     if (url) form.append('url', url);
+    if (ramoDireito) form.append('ramo_direito', ramoDireito);
     return this.http.post<any>(`${this.baseUrl}/legislacao/upload`, form, { headers: this.getHeaders() });
   }
 

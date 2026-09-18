@@ -23,6 +23,7 @@ export class LegislacaoService {
     numero?: string,
     ano?: number,
     urlLink?: string,
+    ramoDireito?: string,
   ) {
     this.logger.log(`[Legislação] Iniciando cadastro para userId=${userId}, titulo="${titulo}", url=${urlLink || 'nenhuma'}`);
 
@@ -34,6 +35,7 @@ export class LegislacaoService {
       numero,
       ano,
       fonte: urlLink || null,
+      ramo_direito: ramoDireito,
     });
     if (!legislacao) throw new Error('Falha ao criar registro da legislação.');
 

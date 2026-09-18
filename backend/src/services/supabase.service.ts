@@ -1020,6 +1020,7 @@ export class SupabaseService {
     numero?: string;
     ano?: number;
     fonte?: string;
+    ramo_direito?: string;
   }) {
     if (!this.adminClient) return null;
     const { data: row, error } = await this.adminClient
@@ -1031,6 +1032,7 @@ export class SupabaseService {
         numero: data.numero || null,
         ano: data.ano || null,
         fonte: data.fonte || null,
+        ramo_direito: data.ramo_direito || null,
         status: 'pendente',
       })
       .select()
