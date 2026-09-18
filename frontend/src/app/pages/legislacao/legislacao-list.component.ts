@@ -142,12 +142,9 @@ import { Subscription } from 'rxjs';
       <!-- Lista de cards (Meu Vade Mecum) -->
       <div *ngIf="!loading && legislacoesVadeMecum.length > 0 && abaAtiva === 'vade_mecum'" class="flex flex-col px-2 md:px-6 xl:px-12">
         <div *ngFor="let grupo of getVadeMecumGroupedByRamo()"
-             class="mb-2"
-             [class.border-b-2]="!isRamoExpanded(grupo.ramo)"
-             [class.border-[#5d3bf6]/40]="!isRamoExpanded(grupo.ramo)"
-             [class.mb-6]="!isRamoExpanded(grupo.ramo)"
-             [class.pb-1]="!isRamoExpanded(grupo.ramo)">
-          <h2 (click)="toggleRamo(grupo.ramo)"
+             class="mb-2 transition-all"
+             [ngClass]="{'border-b-2 border-[#5d3bf6]/40 mb-6 pb-1': !isRamoExpanded(grupo.ramo)}">
+          <div (click)="toggleRamo(grupo.ramo)"
               (mouseenter)="hoveredRamo = grupo.ramo"
               (mouseleave)="hoveredRamo = null"
               class="cursor-pointer text-xl font-black text-[var(--on-surface)] mb-4 flex items-center justify-between px-4 py-3 rounded-2xl select-none"
@@ -165,7 +162,7 @@ import { Subscription } from 'rxjs';
                  [style.color]="(hoveredRamo === grupo.ramo || isRamoExpanded(grupo.ramo)) ? 'white' : 'var(--on-surface-variant)'">
               <span class="material-symbols-outlined !text-[20px]">expand_more</span>
             </div>
-          </h2>
+          </div>
           <div class="flex flex-col gap-5 mb-6" *ngIf="isRamoExpanded(grupo.ramo)">
             <div *ngFor="let leg of grupo.legislacoes"
               class="bg-gradient-to-br from-[#f8f9ff] via-[#fbfbfe] to-[#edf2fe] dark:bg-gradient-to-br dark:from-[#13162d] dark:via-[#161a37] dark:to-[#1a1b3f] rounded-3xl p-4 sm:p-6 flex flex-col justify-between border-2 border-indigo-200/90 dark:border-indigo-500/40 hover:border-indigo-400 dark:hover:border-indigo-400/80 shadow-md shadow-indigo-500/5 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 relative overflow-hidden group cursor-pointer"
@@ -289,12 +286,9 @@ import { Subscription } from 'rxjs';
         </div>
 
         <div *ngFor="let grupo of getCatalogoGroupedByRamo()"
-             class="mb-2"
-             [class.border-b-2]="!isRamoExpanded(grupo.ramo)"
-             [class.border-[#5d3bf6]/40]="!isRamoExpanded(grupo.ramo)"
-             [class.mb-6]="!isRamoExpanded(grupo.ramo)"
-             [class.pb-1]="!isRamoExpanded(grupo.ramo)">
-          <h2 (click)="toggleRamo(grupo.ramo)"
+             class="mb-2 transition-all"
+             [ngClass]="{'border-b-2 border-[#5d3bf6]/40 mb-6 pb-1': !isRamoExpanded(grupo.ramo)}">
+          <div (click)="toggleRamo(grupo.ramo)"
               (mouseenter)="hoveredRamo = grupo.ramo"
               (mouseleave)="hoveredRamo = null"
               class="cursor-pointer text-lg font-black text-[var(--on-surface)] mb-4 flex items-center justify-between px-4 py-3 rounded-2xl select-none"
@@ -312,7 +306,7 @@ import { Subscription } from 'rxjs';
                  [style.color]="(hoveredRamo === grupo.ramo || isRamoExpanded(grupo.ramo)) ? 'white' : 'var(--on-surface-variant)'">
               <span class="material-symbols-outlined !text-[20px]">expand_more</span>
             </div>
-          </h2>
+          </div>
           <div class="flex flex-col gap-4 mb-6" *ngIf="isRamoExpanded(grupo.ramo)">
             <div *ngFor="let leg of grupo.legislacoes"
               class="rounded-3xl p-4 sm:p-5 bg-[var(--card-bg)] border border-[var(--outline-variant)] shadow-sm hover:shadow-md hover:border-[var(--primary)]/30 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group">
