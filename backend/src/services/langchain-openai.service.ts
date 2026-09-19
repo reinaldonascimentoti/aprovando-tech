@@ -2079,8 +2079,8 @@ Estrutura obrigatória:
 }`;
 
     const genAI = new GoogleGenerativeAI(googleKey);
-    // gemini-2.5-flash-lite é o nome correto do modelo lite; gemini-1.5-flash como último fallback
-    const modelNames = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-flash'];
+    // Modelos validados via teste direto com a API (setembro/2026)
+    const modelNames = ['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.5-flash'];
     // Limite real de output da API Gemini (65536 tokens)
     const MAX_OUTPUT_TOKENS = 65536;
 
