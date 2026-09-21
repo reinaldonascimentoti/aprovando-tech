@@ -32,7 +32,7 @@ import { Subscription } from 'rxjs';
               {{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}
             </span>
           </button>
-          <button (click)="router.navigate(['/student'])"
+          <button (click)="router.navigate([isAdmin ? '/admin' : '/student'])"
             class="btn-neo px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 text-[var(--primary)]">
             <span class="material-symbols-outlined !text-[16px]">arrow_back</span>
             <span class="hidden sm:inline">Dashboard</span>
@@ -588,6 +588,7 @@ export class LegislacaoListComponent implements OnInit, OnDestroy {
       next: () => {
         this.vadeMecumIds.add(leg.id);
         this.legislacoesVadeMecum.push(leg); // Optimistic UI update
+        this.vadeMecumGroups = this.groupByRamo(this.legislacoesVadeMecum);
         this.addingLegId = null;
       },
       error: () => { this.addingLegId = null; }
@@ -607,6 +608,7 @@ export class LegislacaoListComponent implements OnInit, OnDestroy {
     // Optimistic UI
     this.vadeMecumIds.delete(leg.id);
     this.legislacoesVadeMecum = this.legislacoesVadeMecum.filter(l => l.id !== leg.id);
+    this.vadeMecumGroups = this.groupByRamo(this.legislacoesVadeMecum);
     
     const sub = this.legislacaoService.removerDoVadeMecum(leg.id).subscribe({
       next: () => {
@@ -617,6 +619,7 @@ export class LegislacaoListComponent implements OnInit, OnDestroy {
         // Rollback se falhar
         this.vadeMecumIds.add(leg.id);
         this.legislacoesVadeMecum.push(leg);
+        this.vadeMecumGroups = this.groupByRamo(this.legislacoesVadeMecum);
         this.removendo = false;
         this.removendoLeg = null;
       }
@@ -713,16 +716,34 @@ export class LegislacaoListComponent implements OnInit, OnDestroy {
 
   executarExclusao() {
     if (!this.excluindoLeg) return;
+    const leg = this.excluindoLeg;
     this.excluindo = true;
-    const sub = this.legislacaoService.excluir(this.excluindoLeg.id).subscribe({
+
+    // Optimistic UI
+    this.legislacoesVadeMecum = this.legislacoesVadeMecum.filter(l => l.id !== leg.id);
+    this.legislacoesCatalogo = this.legislacoesCatalogo.filter(l => l.id !== leg.id);
+    this.vadeMecumIds.delete(leg.id);
+    this.vadeMecumGroups = this.groupByRamo(this.legislacoesVadeMecum);
+    this.filterCatalogo();
+
+    const sub = this.legislacaoService.excluir(leg.id).subscribe({
       next: () => {
-        this.legislacoesVadeMecum = this.legislacoesVadeMecum.filter(l => l.id !== this.excluindoLeg?.id);
-        this.legislacoesCatalogo = this.legislacoesCatalogo.filter(l => l.id !== this.excluindoLeg?.id);
-        this.vadeMecumIds.delete(this.excluindoLeg?.id || '');
         this.excluindoLeg = null;
         this.excluindo = false;
       },
-      error: () => { this.excluindo = false; },
+      error: () => {
+        // Rollback se falhar
+        if (this.vadeMecumIds.has(leg.id)) {
+          this.legislacoesVadeMecum.push(leg);
+        }
+        this.legislacoesCatalogo.push(leg);
+        this.vadeMecumIds.add(leg.id);
+        this.vadeMecumGroups = this.groupByRamo(this.legislacoesVadeMecum);
+        this.filterCatalogo();
+        
+        this.excluindo = false;
+        this.excluindoLeg = null;
+      },
     });
     this.subs.push(sub);
   }

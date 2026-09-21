@@ -1578,24 +1578,48 @@ export class SupabaseService {
     updates: Record<string, any>,
   ) {
     if (!this.adminClient) return null;
-    const { data, error } = await this.adminClient
+
+    const { data: existente } = await this.adminClient
       .from('legislacao_analises_estrategicas')
-      .upsert(
-        {
+      .select('id')
+      .eq('legislacao_id', legislacaoId)
+      .limit(1)
+      .maybeSingle();
+
+    if (existente?.id) {
+      const { data, error } = await this.adminClient
+        .from('legislacao_analises_estrategicas')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existente.id)
+        .select()
+        .single();
+        
+      if (error) {
+        this.logger.error(`upsertAnaliseEstrategica update error: ${error.message}`);
+        return null;
+      }
+      return data;
+    } else {
+      const { data, error } = await this.adminClient
+        .from('legislacao_analises_estrategicas')
+        .insert({
           legislacao_id: legislacaoId,
           user_id: userId,
           ...updates,
           updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'legislacao_id,user_id' },
-      )
-      .select()
-      .single();
-    if (error) {
-      this.logger.error(`upsertAnaliseEstrategica error: ${error.message}`);
-      return null;
+        })
+        .select()
+        .single();
+
+      if (error) {
+        this.logger.error(`upsertAnaliseEstrategica insert error: ${error.message}`);
+        return null;
+      }
+      return data;
     }
-    return data;
   }
 
   /**
@@ -1607,7 +1631,7 @@ export class SupabaseService {
       .from('legislacao_analises_estrategicas')
       .select('*')
       .eq('legislacao_id', legislacaoId)
-      .eq('user_id', userId)
+      .limit(1)
       .maybeSingle();
     if (error) {
       this.logger.warn(`getAnaliseEstrategicaByLegislacao error: ${error.message}`);
@@ -1634,7 +1658,7 @@ export class SupabaseService {
       .from('legislacao_materiais_concurso')
       .select('id')
       .eq('legislacao_id', legislacaoId)
-      .eq('user_id', userId)
+      .limit(1)
       .maybeSingle();
 
     if (existente?.id) {
@@ -1682,7 +1706,7 @@ export class SupabaseService {
       .from('legislacao_materiais_concurso')
       .select('*')
       .eq('legislacao_id', legislacaoId)
-      .eq('user_id', userId)
+      .limit(1)
       .maybeSingle();
     if (error) {
       this.logger.warn(`getMaterialConcursoByLegislacao error: ${error.message}`);

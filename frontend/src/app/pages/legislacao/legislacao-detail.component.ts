@@ -306,17 +306,6 @@ import { Subscription } from 'rxjs';
               <span *ngIf="analiseEstrategica?.status === 'concluido'" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             </span>
           </button>
-          <button (click)="abaAtiva = 'cronograma'; carregarPlano()"
-            class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            [ngClass]="abaAtiva === 'cronograma'
-              ? 'bg-[var(--card-bg)] text-[var(--primary)] shadow-sm'
-              : 'text-[var(--on-surface-variant)] hover:text-[var(--on-surface)]'">
-            <span class="flex items-center gap-1.5">
-              <span class="material-symbols-outlined !text-[15px]">calendar_month</span>
-              Cronograma
-              <span *ngIf="plano?.status === 'concluido'" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            </span>
-          </button>
           <button (click)="abaAtiva = 'concurso'; carregarMaterialConcurso()"
             class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
             [ngClass]="abaAtiva === 'concurso'
@@ -326,6 +315,17 @@ import { Subscription } from 'rxjs';
               <span class="material-symbols-outlined !text-[15px]">quiz</span>
               Questões & Flashcards
               <span *ngIf="materialConcurso?.status === 'concluido'" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            </span>
+          </button>
+          <button (click)="abaAtiva = 'cronograma'; carregarPlano()"
+            class="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            [ngClass]="abaAtiva === 'cronograma'
+              ? 'bg-[var(--card-bg)] text-[var(--primary)] shadow-sm'
+              : 'text-[var(--on-surface-variant)] hover:text-[var(--on-surface)]'">
+            <span class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined !text-[15px]">calendar_month</span>
+              Cronograma
+              <span *ngIf="plano?.status === 'concluido'" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             </span>
           </button>
         </div>

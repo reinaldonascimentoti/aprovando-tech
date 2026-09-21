@@ -66,19 +66,17 @@ import { MultiSelectFilterComponent } from '../../components/multi-select-filter
 
         <!-- Card 2: Score Qualidade Média IA -->
         <div 
-          (click)="goToTab('quality')"
-          class="neo-raised rounded-2xl p-6 flex items-center gap-4 cursor-pointer hover:scale-[1.02] hover:shadow-lg transition-all duration-200 active:scale-[0.98] group"
-          title="Clique para ir para Análise de Qualidade">
-          <div class="w-14 h-14 flex items-center justify-center group-hover:rotate-6 transition-transform">
+          class="neo-raised rounded-2xl p-6 flex items-center gap-4 transition-all duration-200 group"
+          title="Score de Qualidade">
+          <div class="w-14 h-14 flex items-center justify-center">
             <img src="assets/security_shield_icon.svg" alt="Qualidade" class="w-12 h-12 object-contain drop-shadow-sm">
           </div>
           <div class="flex-1">
             <div class="flex items-center justify-between">
               <p class="text-xs font-semibold text-[var(--on-surface-variant)]">Score Qualidade Média IA</p>
-              <span class="material-symbols-outlined !text-[14px] text-[var(--tertiary)] opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
             </div>
             <h3 class="text-2xl font-extrabold text-[var(--tertiary)]">{{ qualityReport?.average_metrics?.avg_overall_quality_score || 9.2 }}/10</h3>
-            <p class="text-[10px] text-[var(--tertiary)] font-bold mt-0.5">Ver Métricas de Qualidade →</p>
+            <p class="text-[10px] text-[var(--tertiary)] font-bold mt-0.5">Score Atualizado</p>
           </div>
         </div>
 
@@ -328,11 +326,11 @@ import { MultiSelectFilterComponent } from '../../components/multi-select-filter
       <!-- ===================================================================== -->
       <!-- 3ª LINHA — Uploads                                                    -->
       <!-- ===================================================================== -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8 mb-8">
         
         <!-- Upload PDF de Aulas (Extração IA) -->
-        <div class="neo-raised rounded-3xl p-6 flex flex-col justify-between">
-          <div>
+        <div class="neo-raised rounded-3xl p-6 flex flex-col justify-between h-full">
+          <div class="flex flex-col flex-1 h-full">
             <div class="flex items-center justify-between mb-4">
               <h2 class="text-lg font-bold text-[var(--on-surface)] flex items-center gap-2">
                 <img src="assets/cloud_upload_icon.svg" class="w-12 h-12 drop-shadow-sm">
@@ -344,7 +342,7 @@ import { MultiSelectFilterComponent } from '../../components/multi-select-filter
               Envie o PDF da aula teórica. A IA extrairá as questões, calculará o score de clareza psicométrica e salvará em <code>backend/data/questions.json</code> e <code>quality_analysis.json</code>.
             </p>
 
-            <div class="neo-pressed rounded-2xl p-8 border-2 border-dashed border-[var(--outline-variant)] flex flex-col items-center justify-center text-center relative hover:border-[var(--primary)] transition-colors cursor-pointer mb-4">
+            <div class="neo-pressed rounded-2xl p-8 border-2 border-dashed border-[var(--outline-variant)] flex flex-col items-center justify-center text-center relative hover:border-[var(--primary)] transition-colors cursor-pointer mb-4 flex-1">
               <span class="material-symbols-outlined !text-[40px] text-[var(--secondary)] mb-1">picture_as_pdf</span>
               <p class="text-sm font-semibold text-[var(--on-surface)]">
                 {{ selectedPdfFile ? selectedPdfFile.name : 'Arraste o PDF da aula ou clique para selecionar' }}
@@ -357,15 +355,16 @@ import { MultiSelectFilterComponent } from '../../components/multi-select-filter
           <button 
             (click)="uploadPdfLesson()" 
             [disabled]="!selectedPdfFile || isUploadingPdf"
-            class="btn-mesh w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm mt-4 cursor-pointer">
+            class="w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm mt-4 cursor-pointer text-white shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 hover:shadow-lg hover:scale-[1.01]"
+            style="background: linear-gradient(to right, #4a85ff, #8a55ff);">
             <span class="material-symbols-outlined">auto_awesome</span>
             <span>{{ isUploadingPdf ? 'Extraindo Questões e Analisando Qualidade...' : 'Extrair Questões & Análise de Qualidade' }}</span>
           </button>
         </div>
 
         <!-- Upload de Edital (Regra Pareto 80/20) -->
-        <div class="neo-raised rounded-3xl p-6 flex flex-col justify-between">
-          <div>
+        <div class="neo-raised rounded-3xl p-6 flex flex-col justify-between h-full">
+          <div class="flex flex-col flex-1 h-full">
             <div class="flex items-center justify-between mb-4">
               <h2 class="text-lg font-bold text-[var(--on-surface)] flex items-center gap-3">
                 <img src="assets/cloud_upload_icon.svg" class="w-12 h-12 drop-shadow-sm">
@@ -378,7 +377,7 @@ import { MultiSelectFilterComponent } from '../../components/multi-select-filter
             </p>
 
             <!-- Card de Acionamento do Modal de Upload -->
-            <div (click)="openUploadModal()" class="neo-pressed rounded-2xl p-8 border-2 border-dashed border-[var(--outline-variant)] flex flex-col items-center justify-center text-center relative hover:border-[var(--primary)] transition-all cursor-pointer mb-4 group">
+            <div (click)="openUploadModal()" class="neo-pressed rounded-2xl p-8 border-2 border-dashed border-[var(--outline-variant)] flex flex-col items-center justify-center text-center relative hover:border-[var(--primary)] transition-all cursor-pointer mb-4 group flex-1">
               <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#5d3bf6] to-[#7c3aed] text-white flex items-center justify-center shadow-md mb-3 group-hover:scale-105 transition-transform">
                 <span class="material-symbols-outlined !text-[32px]">cloud_upload</span>
               </div>
@@ -393,13 +392,79 @@ import { MultiSelectFilterComponent } from '../../components/multi-select-filter
 
           <button 
             (click)="openUploadModal()" 
-            class="btn-mesh w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm mt-4 cursor-pointer"
-            style="background: linear-gradient(135deg, #6b38d4 0%, #8455ef 100%);">
+            class="w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm mt-4 cursor-pointer text-white shadow-md transition-all hover:shadow-lg hover:scale-[1.01]"
+            style="background: linear-gradient(to right, #4a85ff, #8a55ff);">
             <span class="material-symbols-outlined">add_circle</span>
             <span>Novo Upload de Edital</span>
           </button>
         </div>
 
+        <!-- Card de Upload de Questões via Arquivo JSON -->
+        <div class="neo-raised rounded-3xl p-6 bg-gradient-to-br from-white to-[#f5f3ff] dark:from-[#202433] dark:to-[#1a1d29] border border-[var(--outline-variant)] shadow-sm flex flex-col justify-between h-full">
+          <div class="flex flex-col flex-1 h-full">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-bold text-[var(--on-surface)] flex items-center gap-2">
+                <img src="assets/cloud_upload_icon.svg" class="w-12 h-12 drop-shadow-sm">
+                Upload de Questões
+              </h2>
+              <span class="bg-[#eefff2] dark:bg-[#003824] text-[#005236] dark:text-[#6ffbbe] text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                <span class="material-symbols-outlined !text-[14px]">verified</span>
+                POST /api/questions/import
+              </span>
+            </div>
+            <p class="text-xs text-[var(--on-surface-variant)] mb-6">
+              Importe questões completas (com gabaritos, alternativas e imagens) para o catálogo do banco através de um arquivo JSON padronizado.
+            </p>
+
+            <!-- Área de Drop/Seleção do arquivo JSON -->
+            <div class="neo-pressed rounded-2xl p-6 border-2 border-dashed border-[var(--outline-variant)] flex flex-col items-center justify-center text-center relative hover:border-[var(--primary)] transition-colors cursor-pointer mb-4 flex-1">
+              <span class="material-symbols-outlined !text-[36px] text-[var(--primary)] mb-1">integration_instructions</span>
+              <p class="text-sm font-bold text-[var(--on-surface)]">
+                {{ selectedJsonFile ? selectedJsonFile.name : 'Clique ou arraste seu arquivo .json' }}
+              </p>
+              <p class="text-[10px] text-[var(--outline)] mt-1">
+                <ng-container *ngIf="jsonPreviewCount !== null; else jsonHelp">
+                  <strong class="text-[var(--primary)] font-extrabold">{{ jsonPreviewCount }} questão(ões)</strong> pronta(s)!
+                </ng-container>
+                <ng-template #jsonHelp>Múltipla Escolha e Certo/Errado.</ng-template>
+              </p>
+              <input type="file" (change)="onJsonFileSelected($event)" accept=".json,application/json" class="absolute inset-0 opacity-0 cursor-pointer">
+            </div>
+
+            <!-- Toast / Feedback de Importação -->
+            <div *ngIf="jsonUploadToastMsg" class="rounded-xl p-3 text-xs font-bold flex items-center gap-2 mb-4 animate-fadeIn"
+                 [ngClass]="jsonUploadToastType === 'success' ? 'bg-[#eefff2] dark:bg-[#003824] text-[#005236] dark:text-[#6ffbbe]' : 'bg-[#ffdad6] dark:bg-[#ba1a1a]/30 text-[#93000a] dark:text-[#ffb4ab]'">
+              <span class="material-symbols-outlined !text-[16px]">{{ jsonUploadToastType === 'success' ? 'check_circle' : 'error' }}</span>
+              <span>{{ jsonUploadToastMsg }}</span>
+            </div>
+          </div>
+
+          <!-- Botão de Ação -->
+          <button 
+            (click)="uploadQuestionsJson()" 
+            [disabled]="!parsedJsonData || isUploadingJson"
+            class="w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm mt-4 cursor-pointer text-white shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 hover:shadow-lg hover:scale-[1.01]"
+            style="background: linear-gradient(to right, #4a85ff, #8a55ff);">
+            <span class="material-symbols-outlined !text-[18px]">{{ isUploadingJson ? 'hourglass_top' : 'cloud_upload' }}</span>
+            <span>{{ isUploadingJson ? 'Importando e Salvando Questões...' : 'Importar Questões para o Banco' }}</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Console de Logs (Real-time) - Movido do tab para fora para ficar abaixo do grid se acionado -->
+      <div *ngIf="isLogConsoleExpanded" class="neo-raised rounded-2xl p-4 bg-[#191c1e] mb-8 w-full max-w-4xl mx-auto">
+        <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs font-bold text-[#eefff2]">Processo de Importação (Logs)</h4>
+            <button (click)="disconnectLogStream(); isLogConsoleExpanded = false" class="text-[#767587] hover:text-white cursor-pointer">
+              <span class="material-symbols-outlined !text-[16px]">close</span>
+            </button>
+        </div>
+        <div id="log-console-container" class="h-48 overflow-y-auto space-y-1 font-mono text-[10px]">
+          <div *ngFor="let log of importLogs" [class.text-[#eefff2]]="log.type === 'info'" [class.text-[#ffb4ab]]="log.type === 'error'" [class.text-[#d0bcff]]="log.type === 'warn'">
+              [{{ log.time | date:'HH:mm:ss' }}] {{ log.message }}
+          </div>
+        </div>
       </div>
 
       <!-- Tabbed Views: Questions Bank, Quality Analysis & Users -->
@@ -415,15 +480,6 @@ import { MultiSelectFilterComponent } from '../../components/multi-select-filter
             <span>Gestão de Questões</span>
           </button>
 
-          <button 
-            (click)="activeTab = 'quality'"
-            [class.border-b-2]="activeTab === 'quality'"
-            [class.border-[var(--primary)]]="activeTab === 'quality'"
-            [class.text-[var(--primary)]]="activeTab === 'quality'"
-            class="pb-3 text-sm font-bold text-[var(--on-surface-variant)] hover:text-[var(--on-surface)] transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer">
-            <span class="material-symbols-outlined">analytics</span>
-            <span>Análise de Qualidade (JSON)</span>
-          </button>
 
           <button 
             (click)="activeTab = 'users'"
@@ -444,76 +500,17 @@ import { MultiSelectFilterComponent } from '../../components/multi-select-filter
             <span class="material-symbols-outlined">bar_chart</span>
             <span>Estatísticas de Estudo</span>
           </button>
+
+          <button 
+            routerLink="/legislacao"
+            class="pb-3 text-sm font-bold text-[var(--on-surface-variant)] hover:text-[var(--on-surface)] transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer">
+            <span class="material-symbols-outlined">gavel</span>
+            <span>Legislação Comentada</span>
+          </button>
         </div>
 
         <!-- Questions Tab Content -->
         <div *ngIf="activeTab === 'questions'" class="space-y-6">
-
-          <!-- Card de Upload de Questões via Arquivo JSON -->
-          <div class="neo-raised rounded-3xl p-6 bg-gradient-to-br from-white to-[#f5f3ff] dark:from-[#202433] dark:to-[#1a1d29] border border-[var(--outline-variant)] shadow-sm">
-            <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
-              <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-2xl bg-[#e1dfff] dark:bg-[#2b20d2]/30 flex items-center justify-center text-[#2b20d2] dark:text-[#c1c1ff] shrink-0">
-                  <span class="material-symbols-outlined !text-[28px]">upload_file</span>
-                </div>
-                <div>
-                  <h3 class="text-base font-extrabold text-[var(--on-surface)]">Upload de Questões via Arquivo JSON</h3>
-                  <p class="text-xs text-[var(--outline)]">Selecione ou arraste um arquivo .json para importar questões com gabaritos, alternativas e imagens no catálogo.</p>
-                </div>
-              </div>
-              <span class="bg-[#eefff2] dark:bg-[#003824] text-[#005236] dark:text-[#6ffbbe] text-[11px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1">
-                <span class="material-symbols-outlined !text-[14px]">verified</span>
-                POST /api/questions/import
-              </span>
-            </div>
-
-            <!-- Área de Drop/Seleção do arquivo JSON -->
-            <div class="neo-pressed rounded-2xl p-6 border-2 border-dashed border-[var(--outline-variant)] flex flex-col items-center justify-center text-center relative hover:border-[var(--primary)] transition-colors cursor-pointer mb-4">
-              <span class="material-symbols-outlined !text-[36px] text-[var(--primary)] mb-1">integration_instructions</span>
-              <p class="text-sm font-bold text-[var(--on-surface)]">
-                {{ selectedJsonFile ? selectedJsonFile.name : 'Clique ou arraste seu arquivo .json aqui' }}
-              </p>
-              <p class="text-xs text-[var(--outline)] mt-1">
-                <ng-container *ngIf="jsonPreviewCount !== null; else jsonHelp">
-                  <strong class="text-[var(--primary)] font-extrabold">{{ jsonPreviewCount }} questão(ões)</strong> pronta(s) para importação!
-                </ng-container>
-                <ng-template #jsonHelp>Suporta Múltipla Escolha (A-E ou C/E) e Certo/Errado com ou sem imagem.</ng-template>
-              </p>
-              <input type="file" (change)="onJsonFileSelected($event)" accept=".json,application/json" class="absolute inset-0 opacity-0 cursor-pointer">
-            </div>
-
-            <!-- Toast / Feedback de Importação -->
-            <div *ngIf="jsonUploadToastMsg" class="rounded-xl p-3 text-xs font-bold flex items-center gap-2 mb-4 animate-fadeIn"
-                 [ngClass]="jsonUploadToastType === 'success' ? 'bg-[#eefff2] dark:bg-[#003824] text-[#005236] dark:text-[#6ffbbe]' : 'bg-[#ffdad6] dark:bg-[#ba1a1a]/30 text-[#93000a] dark:text-[#ffb4ab]'">
-              <span class="material-symbols-outlined !text-[16px]">{{ jsonUploadToastType === 'success' ? 'check_circle' : 'error' }}</span>
-              <span>{{ jsonUploadToastMsg }}</span>
-            </div>
-
-            <!-- Botão de Ação -->
-            <button 
-              (click)="uploadQuestionsJson()" 
-              [disabled]="!parsedJsonData || isUploadingJson"
-              class="btn-mesh w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm transition-all cursor-pointer"
-              [ngClass]="!parsedJsonData || isUploadingJson ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.01]'">
-              <span class="material-symbols-outlined !text-[18px]">{{ isUploadingJson ? 'hourglass_top' : 'cloud_upload' }}</span>
-              <span>{{ isUploadingJson ? 'Importando e Salvando Questões...' : 'Importar Questões para o Banco' }}</span>
-            </button>
-          </div>
-
-          <!-- Console de Logs (Real-time) -->
-          <div *ngIf="isLogConsoleExpanded" class="neo-raised rounded-2xl p-4 bg-[#191c1e]">
-            <div class="flex items-center justify-between mb-2">
-               <h4 class="text-xs font-bold text-[#eefff2]">Processo de Importação (Logs)</h4>
-               <button (click)="disconnectLogStream(); isLogConsoleExpanded = false" class="text-[#767587] hover:text-white cursor-pointer">
-                 <span class="material-symbols-outlined !text-[16px]">close</span>
-               </button>
-            </div>
-            <div id="log-console-container" class="h-48 overflow-y-auto space-y-1 font-mono text-[10px]">
-              <div *ngFor="let log of importLogs" [class.text-[#eefff2]]="log.type === 'info'" [class.text-[#ffb4ab]]="log.type === 'error'" [class.text-[#d0bcff]]="log.type === 'warn'">
-                 [{{ log.time | date:'HH:mm:ss' }}] {{ log.message }}
-              </div>
-            </div>
-          </div>
 
           <!-- Filtros de Pesquisa -->
           <div class="neo-raised rounded-3xl p-4 sm:p-6 space-y-4 bg-[var(--card-bg)] border border-[var(--outline-variant)]">
@@ -705,166 +702,7 @@ import { MultiSelectFilterComponent } from '../../components/multi-select-filter
           </div>
         </div>
 
-        <!-- Quality Analysis Tab Content (JSON View) -->
-        <div *ngIf="activeTab === 'quality'" class="space-y-6">
 
-          <!-- Header & Seletor de Edital do Relatório do Prompt 1 -->
-          <div class="neo-raised rounded-2xl p-5 border-l-4 border-[var(--primary)] space-y-4">
-            <div class="flex items-center justify-between flex-wrap gap-4">
-              <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-[var(--primary)] !text-[28px]">data_object</span>
-                <div>
-                  <h3 class="text-base font-extrabold text-[var(--on-surface)]">Relatório de Qualidade do JSON — Disciplinas (Prompt 1)</h3>
-                  <p class="text-xs text-[var(--outline)]">Resumo e validação de integridade da extração de conteúdo programático (Disciplinas → Tópicos → Subtópicos).</p>
-                </div>
-              </div>
-
-              <!-- Dropdown de Seleção do Edital Analisado -->
-              <div *ngIf="editaisAnalisados.length > 0" class="flex items-center gap-2">
-                <span class="text-xs font-bold text-[var(--on-surface-variant)]">Edital:</span>
-                <div class="neo-pressed rounded-xl p-1 bg-[var(--surface-container)]">
-                  <select 
-                    [(ngModel)]="selectedQualityEditalId"
-                    class="border-none outline-none text-xs font-semibold px-3 py-1.5 text-[var(--on-surface)] cursor-pointer bg-transparent">
-                    <option *ngFor="let ed of editaisAnalisados" [value]="ed.id">
-                      {{ ed.title }} ({{ ed.cargo || 'Geral' }})
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <!-- Resumo das Métricas de Qualidade do Prompt 1 -->
-            <div *ngIf="promptQualitySummary" class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-              <div class="neo-pressed rounded-xl p-3 text-center bg-[var(--surface-container-low)]/80 dark:bg-[#252a3b]/80">
-                <p class="text-[11px] font-bold text-[var(--outline)]">Disciplinas Extraídas</p>
-                <h4 class="text-xl font-black text-[var(--primary)]">{{ promptQualitySummary.totalDisciplinas }}</h4>
-              </div>
-              <div class="neo-pressed rounded-xl p-3 text-center bg-[var(--surface-container-low)]/80 dark:bg-[#252a3b]/80">
-                <p class="text-[11px] font-bold text-[var(--outline)]">Tópicos Extratificados</p>
-                <h4 class="text-xl font-black text-[var(--secondary)]">{{ promptQualitySummary.totalTopicos }}</h4>
-              </div>
-              <div class="neo-pressed rounded-xl p-3 text-center bg-[var(--surface-container-low)]/80 dark:bg-[#252a3b]/80">
-                <p class="text-[11px] font-bold text-[var(--outline)]">Subtópicos Detalhados</p>
-                <h4 class="text-xl font-black text-[var(--tertiary)]">{{ promptQualitySummary.totalSubtopicos }}</h4>
-              </div>
-              <div class="neo-pressed rounded-xl p-3 text-center bg-[var(--surface-container-low)]/80 dark:bg-[#252a3b]/80 flex flex-col items-center justify-center">
-                <p class="text-[11px] font-bold text-[var(--outline)]">Conformidade Schema</p>
-                <span 
-                  [ngClass]="promptQualitySummary.isValidSchema 
-                    ? 'bg-[#eefff2] dark:bg-[#003824] text-[#005236] dark:text-[#6ffbbe]' 
-                    : 'bg-[var(--surface-container)] text-[var(--outline)]'"
-                  class="mt-1 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                  <span class="material-symbols-outlined !text-[12px]">verified</span>
-                  {{ promptQualitySummary.isValidSchema ? 'Draft-07 Válido' : 'Pendente' }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Tabela Resumida das Disciplinas Extraídas pelo Prompt 1 -->
-          <div *ngIf="promptQualitySummary && promptQualitySummary.totalDisciplinas > 0" class="space-y-4">
-            <h4 class="text-xs font-black uppercase text-[var(--on-surface-variant)] tracking-wider flex items-center gap-1.5">
-              <span class="material-symbols-outlined !text-[16px] text-[var(--primary)]">menu_book</span>
-              Resumo por Disciplina (Conhecimentos Gerais e Específicos)
-            </h4>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <!-- Conhecimentos Gerais -->
-              <div class="neo-pressed rounded-2xl p-4 space-y-3 bg-[var(--surface-container-low)]/50 dark:bg-[#202433]/50">
-                <div class="flex items-center justify-between border-b border-[var(--outline-variant)]/40 pb-2">
-                  <span class="text-xs font-extrabold text-[var(--primary)] flex items-center gap-1.5">
-                    <span class="material-symbols-outlined !text-[15px] text-[var(--primary)]">category</span>
-                    Conhecimentos Gerais
-                  </span>
-                  <span class="bg-[#e1dfff] dark:bg-[#2b20d2]/30 text-[#2b20d2] dark:text-[#c1c1ff] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    {{ promptQualitySummary.gerais.length }} Disciplinas
-                  </span>
-                </div>
-
-                <div *ngIf="promptQualitySummary.gerais.length === 0" class="text-xs text-[var(--outline)] italic p-2">
-                  Nenhuma disciplina geral cadastrada.
-                </div>
-
-                <div *ngFor="let d of promptQualitySummary.gerais" class="neo-raised rounded-xl p-3 space-y-1">
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-[var(--on-surface)]">{{ d.disciplina }}</span>
-                    <span class="text-[10px] font-bold text-[var(--primary)] bg-[#e1dfff] dark:bg-[#2b20d2]/30 dark:text-[#c1c1ff] px-2 py-0.5 rounded-md">
-                      {{ d.topicosCount }} tópicos • {{ d.subtopicosCount }} subtópicos
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Conhecimentos Específicos -->
-              <div class="neo-pressed rounded-2xl p-4 space-y-3 bg-[var(--surface-container-low)]/50 dark:bg-[#202433]/50">
-                <div class="flex items-center justify-between border-b border-[var(--outline-variant)]/40 pb-2">
-                  <span class="text-xs font-extrabold text-[var(--secondary)] flex items-center gap-1.5">
-                    <span class="material-symbols-outlined !text-[15px] text-[var(--secondary)]">stars</span>
-                    Conhecimentos Específicos
-                  </span>
-                  <span class="bg-[#e9ddff] dark:bg-[#5516be]/30 text-[#5516be] dark:text-[#d0bcff] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    {{ promptQualitySummary.especificos.length }} Disciplinas
-                  </span>
-                </div>
-
-                <div *ngIf="promptQualitySummary.especificos.length === 0" class="text-xs text-[var(--outline)] italic p-2">
-                  Nenhuma disciplina específica cadastrada.
-                </div>
-
-                <div *ngFor="let d of promptQualitySummary.especificos" class="neo-raised rounded-xl p-3 space-y-1">
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-[var(--on-surface)]">{{ d.disciplina }}</span>
-                    <span class="text-[10px] font-bold text-[var(--secondary)] bg-[#e9ddff] dark:bg-[#5516be]/30 dark:text-[#d0bcff] px-2 py-0.5 rounded-md">
-                      {{ d.topicosCount }} tópicos • {{ d.subtopicosCount }} subtópicos
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Código JSON Bruto do Prompt 1 (conteudo_programatico) -->
-          <div class="neo-pressed rounded-2xl p-4">
-            <h4 class="text-xs font-bold text-[var(--on-surface)] mb-2 flex items-center justify-between">
-              <span>Estrutura JSON das Disciplinas Extraídas (Prompt 1 — <code>conteudo_programatico</code>)</span>
-              <span class="text-[10px] font-bold text-[var(--primary)] bg-[#e1dfff] dark:bg-[#2b20d2]/30 dark:text-[#c1c1ff] px-2 py-0.5 rounded-md">Draft-07 Schema</span>
-            </h4>
-            <pre class="bg-[#191c1e] text-[#eefff2] p-4 rounded-xl text-xs overflow-x-auto font-mono max-h-96">{{ promptQualityJson }}</pre>
-          </div>
-
-          <!-- Seção de Relatório Psicométrico de Questões -->
-          <div class="border-t border-[var(--outline-variant)]/40 pt-6 space-y-4">
-            <div class="bg-[#eefff2] dark:bg-[#003824]/40 border border-[#6ffbbe] dark:border-[#006847] rounded-2xl p-4 text-xs text-[#005236] dark:text-[#6ffbbe] flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-[var(--tertiary)]">description</span>
-                <span>Relatório salvo em tempo real em <code>backend/data/quality_analysis.json</code> e <code>questions.json</code></span>
-              </div>
-              <span class="font-bold">Total Analisado: {{ qualityReport?.total_questions_analyzed || questions.length }} Questões</span>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="neo-pressed rounded-2xl p-4 text-center">
-                <p class="text-xs text-[var(--outline)]">Score de Clareza Médio</p>
-                <h4 class="text-xl font-bold text-[var(--primary)]">{{ qualityReport?.average_metrics?.avg_clarity_score || 9.5 }}/10</h4>
-              </div>
-              <div class="neo-pressed rounded-2xl p-4 text-center">
-                <p class="text-xs text-[var(--outline)]">Plausibilidade dos Distratores</p>
-                <h4 class="text-xl font-bold text-[var(--secondary)]">{{ qualityReport?.average_metrics?.avg_distractor_plausibility || 9.1 }}/10</h4>
-              </div>
-              <div class="neo-pressed rounded-2xl p-4 text-center">
-                <p class="text-xs text-[var(--outline)]">Qualidade Psicométrica Geral</p>
-                <h4 class="text-xl font-bold text-[var(--tertiary)]">{{ qualityReport?.average_metrics?.avg_overall_quality_score || 9.3 }}/10</h4>
-              </div>
-            </div>
-
-            <div class="neo-pressed rounded-2xl p-4">
-              <h4 class="text-xs font-bold text-[var(--on-surface)] mb-2">Estrutura JSON do Relatório de Qualidade em Disco (backend/data/quality_analysis.json)</h4>
-              <pre class="bg-[#191c1e] text-[#eefff2] p-4 rounded-xl text-xs overflow-x-auto font-mono max-h-96">{{ qualityReportJson }}</pre>
-            </div>
-          </div>
-
-        </div>
 
         <!-- Stats Tab Content (Admin Only) -->
         <div *ngIf="activeTab === 'stats'" class="space-y-8">
