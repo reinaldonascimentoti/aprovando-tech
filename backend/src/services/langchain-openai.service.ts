@@ -2388,43 +2388,44 @@ Sua pergunta central é: "O que esse dispositivo significa?"
   // ===========================================================================
   // AGENTE 3 — ANALISTA ESTRATÉGICO DE CONCURSOS — LEGISLAÇÃO
   // Transforma artigos comentados em estratégia de preparação, prioridade e metas
+  // Suporta batching automático para legislações extensas (>60k chars de contexto)
   // ===========================================================================
 
-  async analisarEstrategiaConcurso(
-    legislacao: {
-      id: string;
-      titulo: string;
-      tipo?: string | null;
-      numero?: string | null;
-      ano?: number | null;
-      ementa?: string | null;
-    },
-    artigosComComentarios: any[],
+  /**
+   * Monta o contexto enxuto de cada artigo para o Agente 3.
+   * Campos opcionais são omitidos quando vazios para reduzir o tamanho do payload.
+   */
+  private _buildArtigoContextoAgente3(a: any): any {
+    const c = Array.isArray(a.legislacao_comentarios)
+      ? a.legislacao_comentarios[0]
+      : a.legislacao_comentarios;
+    const ctx: any = {
+      artigo_id: a.id,
+      artigo_numero: a.numero,
+      titulo: a.titulo || null,
+      texto_resumo: c?.resumo || (a.texto_original ? a.texto_original.slice(0, 250) : null),
+      status_dispositivo: a.status_dispositivo || 'vigente_no_documento',
+      relevancia_concurso: c?.relevancia_concurso || 'media',
+    };
+    // Inclui campos opcionais somente se houver conteúdo (economiza tokens)
+    if (c?.prazos?.length)       ctx.prazos       = c.prazos;
+    if (c?.competencias?.length) ctx.competencias  = c.competencias;
+    if (c?.requisitos?.length)   ctx.requisitos    = c.requisitos;
+    if (c?.excecoes?.length)     ctx.excecoes      = c.excecoes;
+    if (c?.pontos_atencao?.length) ctx.pontos_atencao = c.pontos_atencao;
+    return ctx;
+  }
+
+  /**
+   * Invoca o Agente 3 para um lote específico de artigos.
+   * Contém toda a lógica de chamada ao modelo Gemini (e fallback Groq).
+   */
+  private async _analisarBatchEstrategico(
+    googleKey: string,
+    legislacao: { id: string; titulo: string; tipo?: string | null; numero?: string | null; ano?: number | null },
+    artigosContexto: any[],
+    batchLabel: string,
   ): Promise<any> {
-    const googleKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
-    if (!googleKey) {
-      throw new Error('GOOGLE_AI_API_KEY não configurada para o Agente Analista Estratégico.');
-    }
-
-    const artigosContexto = artigosComComentarios.map(a => {
-      const c = Array.isArray(a.legislacao_comentarios)
-        ? a.legislacao_comentarios[0]
-        : a.legislacao_comentarios;
-      return {
-        artigo_id: a.id,
-        artigo_numero: a.numero,
-        titulo: a.titulo || null,
-        texto_resumo: c?.resumo || (a.texto_original ? a.texto_original.slice(0, 300) : null),
-        status_dispositivo: a.status_dispositivo || 'vigente_no_documento',
-        relevancia_concurso: c?.relevancia_concurso || 'media',
-        prazos: c?.prazos?.length ? c.prazos : undefined,
-        competencias: c?.competencias?.length ? c.competencias : undefined,
-        requisitos: c?.requisitos?.length ? c.requisitos : undefined,
-        excecoes: c?.excecoes?.length ? c.excecoes : undefined,
-        pontos_atencao: c?.pontos_atencao?.length ? c.pontos_atencao : undefined,
-      };
-    });
-
     const PROMPT_ANALISTA = `# AGENTE 3 — ANALISTA ESTRATÉGICO DE CONCURSOS — LEGISLAÇÃO
 
 ## 1. PAPEL
@@ -2439,8 +2440,8 @@ Você responde: "O que merece mais atenção na prova e quanto treinamento esse 
   - Prioridade ALTA: meta de questões (min: 2, recomendado: 5, max: 8), flashcards (min: 1, recomendado: 2, max: 3).
   - Prioridade MÉDIA: meta de questões (min: 2, recomendado: 4, max: 6), flashcards (min: 1, recomendado: 1, max: 2).
   - Prioridade BAIXA: meta de questões (min: 1, recomendado: 2, max: 3), flashcards (min: 0, recomendado: 1, max: 1).
-- Defina a **meta global** (soma das metas recomendadas).
-- Identifique **comparações recomendadas** entre artigos semelhantes ou com risco de confusão.
+- Defina a **meta global** (soma das metas recomendadas deste lote).
+- Identifique **comparações recomendadas** entre artigos semelhantes ou com risco de confusão neste lote.
 
 ## 3. DADOS DA LEGISLAÇÃO
 ${JSON.stringify({
@@ -2449,7 +2450,7 @@ ${JSON.stringify({
   tipo: legislacao.tipo,
   numero: legislacao.numero,
   ano: legislacao.ano,
-  total_artigos: artigosContexto.length,
+  total_artigos_neste_lote: artigosContexto.length,
 }, null, 2)}
 
 ## 4. ARTIGOS E COMENTÁRIOS DE ENTRADA
@@ -2506,7 +2507,7 @@ Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
 
     for (const modelName of modelNames) {
       try {
-        this.logger.log(`[Agente 3 - Analista] Tentando analisarEstrategiaConcurso com modelo ${modelName}...`);
+        this.logger.log(`[Agente 3 - Analista] ${batchLabel}: tentando modelo ${modelName}...`);
         const model = genAI.getGenerativeModel({
           model: modelName,
           generationConfig: {
@@ -2520,24 +2521,24 @@ Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
         const text = result.response.text();
 
         if (text && text.trim().length > 10) {
-          const parsed = this.parseJsonResponse(text, `AnalistaEstrategico-${modelName}`);
+          const parsed = this.parseJsonResponse(text, `AnalistaEstrategico-${batchLabel}-${modelName}`);
           if (parsed && parsed.analise_concurso && Array.isArray(parsed.analise_concurso) && parsed.analise_concurso.length > 0) {
-            this.logger.log(`[Agente 3 - Analista] ✅ ${modelName}: ${parsed.analise_concurso.length} artigos analisados strategicamente.`);
+            this.logger.log(`[Agente 3 - Analista] ✅ ${batchLabel} | ${modelName}: ${parsed.analise_concurso.length} artigos analisados.`);
             return parsed;
           }
         }
       } catch (err: any) {
-        this.logger.warn(`[Agente 3 - Analista] ${modelName} falhou: ${err.message}. Tentando próximo modelo...`);
+        this.logger.warn(`[Agente 3 - Analista] ${batchLabel} | ${modelName} falhou: ${err.message}. Tentando próximo modelo...`);
       }
     }
 
-    // Fallback de alta disponibilidade com Groq
+    // Fallback Groq
     const groqKey = process.env.GROQ_API_KEY;
     if (groqKey) {
       const groqModels = ['qwen/qwen3.8-27b', 'groq/compound'];
       for (const gm of groqModels) {
         try {
-          this.logger.log(`[Agente 3 - Analista] Tentando fallback com Groq (${gm})...`);
+          this.logger.log(`[Agente 3 - Analista] ${batchLabel}: tentando fallback Groq (${gm})...`);
           const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -2554,19 +2555,149 @@ Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
           const data = await groqRes.json();
           const content = data?.choices?.[0]?.message?.content;
           if (content) {
-            const parsed = this.parseJsonResponse(content, `AnalistaEstrategico-Groq-${gm}`);
+            const parsed = this.parseJsonResponse(content, `AnalistaEstrategico-Groq-${batchLabel}-${gm}`);
             if (parsed && parsed.analise_concurso && Array.isArray(parsed.analise_concurso) && parsed.analise_concurso.length > 0) {
-              this.logger.log(`[Agente 3 - Analista] ✅ Fallback Groq (${gm}) sucesso: ${parsed.analise_concurso.length} artigos analisados.`);
+              this.logger.log(`[Agente 3 - Analista] ✅ ${batchLabel} | Fallback Groq (${gm}): ${parsed.analise_concurso.length} artigos analisados.`);
               return parsed;
             }
           }
         } catch (groqErr: any) {
-          this.logger.warn(`[Agente 3 - Analista] Fallback Groq (${gm}) falhou: ${groqErr.message}`);
+          this.logger.warn(`[Agente 3 - Analista] ${batchLabel} | Fallback Groq (${gm}) falhou: ${groqErr.message}`);
         }
       }
     }
 
-    throw new Error('Todos os modelos de IA falharam ao gerar a análise estratégica de concursos.');
+    return null; // Não lança exceção aqui — o caller decide o que fazer
+  }
+
+  /**
+   * AGENTE 3 — Análise Estratégica de Concursos para legislação.
+   *
+   * Para leis pequenas (contexto ≤ 60k chars): single-shot (comportamento original).
+   * Para leis extensas (contexto > 60k chars): batching automático em lotes de 40 artigos,
+   * com merge inteligente dos resultados (meta_global somada, analise_concurso concatenada,
+   * comparacoes_recomendadas unificadas com deduplicação).
+   */
+  async analisarEstrategiaConcurso(
+    legislacao: {
+      id: string;
+      titulo: string;
+      tipo?: string | null;
+      numero?: string | null;
+      ano?: number | null;
+      ementa?: string | null;
+    },
+    artigosComComentarios: any[],
+  ): Promise<any> {
+    const googleKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
+    if (!googleKey) {
+      throw new Error('GOOGLE_AI_API_KEY não configurada para o Agente Analista Estratégico.');
+    }
+
+    // --- Monta contexto enxuto de todos os artigos ---
+    const artigosContexto = artigosComComentarios.map(a => this._buildArtigoContextoAgente3(a));
+
+    // --- Heurística de tamanho: estima tokens pelo tamanho em chars do JSON ---
+    const LIMITE_CHARS_SINGLE_SHOT = 60_000;  // ~15k tokens de entrada; deixa espaço para output
+    const BATCH_SIZE = 40;                    // artigos por lote
+    const contextSize = JSON.stringify(artigosContexto).length;
+
+    this.logger.log(
+      `[Agente 3 - Analista] Iniciando análise estratégica — ${artigosComComentarios.length} artigos | ` +
+      `contexto estimado: ${contextSize} chars | modo: ${contextSize <= LIMITE_CHARS_SINGLE_SHOT ? 'single-shot' : 'batching'}`,
+    );
+
+    // =========================================================================
+    // MODO SINGLE-SHOT — leis pequenas, sem overhead de múltiplas chamadas
+    // =========================================================================
+    if (contextSize <= LIMITE_CHARS_SINGLE_SHOT) {
+      const resultado = await this._analisarBatchEstrategico(
+        googleKey,
+        legislacao,
+        artigosContexto,
+        'single-shot',
+      );
+
+      if (resultado) return resultado;
+
+      throw new Error('Todos os modelos de IA falharam ao gerar a análise estratégica de concursos.');
+    }
+
+    // =========================================================================
+    // MODO BATCHING — leis extensas
+    // =========================================================================
+    this.logger.log(
+      `[Agente 3 - Analista] Ativando modo batching: ${artigosContexto.length} artigos divididos em lotes de ${BATCH_SIZE}.`,
+    );
+
+    const batches: any[][] = [];
+    for (let i = 0; i < artigosContexto.length; i += BATCH_SIZE) {
+      batches.push(artigosContexto.slice(i, i + BATCH_SIZE));
+    }
+
+    const resultadosMesclados: any[] = [];
+    let metaQuestoesTotal = 0;
+    let metaFlashcardsTotal = 0;
+    const comparacoesSet = new Set<string>(); // deduplicação por chave textual
+    const comparacoesMescladas: any[] = [];
+
+    for (let bIdx = 0; bIdx < batches.length; bIdx++) {
+      const batch = batches[bIdx];
+      const batchLabel = `lote ${bIdx + 1}/${batches.length} (arts. ${batch[0].artigo_numero}–${batch[batch.length - 1].artigo_numero})`;
+
+      // Pausa entre lotes para evitar rate-limit (exceto no primeiro)
+      if (bIdx > 0) {
+        await new Promise(r => setTimeout(r, 1500));
+      }
+
+      const resultado = await this._analisarBatchEstrategico(googleKey, legislacao, batch, batchLabel);
+
+      if (!resultado) {
+        this.logger.warn(`[Agente 3 - Analista] ${batchLabel}: nenhum resultado. Prosseguindo com próximo lote...`);
+        continue;
+      }
+
+      // Acumula análises de artigos
+      if (Array.isArray(resultado.analise_concurso)) {
+        resultadosMesclados.push(...resultado.analise_concurso);
+      }
+
+      // Soma metas globais
+      metaQuestoesTotal   += resultado.meta_global?.meta_questoes_total   ?? 0;
+      metaFlashcardsTotal += resultado.meta_global?.meta_flashcards_total ?? 0;
+
+      // Mescla comparações com deduplicação por artigos envolvidos
+      if (Array.isArray(resultado.comparacoes_recomendadas)) {
+        for (const comp of resultado.comparacoes_recomendadas) {
+          const chave = (comp.artigos ?? []).slice().sort().join('|');
+          if (!comparacoesSet.has(chave)) {
+            comparacoesSet.add(chave);
+            comparacoesMescladas.push(comp);
+          }
+        }
+      }
+
+      this.logger.log(`[Agente 3 - Analista] ${batchLabel}: ✅ ${resultado.analise_concurso?.length ?? 0} artigos acumulados. Total até agora: ${resultadosMesclados.length}.`);
+    }
+
+    if (resultadosMesclados.length === 0) {
+      throw new Error('Todos os lotes do Agente 3 falharam. Nenhum artigo foi analisado estrategicamente.');
+    }
+
+    this.logger.log(
+      `[Agente 3 - Analista] ✅ Batching concluído — ${resultadosMesclados.length}/${artigosComComentarios.length} artigos analisados | ` +
+      `Meta total: ${metaQuestoesTotal} questões, ${metaFlashcardsTotal} flashcards.`,
+    );
+
+    return {
+      legislacao_id: legislacao.id,
+      meta_global: {
+        meta_questoes_total: metaQuestoesTotal,
+        meta_flashcards_total: metaFlashcardsTotal,
+      },
+      analise_concurso: resultadosMesclados,
+      comparacoes_recomendadas: comparacoesMescladas,
+    };
   }
 
   // ===========================================================================
@@ -2616,28 +2747,38 @@ Responda EXCLUSIVAMENTE em JSON válido, sem markdown, sem texto fora do JSON:
       }
     }
 
+    // Contexto comprimido: omite arrays vazios e trunca resumo para economizar tokens
+    // (o Agente 4 precisa ver todos os artigos de uma vez para gerar cronograma coerente)
     const artigosContexto = artigosComComentarios.map(a => {
       const c = Array.isArray(a.legislacao_comentarios)
         ? a.legislacao_comentarios[0]
         : a.legislacao_comentarios;
       const est = estrategiaMap.get(String(a.id)) || estrategiaMap.get(String(a.numero)) || {};
-      return {
+      const ctx: any = {
         artigo_id: a.id,
         numero: a.numero,
-        titulo: a.titulo,
-        status_dispositivo: a.status_dispositivo,
-        resumo: c?.resumo || null,
+        titulo: a.titulo || null,
+        status_dispositivo: a.status_dispositivo || 'vigente_no_documento',
+        // Trunca resumo para 200 chars — suficiente para planejamento de blocos
+        resumo: c?.resumo ? c.resumo.slice(0, 200) : null,
         relevancia_concurso: c?.relevancia_concurso || 'media',
         prioridade_estrategica: est.prioridade || c?.relevancia_concurso || 'media',
         potencial_cobranca: est.potencial_cobranca || 'medio',
         meta_questoes_sugerida: est.meta_questoes?.recomendado || 4,
-        prazos: c?.prazos?.length ? c.prazos : [],
-        competencias: c?.competencias?.length ? c.competencias : [],
-        requisitos: c?.requisitos?.length ? c.requisitos : [],
-        excecoes: c?.excecoes?.length ? c.excecoes : [],
-        pontos_atencao: c?.pontos_atencao?.length ? c.pontos_atencao : [],
       };
+      // Inclui arrays opcionais somente quando não vazios (elimina tokens desperdiçados)
+      if (c?.prazos?.length)         ctx.prazos        = c.prazos;
+      if (c?.competencias?.length)   ctx.competencias   = c.competencias;
+      if (c?.requisitos?.length)     ctx.requisitos     = c.requisitos;
+      if (c?.excecoes?.length)       ctx.excecoes       = c.excecoes;
+      if (c?.pontos_atencao?.length) ctx.pontos_atencao = c.pontos_atencao;
+      return ctx;
     });
+
+    const contextSize = JSON.stringify(artigosContexto).length;
+    this.logger.log(
+      `[Agente 4 - Planejador] Contexto comprimido: ${artigosComComentarios.length} artigos | ${contextSize} chars`,
+    );
 
     const PROMPT_PLANEJADOR = `# AGENTE 4 — PLANEJADOR E GERENCIADOR DE CRONOGRAMA DE ESTUDOS
 
@@ -2791,104 +2932,69 @@ ${JSON.stringify(artigosContexto, null, 2)}
   // ===========================================================================
   // AGENTE 5 — GERADOR DE QUESTÕES E MATERIAL DE FIXAÇÃO
   // Cumpre as metas do Agente 3 com controle de cobertura e qualidade
+  // Suporta batching automático para legislações extensas (>50k chars de contexto)
   // ===========================================================================
 
-  async gerarMaterialFixacao(
-    legislacao: {
-      id: string;
-      titulo: string;
-      tipo?: string | null;
-      numero?: string | null;
-      ano?: number | null;
-      ementa?: string | null;
-    },
-    artigosComComentarios: any[],
-    analiseEstrategica?: any,
-    opcoes?: {
-      sessao_id?: string;
-      banca?: string;
-      artigo_id?: string;
-      artigos_filtro?: string[];
-      questoes_existentes?: any[];
-      modo?: 'adicionar' | 'substituir';
-    },
+  /**
+   * Monta o contexto enxuto de cada artigo para o Agente 5.
+   * Inclui texto_original e todos os campos de comentário necessários para gerar questões.
+   */
+  private _buildArtigoContextoAgente5(
+    a: any,
+    estrategiaMap: Map<string, any>,
+  ): any {
+    const c = Array.isArray(a.legislacao_comentarios)
+      ? a.legislacao_comentarios[0]
+      : a.legislacao_comentarios;
+    const est = estrategiaMap.get(String(a.id)) || estrategiaMap.get(String(a.numero)) || {};
+    const ctx: any = {
+      artigo_id: a.id,
+      artigo_numero: a.numero,
+      titulo: a.titulo || null,
+      texto_original: a.texto_original,
+      status_dispositivo: a.status_dispositivo || 'vigente_no_documento',
+      resumo: c?.resumo || null,
+      explicacao_simples: c?.explicacao_simples || null,
+      comentario_tecnico: c?.comentario_tecnico || null,
+      relevancia_concurso: c?.relevancia_concurso || 'media',
+      // Estratégia do Agente 3
+      prioridade_agente3: est.prioridade || 'media',
+      potencial_cobranca: est.potencial_cobranca || 'medio',
+      meta_questoes: est.meta_questoes || { minimo: 2, recomendado: 4, maximo: 6 },
+      meta_flashcards: est.meta_flashcards || { minimo: 1, recomendado: 2, maximo: 2 },
+      tipos_recomendados: est.tipos_recomendados || ['questao_certo_errado', 'questao_multipla_escolha'],
+    };
+    // Arrays opcionais: inclui somente quando não vazios
+    if (c?.direitos?.length)           ctx.direitos           = c.direitos;
+    if (c?.obrigacoes?.length)         ctx.obrigacoes         = c.obrigacoes;
+    if (c?.proibicoes?.length)         ctx.proibicoes         = c.proibicoes;
+    if (c?.permissoes?.length)         ctx.permissoes         = c.permissoes;
+    if (c?.requisitos?.length)         ctx.requisitos         = c.requisitos;
+    if (c?.condicoes?.length)          ctx.condicoes          = c.condicoes;
+    if (c?.competencias?.length)       ctx.competencias       = c.competencias;
+    if (c?.prazos?.length)             ctx.prazos             = c.prazos;
+    if (c?.excecoes?.length)           ctx.excecoes           = c.excecoes;
+    if (c?.consequencias?.length)      ctx.consequencias      = c.consequencias;
+    if (c?.pontos_importantes?.length) ctx.pontos_importantes = c.pontos_importantes;
+    if (c?.pontos_atencao?.length)     ctx.pontos_atencao     = c.pontos_atencao;
+    if (est.riscos_de_erro?.length)    ctx.riscos_de_erro     = est.riscos_de_erro;
+    if (est.formas_de_cobranca?.length) ctx.formas_de_cobranca = est.formas_de_cobranca;
+    return ctx;
+  }
+
+  /**
+   * Invoca o Agente 5 para um lote de artigos.
+   * Contém toda a lógica de chamada ao modelo Gemini (+ fallback Groq).
+   * Retorna null em caso de falha total — o caller decide continuar ou abortar.
+   */
+  private async _gerarMaterialFixacaoBatch(
+    googleKey: string,
+    legislacao: { id: string; titulo: string; tipo?: string | null; numero?: string | null; ano?: number | null; ementa?: string | null },
+    artigosContexto: any[],
+    batchLabel: string,
+    banca: string,
+    instrucaoIncremental: string,
   ): Promise<any> {
-    const googleKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
-    if (!googleKey) {
-      throw new Error('GOOGLE_AI_API_KEY não configurada para o Agente de Fixação.');
-    }
-
-    let artigosFiltrados = artigosComComentarios;
-    if (opcoes?.artigos_filtro && opcoes.artigos_filtro.length > 0) {
-      artigosFiltrados = artigosComComentarios.filter(a =>
-        opcoes.artigos_filtro!.includes(String(a.numero)) || opcoes.artigos_filtro!.includes(String(a.id)),
-      );
-    } else if (opcoes?.artigo_id) {
-      artigosFiltrados = artigosComComentarios.filter(a => a.id === opcoes.artigo_id);
-    }
-
-    if (!artigosFiltrados.length) {
-      artigosFiltrados = artigosComComentarios;
-    }
-
-    // Mapeia estratégia do Agente 3 por artigo
-    const estrategiaMap = new Map<string, any>();
-    if (analiseEstrategica?.analise_concurso && Array.isArray(analiseEstrategica.analise_concurso)) {
-      for (const item of analiseEstrategica.analise_concurso) {
-        if (item.artigo_id) estrategiaMap.set(String(item.artigo_id), item);
-        if (item.artigo_numero) estrategiaMap.set(String(item.artigo_numero), item);
-      }
-    }
-
-    const artigosContexto = artigosFiltrados.map(a => {
-      const c = Array.isArray(a.legislacao_comentarios)
-        ? a.legislacao_comentarios[0]
-        : a.legislacao_comentarios;
-      const est = estrategiaMap.get(String(a.id)) || estrategiaMap.get(String(a.numero)) || {};
-      return {
-        artigo_id: a.id,
-        artigo_numero: a.numero,
-        titulo: a.titulo || null,
-        texto_original: a.texto_original,
-        status_dispositivo: a.status_dispositivo || 'vigente_no_documento',
-        resumo: c?.resumo || null,
-        explicacao_simples: c?.explicacao_simples || null,
-        comentario_tecnico: c?.comentario_tecnico || null,
-        direitos: c?.direitos || [],
-        obrigacoes: c?.obrigacoes || [],
-        proibicoes: c?.proibicoes || [],
-        permissoes: c?.permissoes || [],
-        requisitos: c?.requisitos || [],
-        condicoes: c?.condicoes || [],
-        competencias: c?.competencias || [],
-        prazos: c?.prazos || [],
-        excecoes: c?.excecoes || [],
-        consequencias: c?.consequencias || [],
-        pontos_importantes: c?.pontos_importantes || [],
-        pontos_atencao: c?.pontos_atencao || [],
-        relevancia_concurso: c?.relevancia_concurso || 'media',
-        // Entradas estratégicas do Agente 3
-        prioridade_agente3: est.prioridade || 'media',
-        potencial_cobranca: est.potencial_cobranca || 'medio',
-        riscos_de_erro: est.riscos_de_erro || [],
-        formas_de_cobranca: est.formas_de_cobranca || [],
-        meta_questoes: est.meta_questoes || { minimo: 2, recomendado: 4, maximo: 6 },
-        meta_flashcards: est.meta_flashcards || { minimo: 1, recomendado: 2, maximo: 2 },
-        tipos_recomendados: est.tipos_recomendados || ['questao_certo_errado', 'questao_multipla_escolha'],
-      };
-    });
-
-    const artigosJaAbordados = (opcoes as any)?.questoes_existentes?.length
-      ? (opcoes as any).questoes_existentes.map((q: any) => q.artigo_numero || q.artigo_id).slice(0, 50)
-      : [];
-
-    const instrucaoIncremental = (opcoes as any)?.questoes_existentes?.length
-      ? `\n## 2.1 MODO INCREMENTAL (GERAR MAIS QUESTÕES)
-- Já existem ${(opcoes as any).questoes_existentes.length} questões cadastradas no banco para esta lei.
-- Gere NOVAS questões inéditas, explorando outros parágrafos, incisos, exceções e artigos com menor cobertura.
-- NÃO repita os mesmos enunciados ou pegadinhas já trabalhados anteriormente.`
-      : '';
-
     const PROMPT_AGENTE_5 = `# AGENTE 5 — GERADOR DE QUESTÕES E MATERIAL DE FIXAÇÃO
 
 ## 1. PAPEL
@@ -2898,7 +3004,7 @@ Você responde: "Como o aluno vai praticar e fixar esse conteúdo?"
 
 ## 2. REGRAS FUNDAMENTAIS
 - **Cumprimento de Metas do Agente 3**: cumpra a meta de questões e flashcards definida para cada artigo. Não produza apenas poucas questões genéricas.
-- **Cobertura praticamente integral**: trate praticamente toda a legislação elegível.
+- **Cobertura praticamente integral**: trate praticamente toda a legislação elegível deste lote.
 - **Distribuição dos tipos**: mescle Múltipla Escolha (com 5 alternativas A, B, C, D, E e justificativas individuais para cada alternativa), Certo/Errado e Casos Práticos.
 - **Rigor de Qualidade**: 
   1. Apenas 1 resposta correta por questão de múltipla escolha.
@@ -2915,8 +3021,8 @@ ${JSON.stringify({
   ano: legislacao.ano,
   titulo: legislacao.titulo,
   ementa: legislacao.ementa,
-  total_artigos_analisados: artigosContexto.length,
-  banca: opcoes?.banca || 'Geral (estilo FCC/Cebraspe/FGV)',
+  total_artigos_neste_lote: artigosContexto.length,
+  banca: banca,
 }, null, 2)}
 
 ## 4. ARTIGOS, COMENTÁRIOS E METAS DO AGENTE 3
@@ -2947,33 +3053,21 @@ ${JSON.stringify(artigosContexto, null, 2)}
         "id": "q-1",
         "tipo": "multipla_escolha",
         "artigo_id": "uuid-do-artigo",
-        "artigo_numero": "1º",
+        "artigo_numero": "1\u00ba",
         "assunto": "...",
         "dificuldade": "medio",
         "prioridade": "alta",
         "enunciado": "...",
-        "alternativas": {
-          "A": "...",
-          "B": "...",
-          "C": "...",
-          "D": "...",
-          "E": "..."
-        },
+        "alternativas": { "A": "...", "B": "...", "C": "...", "D": "...", "E": "..." },
         "gabarito": "C",
         "justificativa": "...",
-        "justificativas_alternativas": {
-          "A": "...",
-          "B": "...",
-          "C": "...",
-          "D": "...",
-          "E": "..."
-        }
+        "justificativas_alternativas": { "A": "...", "B": "...", "C": "...", "D": "...", "E": "..." }
       },
       {
         "id": "q-2",
         "tipo": "certo_errado",
         "artigo_id": "uuid-do-artigo",
-        "artigo_numero": "2º",
+        "artigo_numero": "2\u00ba",
         "assunto": "...",
         "dificuldade": "dificil",
         "prioridade": "alta",
@@ -2986,7 +3080,7 @@ ${JSON.stringify(artigosContexto, null, 2)}
       {
         "id": "fc-1",
         "artigo_id": "uuid-do-artigo",
-        "artigo_numero": "1º",
+        "artigo_numero": "1\u00ba",
         "pergunta": "...",
         "resposta": "...",
         "assunto": "...",
@@ -3003,7 +3097,7 @@ ${JSON.stringify(artigosContexto, null, 2)}
 
     for (const modelName of modelNames) {
       try {
-        this.logger.log(`[Agente 5 - Fixação] Tentando gerarMaterialFixacao com modelo ${modelName}...`);
+        this.logger.log(`[Agente 5 - Fixação] ${batchLabel}: tentando modelo ${modelName}...`);
         const model = genAI.getGenerativeModel({
           model: modelName,
           generationConfig: {
@@ -3017,32 +3111,28 @@ ${JSON.stringify(artigosContexto, null, 2)}
         const text = result.response.text();
 
         if (text && text.trim().length > 10) {
-          const parsed = this.parseJsonResponse(text, `Agente5-Fixacao-${modelName}`);
+          const parsed = this.parseJsonResponse(text, `Agente5-${batchLabel}-${modelName}`);
           if (parsed && (parsed.conteudos || parsed.questoes || parsed.flashcards)) {
-            const questoesCount = parsed.conteudos?.questoes?.length || parsed.questoes?.length || 0;
-            const fcCount = parsed.conteudos?.flashcards?.length || parsed.flashcards?.length || 0;
-            this.logger.log(`[Agente 5 - Fixação] ✅ ${modelName}: ${questoesCount} questões, ${fcCount} flashcards gerados.`);
+            const q = parsed.conteudos?.questoes?.length || parsed.questoes?.length || 0;
+            const fc = parsed.conteudos?.flashcards?.length || parsed.flashcards?.length || 0;
+            this.logger.log(`[Agente 5 - Fixação] ✅ ${batchLabel} | ${modelName}: ${q} questões, ${fc} flashcards.`);
             return parsed;
           }
         }
       } catch (err: any) {
-        this.logger.warn(`[Agente 5 - Fixação] ${modelName} falhou: ${err.message}. Tentando próximo modelo...`);
+        this.logger.warn(`[Agente 5 - Fixação] ${batchLabel} | ${modelName} falhou: ${err.message}. Tentando próximo modelo...`);
       }
     }
 
-    // Fallback de alta disponibilidade com Groq
+    // Fallback Groq
     const groqKey = process.env.GROQ_API_KEY;
     if (groqKey) {
-      const groqModels = ['qwen/qwen3.8-27b', 'groq/compound'];
-      for (const gm of groqModels) {
+      for (const gm of ['qwen/qwen3.8-27b', 'groq/compound']) {
         try {
-          this.logger.log(`[Agente 5 - Fixação] Tentando fallback com Groq (${gm})...`);
+          this.logger.log(`[Agente 5 - Fixação] ${batchLabel}: tentando fallback Groq (${gm})...`);
           const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${groqKey}`,
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
               model: gm,
               messages: [{ role: 'user', content: PROMPT_AGENTE_5 }],
@@ -3053,19 +3143,192 @@ ${JSON.stringify(artigosContexto, null, 2)}
           const data = await groqRes.json();
           const content = data?.choices?.[0]?.message?.content;
           if (content) {
-            const parsed = this.parseJsonResponse(content, `Agente5-Fixacao-Groq-${gm}`);
+            const parsed = this.parseJsonResponse(content, `Agente5-Groq-${batchLabel}-${gm}`);
             if (parsed && (parsed.conteudos || parsed.questoes || parsed.flashcards)) {
-              this.logger.log(`[Agente 5 - Fixação] ✅ Fallback Groq (${gm}) gerou material com sucesso!`);
+              this.logger.log(`[Agente 5 - Fixação] ✅ ${batchLabel} | Fallback Groq (${gm}) gerou material.`);
               return parsed;
             }
           }
         } catch (groqErr: any) {
-          this.logger.warn(`[Agente 5 - Fixação] Fallback Groq (${gm}) falhou: ${groqErr.message}`);
+          this.logger.warn(`[Agente 5 - Fixação] ${batchLabel} | Fallback Groq (${gm}) falhou: ${groqErr.message}`);
         }
       }
     }
 
-    throw new Error('Todos os modelos de IA falharam ao gerar o material de fixação.');
+    return null; // Não lança aqui — o caller decide
+  }
+
+  async gerarMaterialFixacao(
+    legislacao: {
+      id: string;
+      titulo: string;
+      tipo?: string | null;
+      numero?: string | null;
+      ano?: number | null;
+      ementa?: string | null;
+    },
+    artigosComComentarios: any[],
+    analiseEstrategica?: any,
+    opcoes?: {
+      sessao_id?: string;
+      banca?: string;
+      artigo_id?: string;
+      artigos_filtro?: string[];
+      questoes_existentes?: any[];
+      modo?: 'adicionar' | 'substituir';
+    },
+  ): Promise<any> {
+    const googleKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
+    if (!googleKey) {
+      throw new Error('GOOGLE_AI_API_KEY não configurada para o Agente de Fixação.');
+    }
+
+    // --- Filtragem de artigos (mantém comportamento original) ---
+    let artigosFiltrados = artigosComComentarios;
+    if (opcoes?.artigos_filtro && opcoes.artigos_filtro.length > 0) {
+      artigosFiltrados = artigosComComentarios.filter(a =>
+        opcoes.artigos_filtro!.includes(String(a.numero)) || opcoes.artigos_filtro!.includes(String(a.id)),
+      );
+    } else if (opcoes?.artigo_id) {
+      artigosFiltrados = artigosComComentarios.filter(a => a.id === opcoes.artigo_id);
+    }
+    if (!artigosFiltrados.length) {
+      artigosFiltrados = artigosComComentarios;
+    }
+
+    // --- Mapa de estratégia do Agente 3 ---
+    const estrategiaMap = new Map<string, any>();
+    if (analiseEstrategica?.analise_concurso && Array.isArray(analiseEstrategica.analise_concurso)) {
+      for (const item of analiseEstrategica.analise_concurso) {
+        if (item.artigo_id) estrategiaMap.set(String(item.artigo_id), item);
+        if (item.artigo_numero) estrategiaMap.set(String(item.artigo_numero), item);
+      }
+    }
+
+    // --- Contexto comprimido (omite arrays vazios) ---
+    const artigosContexto = artigosFiltrados.map(a => this._buildArtigoContextoAgente5(a, estrategiaMap));
+
+    const instrucaoIncremental = (opcoes as any)?.questoes_existentes?.length
+      ? `\n## 2.1 MODO INCREMENTAL (GERAR MAIS QUESTÕES)\n- Já existem ${(opcoes as any).questoes_existentes.length} questões cadastradas no banco para esta lei.\n- Gere NOVAS questões inéditas, explorando outros parágrafos, incisos, exceções e artigos com menor cobertura.\n- NÃO repita os mesmos enunciados ou pegadinhas já trabalhados anteriormente.`
+      : '';
+
+    const banca = opcoes?.banca || 'Geral (estilo FCC/Cebraspe/FGV)';
+
+    // --- Heurística de tamanho ---
+    const LIMITE_CHARS_SINGLE_SHOT = 50_000;  // Agente 5 tem payload mais pesado por artigo
+    const BATCH_SIZE = 20;                    // lotes menores por causa do texto_original
+    const contextSize = JSON.stringify(artigosContexto).length;
+
+    this.logger.log(
+      `[Agente 5 - Fixação] Iniciando geração de material — ${artigosFiltrados.length} artigos | ` +
+      `contexto: ${contextSize} chars | modo: ${contextSize <= LIMITE_CHARS_SINGLE_SHOT ? 'single-shot' : 'batching'}`,
+    );
+
+    // =========================================================================
+    // MODO SINGLE-SHOT — legislações pequenas
+    // =========================================================================
+    if (contextSize <= LIMITE_CHARS_SINGLE_SHOT) {
+      const resultado = await this._gerarMaterialFixacaoBatch(
+        googleKey, legislacao, artigosContexto, 'single-shot', banca, instrucaoIncremental,
+      );
+      if (resultado) return resultado;
+      throw new Error('Todos os modelos de IA falharam ao gerar o material de fixação.');
+    }
+
+    // =========================================================================
+    // MODO BATCHING — legislações extensas
+    // =========================================================================
+    this.logger.log(
+      `[Agente 5 - Fixação] Ativando modo batching: ${artigosContexto.length} artigos em lotes de ${BATCH_SIZE}.`,
+    );
+
+    const batches: any[][] = [];
+    for (let i = 0; i < artigosContexto.length; i += BATCH_SIZE) {
+      batches.push(artigosContexto.slice(i, i + BATCH_SIZE));
+    }
+
+    // Acumuladores do merge
+    const todasQuestoes: any[] = [];
+    const todosFlashcards: any[] = [];
+    const todosCasosPraticos: any[] = [];
+    let metasAcum = { questoes_planejadas: 0, questoes_geradas: 0, questoes_pendentes: 0, flashcards_planejados: 0, flashcards_gerados: 0 };
+    let coberturaAcum = { total_artigos_elegiveis: artigosContexto.length, artigos_com_material: 0, artigos_sem_material: 0, percentual_cobertura: 0 };
+    let questaoIdxOffset = 1;
+    let fcIdxOffset = 1;
+
+    for (let bIdx = 0; bIdx < batches.length; bIdx++) {
+      const batch = batches[bIdx];
+      const batchLabel = `lote ${bIdx + 1}/${batches.length} (arts. ${batch[0].artigo_numero}–${batch[batch.length - 1].artigo_numero})`;
+
+      // Pausa entre lotes para evitar rate-limit
+      if (bIdx > 0) {
+        await new Promise(r => setTimeout(r, 2000));
+      }
+
+      const resultado = await this._gerarMaterialFixacaoBatch(
+        googleKey, legislacao, batch, batchLabel, banca, instrucaoIncremental,
+      );
+
+      if (!resultado) {
+        this.logger.warn(`[Agente 5 - Fixação] ${batchLabel}: nenhum resultado. Prosseguindo...`);
+        continue;
+      }
+
+      // Normaliza a estrutura (suporta conteudos.questoes ou questoes direto)
+      const questoes: any[]   = resultado.conteudos?.questoes   || resultado.questoes   || [];
+      const flashcards: any[] = resultado.conteudos?.flashcards || resultado.flashcards || [];
+      const casos: any[]      = resultado.conteudos?.casos_praticos || resultado.casos_praticos || [];
+
+      // Re-numera IDs para evitar colisões entre lotes
+      questoes.forEach((q: any, i: number) => { q.id = `q-${questaoIdxOffset + i}`; });
+      flashcards.forEach((fc: any, i: number) => { fc.id = `fc-${fcIdxOffset + i}`; });
+      questaoIdxOffset += questoes.length;
+      fcIdxOffset += flashcards.length;
+
+      todasQuestoes.push(...questoes);
+      todosFlashcards.push(...flashcards);
+      todosCasosPraticos.push(...casos);
+
+      // Soma metas
+      const m = resultado.metas || {};
+      metasAcum.questoes_planejadas  += m.questoes_planejadas  ?? 0;
+      metasAcum.questoes_geradas     += m.questoes_geradas     ?? questoes.length;
+      metasAcum.questoes_pendentes   += m.questoes_pendentes   ?? 0;
+      metasAcum.flashcards_planejados += m.flashcards_planejados ?? 0;
+      metasAcum.flashcards_gerados   += m.flashcards_gerados   ?? flashcards.length;
+
+      // Soma cobertura
+      const cov = resultado.cobertura || {};
+      coberturaAcum.artigos_com_material  += cov.artigos_com_material  ?? batch.length;
+      coberturaAcum.artigos_sem_material  += cov.artigos_sem_material  ?? 0;
+
+      this.logger.log(`[Agente 5 - Fixação] ${batchLabel}: ✅ ${questoes.length} questões, ${flashcards.length} flashcards. Total acumulado: ${todasQuestoes.length} questões.`);
+    }
+
+    if (todasQuestoes.length === 0 && todosFlashcards.length === 0) {
+      throw new Error('Todos os lotes do Agente 5 falharam. Nenhum material foi gerado.');
+    }
+
+    // Calcula percentual de cobertura final
+    coberturaAcum.percentual_cobertura = coberturaAcum.total_artigos_elegiveis > 0
+      ? Math.round((coberturaAcum.artigos_com_material / coberturaAcum.total_artigos_elegiveis) * 100)
+      : 0;
+
+    this.logger.log(
+      `[Agente 5 - Fixação] ✅ Batching concluído — ${todasQuestoes.length} questões, ${todosFlashcards.length} flashcards | ` +
+      `Cobertura: ${coberturaAcum.percentual_cobertura}%.`,
+    );
+
+    return {
+      legislacao_id: legislacao.id,
+      metas: metasAcum,
+      cobertura: coberturaAcum,
+      conteudos: {
+        questoes: todasQuestoes,
+        flashcards: todosFlashcards,
+        casos_praticos: todosCasosPraticos,
+      },
+    };
   }
 
   /**
