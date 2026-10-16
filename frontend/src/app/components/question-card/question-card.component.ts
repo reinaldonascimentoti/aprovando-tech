@@ -137,8 +137,8 @@ export interface NormalizedOption {
 
       <!-- 4. Alternatives (Opções de Resposta) -->
       <div class="space-y-2.5 pt-1">
-        <div *ngFor="let opt of options; let i = index" 
-          class="flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer group"
+        <div *ngFor="let opt of options; let i = index; trackBy: trackByLetra" 
+          class="flex items-center gap-3 p-3 rounded-xl border transition-colors duration-200 cursor-pointer group"
           [ngClass]="getOptionCardClass(opt.letra)"
           [class.opacity-40]="eliminatedOptions[opt.letra]"
           [class.line-through]="eliminatedOptions[opt.letra]"
@@ -157,7 +157,7 @@ export interface NormalizedOption {
           <!-- Circle Option Badge (A, B, C, D, E) -->
           <div 
             [ngClass]="getOptionCircleClass(opt.letra)"
-            class="w-7 h-7 rounded-full border-2 flex items-center justify-center font-black text-xs shrink-0 transition-all select-none">
+            class="w-7 h-7 rounded-full border-2 flex items-center justify-center font-black text-xs shrink-0 transition-colors duration-200 select-none">
             {{ opt.letra }}
           </div>
 
@@ -238,8 +238,13 @@ export class QuestionCardComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['question']) {
+      this._options = this.buildOptions();
       this.resetAnswer();
     }
+  }
+
+  trackByLetra(_: number, opt: NormalizedOption): string {
+    return opt.letra;
   }
 
   get displayIndex(): number | string {
@@ -317,7 +322,14 @@ export class QuestionCardComponent implements OnInit, OnChanges {
     return `${banca} - ${ano} - ${orgao} - ${cargo}`;
   }
 
+  /** Cached options to keep a stable array reference across change detection cycles */
+  private _options: NormalizedOption[] = [];
+
   get options(): NormalizedOption[] {
+    return this._options;
+  }
+
+  private buildOptions(): NormalizedOption[] {
     if (this.question?.alternativas && this.question.alternativas.length > 0) {
       return this.question.alternativas.map((opt: any) => ({
         letra: (opt.letra || opt.letter || 'A').toUpperCase(),
@@ -377,7 +389,7 @@ export class QuestionCardComponent implements OnInit, OnChanges {
       return 'bg-[var(--primary)]/10 border-[var(--primary)] shadow-xs';
     }
 
-    return 'bg-[var(--surface-container-low)] border-[var(--outline-variant)] hover:border-[var(--primary)]/40 hover:bg-[var(--surface-container)]';
+    return 'bg-[var(--surface-container-low)] border-[var(--outline-variant)] hover:bg-violet-50 hover:border-violet-300 dark:hover:bg-violet-500/10 dark:hover:border-violet-400/40';
   }
 
   getOptionCircleClass(letra: string): string {
