@@ -61,8 +61,8 @@
 
 // ---- Desktop horizontal timeline ----
 .timeline {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  display: flex;
+  justify-content: center;
   gap: 14px;
   align-items: stretch;
   width: 100%;
@@ -101,7 +101,9 @@
   align-items: center;
   text-align: center;
   position: relative;
+  flex: 1;
   min-width: 150px;
+  max-width: 280px;
   height: 100%;
   padding: 20px 12px 18px;
   border-radius: 18px;
